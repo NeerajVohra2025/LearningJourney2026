@@ -1,0 +1,620 @@
+What JDK 8 features have you implemented in your project?
+
+  Enable Functional programming in java.
+
+  Write more readable ,maintainable code
+
+  To use APIs very easily and effectively
+
+  To enable paralle
+
+l processing
+
+ 
+
+Lambda Expression:anonymous function
+
+              Not having any name
+
+        Not having modifier
+
+              Not having any return type
+
+ 
+
+public void m1(){
+
+System.out.println("Hi");
+
+}
+
+#()->System.out.println("Hi");
+
+ 
+
+public void add(int a,int b){
+
+System.out.println(a+b);
+
+}
+
+#(a,b)->System.out.println(a+b); # based on context compiler guess the type automatically (Type Inference)
+
+ 
+
+public int getLength(String s){
+
+return s.length();
+
+}
+
+# (String s)->s.length();  #based on situation compiler don't need return keyword
+
+#s->s.length(); # If only one parameter then () is also optional
+
+ 
+
+ 
+
+Functional Interface (SAM):
+
+How to call/Invoke Lambda function, refernce type of lambda-function
+
+  It acts as a type for lambda expressions
+
+  Used to invoke lambda expression
+
+@FunctionalInterface   # compiler interrupt
+
+ 
+
+@FunctionalInterface
+
+Interface P{public void m1();}
+
+ 
+
+@FunctionalInterface
+
+Interface C extends P{}
+
+Interface C extends P{public void m1();}
+
+ 
+
+Invoking Lambda Using Functinal Interface:Just like invoke normal method
+
+ 
+
+Runnable(I)-> run()  Is a functional Interface # job of Thread
+
+ 
+
+Class ThreadDemo{
+
+public static void main(String[] str){
+
+              Runnable r=new MyRunabale();  # MyRunnable Implements Runnable (I)
+
+        Thread t= new Thread(r);  # only one main thread
+
+        t.start();                   # one main and one child thred (Its job is run method)
+
+        for(int i=0;i<10;i++) {System.out.println("main thread")}  # executed by main thread
+
+}
+
+ 
+
+Class ThreadDemo2{
+
+public static void main(String[] str){
+
+              Runnable r=()->{
+
+                             for (inti=0;i<10;i++){System.out.println("child thread")}          
+
+              }
+
+        Thread t= new Thread(r);  # only one main thread
+
+        t.start();                   # one main and one child thred (Its job is run method)
+
+        for(int i=0;i<10;i++) {System.out.println("main thread")}  # executed by main thread
+
+}
+
+ 
+
+Lambda Expressions with Collection (group of individual objects represented as single entity):
+
+List(I)/Set(I)/Map(I):
+
+List(I):[]
+
+  Insertion Order
+
+  Duplicate allowed
+
+  ArrayList/LinkedList/Vector->Stack
+
+             
+
+Set(I):[]
+
+  Insertion Order not preserved # stored based on hashcode
+
+  Duplicate Not allowed
+
+  HashSet/TreeSet(sorted set)
+
+ 
+
+Map(I):{}
+
+ Group of Objects as key-value pairs
+
+ 
+
+Comparator(I) and compare(obj1,obj2): Customized Sorting Order
+
+  If +ve means obj1>obj2 and obj1 will come after obj2
+
+  if -ve if obj1 <obj2 ,obj1 has to come before obj2
+
+ 
+
+Sorting Elements of ArrayList without Lambda expressions:
+
+ArrayList<Integer> al=new ArrayList<Integer>();
+
+Collections.sort(al,Comparator obj);  # customized sorting order e.g. descending order
+
+Collections.sort(al); # default Natural Sorting Order
+
+ 
+
+How to sort as descending order-> customized sorting order
+
+class myComparator implements Comparator<Integer>{
+
+              public int compare(Integer I1,Integer I2){
+
+              If (I1>I2){
+
+              return -1;#obj1 has to come after obj2
+
+              elseIf (I1<I2)
+
+              return 1;#obj1 has to come before obj2
+
+              }
+
+              else
+
+              return 0;
+
+              }
+
+# return (I1>I2>?-1:(I1<I2)?1:0    # ternary operator
+
+Collections.sort(al,new myComparator()); 
+
+ 
+
+Sorting Elements of ArrayList with Lambda expressions:
+
+Collections.sort(al,(I1,I2)->(I1>I2>?-1:(I1<I2)?1:0);
+
+ 
+
+ 
+
+TreeSet: Sorted Set
+
+TreeSet<Integer> ts=new TreeSet<Integer>(); # Default Natural Sorting Order
+
+TreeSet<Integer> ts=new TreeSet<Integer>(Comparator c); # Custom Sorting Order
+
+ 
+
+TreeMap: Sorted based on keys
+
+TreeMap<Integer,String> ts=new TreeMap<Integer,String>(); # Default Natural Sorting Order
+
+TreeMap<Integer> ts=new TreeMap<Integer,String>(Comparator c); # Custom Sorting Order
+
+ 
+
+Sorting of Our Own Class:
+
+(e1,e2)>(e1.eno>e2.eno)?-1:(e1.eno<e2.eno)?1:0
+
+ 
+
+---
+
+pre-defined functional interface
+
+ 
+
+Predicate: boolean
+
+public interface Predicate<T>{
+
+public boolean test(T t);
+
+}
+
+ 
+
+public boolean test(Integer I){
+
+              if(I>10) return true;
+
+              else return false;}
+
+#I->I>10;
+
+#Predicate p=I->I>10;
+
+#System.out.println(p.test(100))
+
+##boolean function-> lambda expression-> assign lambda to functional interface
+
+import java.util.function;
+
+class Test{
+
+public static void main(String[] str){
+
+              Predicate<Input Argument>=(Input Parameter)->(Action performed on Input parameter)
+
+              Predicate<Integer> p=I->I>10;
+
+              System.out.println(p.test(1));  # false
+
+              }
+
+}
+
+ 
+
+Prdicate Joining:default methods in Predicate(I)
+
+p1: check given number is greated than 10
+
+p2: check given number is even
+
+i->i%2==0;
+
+UC1:p1.negate();
+
+UC2:p1.and(p2);
+
+UC3:p1.or(p2);
+
+ 
+
+---
+
+Function: accept input return response
+
+public interface Function<T,R>{
+
+public R apply(T t);
+
+}
+
+Same as Predicate but can return any type of value
+
+find the lenght of String
+
+Function<String,Integer> f=s->s.length();
+
+get the square of the input
+
+Function<Integer,Integer> f=I->I*I;
+
+Function<ArrayList<Employee>,Double> f=l->{
+
+              double total=0;
+
+              forEach(Employee e:l){
+
+              total=total+e.salary();
+
+              }
+
+              return total;
+
+}
+
+Program to perform salary increment (Salary<30000) for Employee by Using Predicate and Function
+
+Predicate<Employee> p=e->e<30000;
+
+Function<Employee,Employee> f=e->{ return e.salary= e.salary+(30000-e.salary);}
+
+ 
+
+Function Chaining: default methods
+
+f1.andThen(f2) # first f1 will be applied followed by f2
+
+f1.compose(f2) # first f2 will be applied followed by f1
+
+Function<String,String> f1=s->s.toUpperCase();
+
+Function<String,String> f2=s->s.subString(0,9); (0-8 first 9 characters)
+
+ 
+
+Function Interface Static Method:
+
+Identity()  -> return the same output as input # return the samething
+
+Function<String,String> f=Function.identity();
+
+ 
+
+---
+
+Consumer: only accepts input don't return anything
+
+public interface Consumer<T>{
+
+public void accept(T t);
+
+}
+
+---
+
+Supplier: only returns output don't accept anything
+
+public interface Supplier<R>{
+
+public R get();
+
+}
+
+---
+
+Method and Construtor Reference by ::operator
+
+What is need of Method/Constructor Reference? Code reusability
+
+Instead of Lambda we can go with Method reference (Whatever Implementation we want to implement already implemented by existing method )
+
+Interf i=<Class Name>::<Method Name>; Test::m2;  # just only arguments match
+
+i.m1();
+
+Its an alternative syntax to lambda-expresion
+
+Function Interface: can hold refence of lambda-expresion as well as method refence
+
+target method can be static or instance method, only mandatory rquirement is parameter must be same.
+
+Static Method:
+
+Classname::method name
+
+Instance Method:
+
+ObjectRef::method name   # Test t=new Test(); t::m2;
+
+Runnable r=new MyRunnable();
+
+                = Lambda-expresion
+
+                = Method Reference
+
+Thread t=new Thread(r);
+
+t.start();
+
+-----
+
+Constructor Reference:
+
+Runnable r=Test::m1;  can use for Functional Interface reference
+
+Interface Interf{
+
+public <UDDT> get();
+
+}
+
+ 
+
+class Test{
+
+public static void main(String[] str){
+
+Interf i=()-> {
+
+              <Sample> s =new Sample();
+
+                             return s;
+
+                             };
+
+Sample s1=i.get();
+
+}}
+
+ 
+
+with constructor reference:
+
+class Test{
+
+public static void main(String[] str){
+
+Interf i=()->Sample::new;
+
+Sample s=i.get();
+
+------------------------------
+
+Streams:length of code reduced
+
+java.io  # FileInputStream     #purpose write some text/binary data to/from file w.r.t file(sequence of character)
+
+java.util.streams streams related to Collection ( to perform actions on Collection) # process objects from collection
+
+ 
+
+Collection Vs Stream:
+
+Collection: group of Objects as a single entity
+
+Stream: Want to process Objects from the Collection (all the Objects)
+
+UC: list out all the students from the collection whose marks is greater than 80
+
+ArrayList<Integer> l=new ArrayList<Integer>();
+
+ 
+
+filter(): Listout
+
+UC1: Listout(filter) all even numbers from a collection
+
+List<Integer> l1=l.stream().filter(I->I%2==0).collect(Collectors.toList());
+
+ 
+
+map(): each element of the collection perform some action
+
+UC2: performAction(map) docuble each numbers from a collection
+
+List<Integer> l1=l.stream().map(I->I*2).collect(Collectors.toList());
+
+                            
+
+Stream s=<Collection object>.stream();  # stream() present in Collection(I) as default method
+
+Stream is an Interface present java.util.stream package, used to process objects from the collection
+
+processing contains two steps:
+
+step1: configuring
+
+              filter ( based on some boolean condition) # less number of objects
+
+              map (based on some function)   # equal number of object
+
+filter:
+
+If you want to filter elements from the collection based on some boolean condition then we go for filtering
+
+We can configure filter by using filter() method of Stream(I)
+
+public Stream filter(Predicate<T> t)     # parameter can be boolean valued function or lambda-expression
+
+Stream s=c.stream().filter(i->i%2==0)
+
+ 
+
+map:
+
+If you want to create a seperate new object for every object present in collection,based on some function.
+
+We can configure map by using map() method of Stream(I)
+
+public Stream map(Function<T,R> t)     # parameter can be boolean valued function or lambda-expression
+
+Stream s=c.stream().map(i->i*2)
+
+ 
+
+ 
+
+step2: processing
+
+collect():
+
+This method collects the elements from the stream and adding to the specified Collection
+
+ 
+
+count():
+
+This method returns the number of elements present in Stream.
+
+public long count()      
+
+long count=l.stream().filter(s->s.length()>=9).count();
+
+ 
+
+sorted():
+
+we can use sorted() method to sort elements stream
+
+sorted(): default sorting order
+
+sorted(Coparator c): customized sorting order
+
+
+min(Comparator c)/max(Comparator c) # list must be sorted
+
+min(Comparator c):
+
+returns min value according to specified Comparator
+
+ 
+
+max(Comparator c):
+
+returns max value according to specified Comparator
+
+ 
+
+Integer min=l.stream().min((i1,i2)->i1.compareTo(i2)).get()
+
+ 
+
+forEach() method:
+
+This method can't return anything
+
+This method can take lambda-expression as an argument and apply that lambda-expression for each element present in stream.
+
+l.stream().forEach(s->System.out.println(s));
+
+l.stream().forEach(System.out::println);   # replace lambda-expression with method reference
+
+ 
+
+toArray():
+
+we can use toArray() method to copy elements present in the stream into specifies Array
+
+Integer[] array=l.stream().toArray(Integer[]::new);
+
+ 
+
+Stream.Of() Method:
+
+Stream concept not only applicatble on collection, it also applicable on group of values and arrays
+
+9,99,999,9999,99999   # group of values
+
+Double[] d={10.0,10.1,10.2}
+
+For Group of Values
+
+Stream<Integer> s=Stream.of(9,99,999,9999,99999)
+
+s.forEach(System.out::println);
+
+ 
+
+For Arrays:
+
+Double[] d={10.0,10.1,10.2}
+
+Stream<Integer> s=Stream.of(d)

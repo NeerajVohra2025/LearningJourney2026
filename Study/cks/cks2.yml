@@ -1,0 +1,935 @@
+
+
+
+
+
+
+
+
+secrets:
+
+
+ 
+
+ 
+
+ps aux | grep 9627<process id>
+
+ 
+
+Encrypt Secrets in ETCD at rest
+
+ 
+
+EncryptionConfiguration
+
+--encryption-provider-config
+
+ 
+
+access kernel from inside the container:
+
+uname -r
+
+outside the container , in master node
+
+uname -r
+
+strace uname -r
+
+ 
+
+OCI:Open Container Initiative
+
+CRI: Container Runtime Interface
+
+Runtime class name: gvisor, handler:runsc
+
+ 
+
+Privilleged Containers:
+
+Privileged means that container user 0(root) is directly mapped to host user 0 (root)
+
+sysctl kernel.hostname=attacker
+
+ 
+
+AllowPrivillegeEsclation:
+
+PrivillegeEsclation controls whether a process can gain more priviledges than a parent process.
+
+spec:
+
+containers:
+
+   - securityContext:
+
+        allowPrivilegeEsclation: true  # default
+
+cat /proc/status
+
+ 
+
+PodSecurityPolicy:
+
+privileged : running of privileged containers
+
+hostPID, hostIPC: Usage of namespaces
+
+hostNetwork,hostPorts: Usage of host networking and ports
+
+volumes: Usage of volume types
+
+allowedHostPaths: Usage of host filesystem
+
+allowedFlexVolumes: Allow specific FlexVolume drivers
+
+fsGroup: Allocationg an FSGroup that owns the pod's volumes
+
+readOnlyRootFilesystem: Requiring the use of a read only root file system
+
+ 
+
+mTLS mutula TLS:
+
+mutual authentication
+
+two-way (bilateral) authentication
+
+two parties authenticating each-other at the same time
+
+ 
+
+sidecar proxy:
+
+k run app --image=bash --command -o yaml --dry-run=client > app.yaml -- sh -c 'ping google.com'
+
+proxy
+
+containers:
+
+  - name: proxy
+
+    image: ubuntu
+
+    command:
+
+      - sh
+
+      - -c
+
+      - 'apt-get update && apt-get install iptables -y && iptables -L && sleep 1d'
+
+    securityContext:
+
+       capabilities:
+
+            add: ["NET_ADMIN"] 
+
+        
+
+OPA- Open Policy Agent
+
+allows allows us to write custom policies
+
+Authentication: Who are you
+
+Authorization: Are you allowed to create a pod
+
+Admision Controller: has the pod all required labels? (OPA)- Not K8s specific
+
+template
+
+constraints
+
+Rego Playground
+
+ 
+
+Reduce Image footprint with mult stage
+
+ 
+
+Secure and hadening Images
+
+1) Use Specific package version # FROM alpine:3.12.1
+
+2) Don't run as root # USER appuser
+
+3)make filesystem readonly  # RUN chmod a-w /etc  (removing write permission from all user)
+
+4)remove shell access # RUN rm -rf /bin/*
+
+ 
+
+Static Analysis: tools kubesec
+
+looks at source code and text files
+
+check against rules
+
+enforce rules
+
+Always define resource requests and limits
+
+Pod should never use the default service account
+
+ 
+
+kubesec:
+
+security risk analysis for k8s resources
+
+open source
+
+opinionated! Fixed set of rules (security best practices)
+
+Admission Controller:
+
+spec:
+
+  containers:
+
+    - securityContext:
+
+        readOnlyRootFilesystem: true
+
+        runAsNonRoot: true
+
+        runAsUser: 10001
+
+OPA - Open Policy Agent
+
+Unit test framework for K8s configurations as part of our static analysis
+
+uses Rego
+
+ 
+
+Scan Image for known vulnerability: tools Clair/Trivy
+
+Targets:
+
+Remotely accessible application in container
+
+Local application inside container
+
+Results:
+
+Priviledge escalation
+
+Information leaks
+
+DDOS
+
+Vulnerabilities can be discovered in our own image and dependencies
+
+Check during build
+
+Check at run time
+
+Mutating webhooks
+
+Validating webhooks
+
+ 
+
+Clair/Trivy (vulnerability scanner)
+
+ 
+
+ 
+
+Secure Supply Chain:
+
+Private Registry with Docker
+
+docker pull wuestkamp/cks-hello-world
+
+docker login
+
+docker pull
+
+ 
+
+kubectl create secret docker-registry my-private-registry --docker-server=private-registry-server \
+
+--docker-username=username
+
+--docker-password=password
+
+--docker-email=email
+
+ 
+
+Add imagePullSecret
+
+kubectl get pod -A -oyaml | grep "image:"
+
+use image digest for api-server
+
+ 
+
+whitelist some registeries using OPA
+
+ 
+
+ImagePolicyWebhook:
+
+ 
+
+kube-apiserver
+
+containers:
+
+- command:
+
+     - 
+
+     - --admission-control-config-file=/etc/kubernetes/admission/admission_config.yaml
+
+     - --enable-admission-plugins=NodeRestriction,ImagePolicyWebhook
+
+     - --authorization-mode=Node,RBAC
+
+ 
+
+ 
+
+Runtime Security:Behaviour Analytics at host and container level
+
+Syscalls and Processe
+
+strace and proc
+
+tools and scenerios
+
+ 
+
+strace:
+
+Intercepts and logs system calls made by process
+
+Log and displays signals received by a process
+
+Diagnostic, Learning,Debugging
+
+strace ls
+
+ 
+
+strace and /proc on ETCD
+/proc:
+
+Information and connections to processes and kernel
+
+Study it to learn how processes work
+
+Configuration and administrative tasks
+
+contains files that doesn't exist, yet you can access these
+
+ 
+
+strace kubernetes ETCD
+
+List syscalls
+
+find open files
+
+read secret values
+
+-p pid
+
+-P path
+
+-cw count and summerize
+
+docker ps |grep etcd
+
+strace -p <3502>
+
+cd /proc/<3502>
+
+pstree -p
+
+ 
+
+Falco:
+
+Cloud-Native runtime security
+
+ACCESS:
+
+  Deep Kernel tracing build on Linux kernel
+
+ASSERT
+
+  Describe Security rules against a system
+
+  Detect unwanted behaviour
+
+ACTION
+
+Automated respond to a security violations
+
+In worker node:
+
+tail -f /var/log/syslog | grep falco
+
+cd /etc/falco
+
+ 
+
+In master node:
+
+cd /etc/falco
+
+grep -r "text" . # search   
+
+             
+
+Immutability of containers at run time:
+
+Mutable:
+
+SSH on VM instance
+
+Stop application
+
+Update application
+
+Start application
+
+ 
+
+Immutable:
+
+Create new VM/container image/
+
+Delete VM/container Instance
+
+Create new VM/container Instance
+
+ 
+
+Why Immutable? We always know the state
+
+Advanced deployment methods
+
+Easy rollback
+
+More reliability
+
+Better Security(on container level)
+
+remove bash/shell
+
+make filesystem readOnly
+
+run as user and non root
+
+ 
+
+But What if we have no control of the container?
+
+(or if we are too lazy)
+
+startupProbe- just like init for liveness and Readyness
+
+chnmod a-w -R/
+
+ 
+
+containers:
+
+- securityContext:
+
+     readOnlyRootFilesystem: true
+
+docker run --read-only --tmpfs /run <my-container>
+
+ 
+
+Runtime security audit:
+
+Why Audit Logs?
+
+Did someone access an important secret while it was not protected?
+
+When was the last time that user X did access cluster Y?
+
+Does my CRD work properly?
+
+ 
+
+Audit Policy Different Stages?
+
+Each request can be recorded with an assocaited "stage"
+
+RequestReceived:
+
+The stage for events generated as soon as the audit handler receives the request, and before it is delegated down the handler chain.
+
+ResponseStarted:
+
+Once the resonse headers are sent, but before the response body is sent. This stage is only generated for long-running requests (e.g. watch)
+
+ResponseComplete:
+
+The respone body has been completed and no more bytes will be sent.
+
+Panic:
+
+Events generated when a panin occurred.
+
+ 
+
+Audit Policy Rule LEVELS?
+
+None: don't log event that match this rule.
+
+Metadata: log request metadata (requesting user,timestamp,resource,verb,etc.) but not request and response body.
+
+Requst: log event metadata and request body but not the response body. This does not apply for non-resource requests.
+
+RequstResponse: log event metadata and request and response bodies. This does not apply for non-resource requests.
+
+ 
+
+Where to store all data?
+
+Log (JSON)
+
+Webhook (external API)
+
+Dynamic backend (AuditSink API)
+
+ 
+
+configure apiserver to store Audit Logs in JSON format
+
+ 
+
+Restrict amount of Audit logs to collect:
+
+Nothing from stage RequestResponse
+
+Nothing from "get","watch","list"
+
+From secrets only metadata level
+
+Everything else RequsetResponse level
+
+1) Change Policy file
+
+2) Disable audit logging in apiserver, wait till restart.
+
+3)Enable audit logging in apiserver, wait till restart
+
+   If apiserver doesn't start then check:
+
+     /var/logs/pods/kube-system_kube-apiserver*
+
+4) Test your changes
+
+ 
+
+Investigate API access history of a secret:
+
+Change policy file to include RequsetResponse from secret
+
+Create a newservice account(+Secret), confirm RequestResponse are available
+
+Create a Pod that uses the ServiceAccount
+
+ 
+
+Kernel hardening tools:
+
+AppArmor:
+
+Seccomp
+
+Container Isolation
+
+Namespaces: Restrict what process can see
+
+              Other processes
+
+              Users
+
+              FileSystems
+
+cGroup: Restrict the resource usage of processed
+
+              RAM
+
+              Disk
+
+              CPU
+
+ 
+
+AppArmor:creates shields between the processes and functionalties using AppArmor profiles
+
+FileSystem
+
+Processes
+
+Network
+
+ 
+
+Profile Modes:
+
+Unconfied: Process can escape
+
+Complain: Process can be escaped but it will be logged
+
+Enforce: Processes can't be escape
+
+# show all profiles
+
+aa-status
+
+# generate a new profile
+
+aa-genprof
+
+# put profile in complain mode
+
+aa-complain
+
+# put profile in enforce mode
+
+aa-enforce
+
+#update the profile if app produced some more usage logs (syslog)
+
+aa-logprof
+
+ 
+
+In worker node:
+
+apt-get install apparmor-utils
+
+aagenprof curl   # generate profile for curl
+
+cd /etc/apparmor.d/
+
+ 
+
+Container runtime needs to support AppArmor
+
+AppArmor needs to be installed on every node
+
+AppArmor profiles need to be available on every node
+
+AppArmor profiles are specified per container
+
+              done using annotations
+
+Seccomp:?
+
+Secure Computing Mode
+
+Security facility in Linux Kernel
+
+Restricts execution of syscalls
+
+ 
+
+seccomp-bpf  # more restricted filters
+
+install seccomp profie in worker node (kubelet to use)
+
+ 
+
+ 
+
+System Hardening- Reduce Attack Surface of Host O/S
+
+Applications:
+
+Network
+
+IAM
+
+ 
+
+Applications:
+
+Keep up to date (Update Linux Kernel)
+
+Remove not needed packages
+
+ 
+
+Network:
+
+Check and Close Open Ports
+
+Network behind firewall
+
+ 
+
+IAM:
+
+Restrict User permissions
+
+Run as user not as root
+
+ 
+
+Nodes that run k8s:
+
+Only purpose: run K8s components
+
+              remove unnecessary services
+
+Node Recycling
+
+              Nodes should be ephermeral
+
+              Created from Images
+
+              Can be recycled any time (and fast if necessary)
+
+              netstat   # open ports
+
+              lsof
+
+              systemctl status kubelet
+
+              ps # running processes
+
+ps aux | grep vsftpd
+
+netstat -plnt
+
+ 
+
+netstat -plnt | grep 21
+
+lsof -i 21
+
+systemctl list-units --type service | grep ftp
+
+systemctl stop <sevicename>
+
+ 
+
+Investegate Linux Users:
+
+whoami
+
+cat /etc/passwd                          # various users
+
+su <ubuntu>
+
+whoami
+
+sudo su -
+
+ps -aux | grep bash # various bash processes
+
+exit
+
+ 
+
+adduser test     # creates a user
+
+
+ 
+
+
+ 
+
+             
+
+ 
+
+----------------------------------------------------------------------------------------
+
+https://www.youtube.com/watch?v=7eH7vfT0axA
+
+https://www.youtube.com/watch?v=qNpmRJ9VfCQ
+
+https://www.youtube.com/watch?v=9rHYCCnlOFw
+
+https://www.youtube.com/watch?v=m7G-dLUs3WU #https://www.youtube.com/watch?v=v1Q47yFNJeA
+
+https://www.youtube.com/watch?v=lQVFkRbEHEU
+
+https://www.youtube.com/watch?v=f6dV9eVBOAc
+
+https://www.youtube.com/watch?v=Yi6qg4rXLdM
+
+https://www.youtube.com/watch?v=jvmShTBSBoA&list=PLFkEchqXDZx6Bw3B2NRVc499j1TavjOvm
+
+https://www.youtube.com/watch?v=W1eiMWGZwKo
+
+https://www.youtube.com/watch?v=Htb44P03I38
+
+ 
+
+Tips
+
+16 quesions
+
+v1.23
+
+Result in 24 hours
+
+No need kubectl alias
+
+Total 16 clusters
+
+Context switch before any quesion
+
+ 
+
+Security tools
+
+Modifying Control Plane Components
+
+Setup,Troubleshooting,Tracing
+
+Linux skills
+
+Carefully copy yaml copy/paste
+
+ 
+
+CKS is cover everything
+
+4C's (
+
+security setup deserve more
+
+tools and utility
+
+Mock Exam- Kode Cloud, Acloud Guru, Killer shell (simulator sessions)
+
+ 
+
+https://www.katacoda.com
+
+https://killercoda.com
+
+https://labs.play-with-k8s.com/
+
+ 
+
+1)Control Plane related (API Server/ETCD/kubelet)
+
+CIS Benchmarking
+
+              Given CIS Benchmark Scan results
+
+              Fix based on its remidiation
+
+PodSecurityPolicy
+
+              --enable-admin-plugins=NodeRestrictions,PodSecurityPolicy
+
+ImagePolicyWebhook/AdmissionConfiguration
+
+              AdmissionConfiguration
+
+ 
+
+AuditPolicy
+
+Falco/Sysdig
+
+Tracing Container syscall
+
+Hardening access to K8s API
+
+Troubleshoot API server
+
+ 
+
+2)General Kubernetes
+
+NetworkPolicy
+
+RBAC
+
+Secret
+
+ServiceAccount
+
+AppArmor
+
+SecComp
+
+RuntimeClass
+
+SecurityContext and Immutable Pods
+
+Static Analysis
+
+Trivy
+
+Ingress TLS
+
+OPA
+
+ 
+
+----
+
+Network Policies-2
+
+Admission Controllers- Intercept Api calls
+
+              Imagepolicy Webhook
+
+              PSP (Pod Security Policy)
+
+SECCOMP- 0
+
+Auditing- kube-api server modify api-server manifest
+
+APPARMOR- 12%
+
+Secrets- 3%
+
+RBAC- 3%
+
+Security Context- 3-4 quesion
+
+Troubleshooting - security flaws?
+
+External tool
+
+              Falco    12%
+
+              Trivy     6% Image scanning
+
+              kube-sec
+
+CI BenchMark (kube api, kubelet)
+
+make copy of kube-api .yaml
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 

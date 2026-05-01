@@ -1,0 +1,101 @@
+https://learning.edureka.co/classroom/recording/922/8409/1491912?tab=ClassRecording
+
+https://learning.edureka.co/classroom/recording/922/8408/1491462?tab=ClassRecording
+
+https://learning.edureka.co/classroom/recording/922/8407/1491361?tab=ClassRecording
+
+https://learning.edureka.co/classroom/recording/922/8406/1491322?tab=ClassRecording
+
+https://learning.edureka.co/classroom/recording/922/8406/1491252?tab=ClassRecording
+
+https://learning.edureka.co/classroom/recording/922/8405/1490951?tab=ClassRecording
+
+https://learning.edureka.co/classroom/recording/922/8404/1490846?tab=ClassRecording
+
+https://learning.edureka.co/classroom/recording/922/8404/1490747?tab=ClassRecording
+
+amit
+
+ 
+
+ 
+
+DevOps:
+
+Is a collaboration of developers and operations to produce high quality software, with frequent and incremental feature releases.
+
+Strategy:
+
+Understand requirements
+
+Define DevOpds process
+
+select and test tools
+
+Focus on automated testing
+
+Plan Organization changes
+
+Implement DevOps tools
+
+ 
+
+Principles:
+
+Development +QA + Operations
+
+Culture
+
+Automation of processes
+
+Measurement of KPIs
+
+Sharing feedback, best practices and knowledge.
+
+ 
+
+Practices:
+
+Agile Planning
+
+Continuoud Delivery
+
+Automation
+
+IaaC
+
+Containerization
+
+Microservices
+
+ 
+
+DevOps Cultural Attributes:
+
+Communication Skills
+
+Leadership
+
+Analytical
+
+Empathy (especially when facing implementation failure)
+
+Cross-functional teams
+
+ 
+
+DevOps is basically a methodology where the developers and operations collaborate throughout the entire lifecycle of the software.
+
+ 
+
+ 
+
+K8s:
+
+VMWare-Tanzo
+
+Redhat-> Opeshift
+
+Racncher-> RKE
+
+AWS->EKS 

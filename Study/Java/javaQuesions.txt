@@ -1,0 +1,893 @@
+public int square (int n){
+
+return n*n;
+
+}
+
+#n->n*n # lambda function an anonymous function function without name
+
+ 
+
+public int getLength(String s){
+
+return s.length();
+
+}
+
+#s->s.legth();
+
+ 
+
+Interface x{
+
+public static void main(){ System.out.println("Hi");}
+
+}
+
+#java x
+
+ 
+
+ 
+
+@FunctionalInterface  # type
+
+Interface P{public void m1();}
+
+ 
+
+ 
+
+# for lambda expression, used to invoke lambda-expression
+
+Interface P {public void m1();}
+
+@FunctionalInterface
+
+Interface C extends P{public void m2();}
+
+ 
+
+ 
+
+Interface Implementation class replaced with simple lambda function.
+
+Functional Interface reference is used to hold lambda expresion
+
+ 
+
+class MyRunnable implements Runnable{
+
+              public void run(){
+
+                                           for (inti=0;i<10;i++){
+
+                                                          System.out.println("child thread")
+
+                                                                        }
+
+#Runnable r=()->{
+
+                             for (inti=0;i<10;i++){System.out.println("child thread")} 
+
+              }                                          }
+
+ 
+
+How to sort as descending order-> customized sorting order
+
+ 
+
+class myComparator implements Comparator<Integer>{
+
+              public int compare(Integer I1,Integer I2){
+
+              If (I1>I2){
+
+              return -1;#obj1 has to come after obj2
+
+              elseIf (I1<I2)
+
+              return 1;#obj1 has to come before obj2
+
+              }
+
+              else
+
+              return 0;
+
+              }
+
+# return (I1>I2>?-1:(I1<I2)?1:0    # ternary operator
+
+#Collections.sort(al,(I1,I2)->(I1>I2>?-1:(I1<I2)?1:0);
+
+ 
+
+Sorting of Our Own Class:
+
+e1,e2)>(e1.eno>e2.eno)?-1:(e1.eno<e2.eno)?1:0
+
+ 
+
+Predicate(I):
+
+public boolean test(Integer I){
+
+              if(I>10) return true;
+
+              else return false;}
+
+#I->I>10;
+
+#Predicate p=I->I>10;
+
+#System.out.println(p.test(100))
+
+##boolean function-> lambda expression-> assign lambda to functional interface
+
+Employee Age is >50
+
+Length of String is greater than 5
+
+s->s.length()>5;
+
+Collection is empty or not
+
+c->c.isEmpty()
+
+Prdicate Joining:default methods in Predicate(I)
+
+p1: check given number is greated than 10
+
+p2: check given number is even
+
+i->i%2==0;
+
+ 
+
+UC1:p1.negate();
+
+UC2:p1.and(p2);
+
+UC3:p1.or(p2);
+
+ 
+
+---
+
+Function(I):
+
+public R Function<T>{
+
+     public R apply(T t);
+
+}
+
+find the lenght of String
+
+find total monthly salary of all employees
+
+Function<ArrayList<Employee>,Double> f=l->{
+
+              double total=0;
+
+              forEach(Employee e:l){
+
+              total=total+e.salary();
+
+              }
+
+              return total;
+
+}
+
+ 
+
+Program to perform salary increment (Salary<30000) for Employee by Using Predicate and Function
+
+Predicate<Employee> p=e->e<30000;
+
+Function<Employee,Employee> f=e->{ return e.salary= e.salary+(30000-e.salary);}
+
+ 
+
+Function Chaining
+
+f1.andThen(f2) # first f1 will be applied followed by f2
+
+f1.compose(f2) # first f2 will be applied followed by f1
+
+Function<String,String> f1=s->s.toUpperCase();
+
+Function<String,String> f2=s->s.subString(0,9); (0-8 first 9 characters)
+
+---
+
+Consumer(I):accept(T t)
+
+Supplier(I): get();
+
+ 
+
+Method Reference /Constructor Refence
+
+---
+
+Collection Vs Stream:
+
+Collection: group of Objects as a single entity
+
+Stream: Want to process Objects from the Collection (all the Objects)
+
+UC: list out all the students from the collection whose marks is greater than 80
+
+ArrayList<Integer> l=new ArrayList<Integer>();
+
+filter: Listout
+
+UC1: Listout(filter) all even numbers from a collection
+
+List<Integer> l1=l.stream().filter(I->I%2==0).collect(Collectors.toList());
+
+UC1: Listout(filter) all name length > 5
+
+map:
+
+UC2: performAction(map) double each numbers from a collection
+
+List<Integer> l1=l.stream().map(I->I*2).collect(Collectors.toList());
+
+UC2: performAction(map) Uppercase the name from a collection
+
+ 
+
+collect(Collectors.toList())# get the elements from stream
+
+count(): # count the elements in stream
+
+UC3: performAction(map) Uppercase the name from a collection, how many students
+
+long count=l.stream().filter(s->s.length()>=9).count();
+
+ 
+
+sorted():
+
+we can use sorted() method to sort elements stream
+
+sorted(): default sorting order
+
+sorted(Coparator c): customized sorting order
+
+List<Intger> l1=l.stream().sorted().collect(Collectors.toList());
+
+List<Intger> l1=l.stream().sorted((i1,i2)->-i1.comparetTo(i2)).collect(Collectors.toList());
+
+ 
+
+min(Comprator c)/max(Comparator c): #The list must be sorted
+
+Integer min=l.stream().min((i1,i2)->i1.compareTo(i2)).get()
+
+ 
+
+forEach() forEach():
+
+This method can't return anything
+
+This method can take lambda-expression as an argument and apply that lambda-expression for each element present in stream.
+
+UC4: print each element of String ArrayList
+
+l.stream().forEach(s->System.out.println(s));
+
+ 
+
+toArray():
+
+we can use toArray() method to copy elements present in the stream into specifies Array
+
+Integer[] array=l.stream().toArray(Integer[]::new);
+
+ 
+
+Stream.Of() Method:
+
+Stream concept not only applicatble on collection, it also applicable on group of values and arrays
+
+9,99,999,9999,99999   # group of values
+
+Double[] d={10.0,10.1,10.2}
+
+For Group of Values
+
+Stream<Integer> s=Stream.of(9,99,999,9999,99999)
+
+s.forEach(System.out::println);
+
+ 
+
+For Arrays:
+
+Double[] d={10.0,10.1,10.2}
+
+Stream<Integer> s=Stream.of(d)
+
+ 
+
+ 
+
+ 
+
+---
+
+String str1 = new String("abcde");
+
+String str2 = "abcde";
+
+str1.intern();
+
+System.out.println(str1 == str2);
+
+str3 =str1.intern();
+
+System.out.println(str1 == str2);
+
+ 
+
+String s2=”nee”+ “raj”;
+
+#Both arguments are compile time constants Object will be created  Only in SCP area
+
+ 
+
+ 
+
+class ReverseWords {
+
+public static void main(String args[]) {
+
+String s[] = "you shall not pass". split(" ");
+
+String ans = "";
+
+for (int i = s. length - 1; i >= 0; i--) {
+
+ans += s[i] + " ";
+
+}
+
+System. out. println("Reversed String: " + ans);
+
+ 
+
+ 
+
+final String s1= “Nee”
+
+String s4=s1 +”raj”;
+
+#  Compile time constant s1 is final
+
+ 
+
+String s2="Neeraj"
+
+String s3=s2+ “vohra”;
+
+#At  least one argument is variable performed at Runtime, Object will be created only in Heap Memory
+
+ 
+
+String s1="Neeraj"
+
+String s2=s2.UpperCase();
+
+#Contents change Runtime Constants
+
+ 
+
+I1.compareTo(I2);
+
+# ascending
+
+return +1;
+
+#insertion order
+
+return -1;
+
+#reverse order
+
+return 0;
+
+#only 1st element will be inserted and all remaining are
+
+ 
+
+ 
+
+ 
+
+public class Test{
+
+public void m1(String s){System.out.println("String arg");}
+
+public void m1(StringBuffer sb){System.out.println("StringBuffer arg");}+++
+
+public static void main(String[] str){
+
+Test t=new Test();
+
+t.m1(null);}}
+
+ 
+
+ 
+
+public class Test{
+
+public void m1(String s){System.out.println("String arg");}
+
+public void m1(Object ob){System.out.println("Object arg");}
+
+public static void main(String[] str){
+
+Test t=new Test();
+
+t.m1(null);}}
+
+ 
+
+ 
+
+try{
+
+System.out.println("10/0");
+
+}
+
+catch(Exception e){System.out.println("Exception")}
+
+catch(ArithmeticException io){System.out.println("Arithmetic Exception")}
+
+finally{System.out.println("finally")}
+
+ 
+
+try{
+
+System.out.println("Inside try");
+
+System.out.println("10/0");
+
+}
+
+try{
+
+System.out.println("Inside try");
+
+}finally{
+
+System.out.println("Inside finally");
+
+}
+
+try(Resource){}
+
+ 
+
+public class Test{
+
+public static void main (String[] str){
+
+String str=new String("neeraj");
+
+Test t =new Test();
+
+s=null;
+
+System.gc();
+
+}
+
+public vod finalize(){
+
+System.out.println("finalize method of Test class");
+
+}
+
+}
+
+# finaize on string class not on test class
+
+ 
+
+JVM ignores the un-caught exceptions raise during the execution of finalize method by GC
+
+ 
+
+public class Test{
+
+public static void main (String[] str){
+
+Test t=new Test();
+
+System.gc();
+
+t.finalize();
+
+System.gc();
+
+}
+
+public void finalize(){System.out.println(10/0)}
+
+}
+
+ 
+
+public void m1(){}
+
+public Synchronized m2()
+
+public static synchronized m3()
+
+ 
+
+ 
+
+public class Test{
+
+static Test t;
+
+public static void main (String[] str){
+
+System.out.println(t.hashCode());
+
+t=null;
+
+System.gc();   #1
+
+Thread.sleep(1000);
+
+System.out.println(t.hashCode());
+
+t=null;
+
+System.gc();   #2
+
+Thread.sleep(1000);
+
+System.out.println("End of main method");}
+
+public void finalize(){
+
+t=this;
+
+System.out.println("End of finalize method");
+
+}
+
+              }
+
+}
+
+ 
+
+ 
+
+ 
+
+Class Parent{
+
+public void m1(){
+
+System.out.println("parent")}}
+
+ 
+
+Class Child extend Parent{
+
+public void m1() throws IOException{
+
+System.out.println("child")}}
+
+ 
+
+ 
+
+Class Parent{
+
+public void m1() throws Exception{
+
+System.out.println("parent")}}
+
+ 
+
+Class Child extend Parent{
+
+public void m1() throws IOException{
+
+System.out.println("child")}}
+
+ 
+
+ 
+
+Class Parent{
+
+public void m1() {
+
+System.out.println("parent")}}
+
+ 
+
+Class Child extend Parent{
+
+public void m1() throws NullPointerException{
+
+System.out.println("child")}}
+
+ 
+
+ 
+
+ 
+
+Class Parent{
+
+public final void m1(){
+
+System.out.println("parent")}}
+
+ 
+
+Class Child extend Parent{
+
+public void m1(){
+
+System.out.println("child")}}
+
+ 
+
+ 
+
+Class Parent{
+
+private void m1(){
+
+System.out.println("parent")}
+
+ 
+
+Class Child extend Parent{
+
+void m1(){
+
+System.out.println("child")}
+
+}
+
+ 
+
+ 
+
+Class Parent{
+
+public void m1(){
+
+System.out.println("parent")}}
+
+ 
+
+Class Child extend Parent{
+
+public void m1() throws Exception{
+
+System.out.println("child")}
+
+}
+
+ 
+
+ 
+
+Class Parent{
+
+public void m1() throws IOException{
+
+System.out.println("parent")}}
+
+ 
+
+Class Child extend Parent{
+
+public void m1() throws NullPointerException, ClassCastException{
+
+System.out.println("child")}}
+
+ 
+
+ 
+
+Class Parent{
+
+public static void m1(){
+
+System.out.println("parent")}}
+
+ 
+
+Class Child extend Parent{
+
+public static void m1(){
+
+System.out.println("child")}
+
+}
+
+ 
+
+ 
+
+Class Parent{
+
+int x=111;}}
+
+Class Child extend Parent{
+
+int x=222;}}
+
+ 
+
+ 
+
+Parent p1=new Child();
+
+System.out.println(""+p1.x)
+
+ 
+
+ 
+
+public class Test{
+
+public static void main(String[] str){
+
+StringBuffer s1=new StringBuffer ("JavaBootCamp");
+
+StringBuffer s2=new StringBuffer ("JavaBootCamp");
+
+System.out.println(""+s1==s2);
+
+System.out.println(""+s1.equals(s2));
+
+}}
+
+ 
+
+public class Test{
+
+public static void main(String[] str){
+
+throw new ArithmaticException("Divide by Zero");
+
+System.out.println("Exception");
+
+}}
+
+ 
+
+#CE: Not reachable
+
+ 
+
+ 
+
+public class Test{
+
+public static void main(String[] str){
+
+String s1=new String("abc");
+
+s1.concat("def");
+
+System.out.println(""s1);
+
+}}
+
+ 
+
+ 
+
+public class Test{
+
+public static void main(String[] str){
+
+StringBuffer s1=new StringBuffer("abc");
+
+s1.concat("def");
+
+System.out.println(""s1);
+
+}}
+
+ 
+
+ 
+
+HashMap hm=new HashMap():
+
+Integer I1= new Integer (10);
+
+Integer I2= new Integer (10);
+
+hm.put(I1,”Neeraj”):
+
+hm.put(I2,”Vohra”);
+
+System.out.println(hm);                                          
+
+// {10=vohra}
+
+ 
+
+ 
+
+HashSet hs=new HashSet ();
+
+System.out.println(hs.add(“A”);
+
+System.out.println(hs.add(“A”);}
+
+// false
+
+ 
+
+ 
+
+Class Test{
+
+Static Integer I;
+
+public static void main(String[] arg)
+
+{int i=I;
+
+System.out.println(i);
+
+}}
+
+//NPE // null.intValue()
+
+ 
+
+ 
+
+Class Dog implements Serializable
+
+{
+
+int i=10;
+
+final int j=20;
+
+transient int j=30;
+
+static transient int j=40;
+
+}
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 

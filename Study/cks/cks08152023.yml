@@ -1,0 +1,651 @@
+Cluster SetUp: 10%
+    Networkpolicy:
+        apiVersion:
+        kind:
+        metadata:
+          name:
+          namespace:
+        spec:
+          podSelector:
+            matchLabels:
+              role: db 
+          polictTypes:
+            - ingress
+            - Egress
+          ingress:
+            - from:
+              ports:
+              
+        k get pods --show-labels
+        k get ns --show-labels    
+        k label ns <name of ns> key=value
+    CIS Benchmark:
+        kube-bench run --targets master --check 12.2.20   # generates the report
+        kubesec scan <pod.yaml>       # generates the report  
+    
+     Ingress:
+    #k apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.1/deploy/static/provider/baremetal/deploy.yaml
+    #k get ingressClass
+    #kubectl create ingress simple --rule="foo.com/bar=svc1:8080,tls=my-cert" --annotation="nginx.ingress.kubernetes.io/rewrite-target= /"
+    k create deploy demo-deployment --image=httpd --port=80
+    k expose deploy demo-deployment --name=demo-svc
+    kubectl create ingress demo-ingress --class=nginx --rule="/*=demo-svc:80" 
+    Secure Ingress:
+    #openssl genrsa -out ca.key 2048
+    #openssl req -x509 -new -nodes -key ca.key -subj "/CN=${MASTER_IP}" -days 10000 -out ca.crt
+    openssl genrsa -out ingress.key 2048
+    openssl req -x509 -new -nodes -key ingress.key -subj "/CN=demo.mycompaney.com" -days 10000 -out ingress.crt
+    k create secret tls secure-ingress --cert=ingress.crt --key=ingress.key
+    #kubectl create ingress simple --rule="foo.com/bar=svc1:8080,tls=my-cert" --annotation="nginx.ingress.kubernetes.io/rewrite-target= /"
+    kubectl create ingress secuer-ingress --class=nginx --rule="demo.mycompaney.com/*=demo-svc:80,tls=secure-ingress" --annotation="nginx.ingress.kubernetes.io/rewrite-target= /"
+    
+    Immutable Container:
+      spec:
+        containers:
+           - name:
+             securityContext:
+                privileged: false
+                runAsUser: 20000
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true     
+    
+    
+    Secure Ingress:   #openssl  , create (secret-tls, Ingress), ingress
+        #openssl genrsa -out ca.key 2048
+        #openssl req -x509 -new -nodes -key ca.key -subj "/CN=${MASTER_IP}" -days 10000 -out ca.crt
+        #kubectl create secret tls tls-secret --cert=path/to/tls.cert --key=path/to/tls.key
+        #kubectl create ingress annotated --class=default --rule="foo.com/bar=svc:port" --annotation ingress.annotation1=foo \
+        k create ingress <secure-ingress> --class=nginx --rule="foo.com/bar=svc:port,tls=<tls.crt>"  --annotation="nginx.ingress.kubernetes.io/rewrite-target= /"
+    Verify Binaries:
+        sha512sum <kube-apiserver> | grep ****    
+        sha512sum kubelet | grep *****
+        rm kubelet
+        
+Cluster Hardening: 15% 
+    Expose ServiceAccount: Least Privilege  
+        Restrict ServiceAccount/User Permossions:
+        Role/RoleBinding/ClusterRole/ClusterRoleBinding/User/ServiceAccount
+        k auth can-i delete pod --as system:serviceaccount:<ns>:<serviceaccontname>
+        
+    Keeping K8s Updated: # upgrade kubernetes /kubeadm upgrade
+        k drain control-plane
+        k uncordon control-plane
+        k drain node01
+        ssh node01
+        exit
+System Hardening (O/S Level): 15%   
+    Minimizing HostFootPrint:
+      spec:
+        hostIPC: false
+        hostNetwork: false
+        hostPID: false
+        containers:
+          - name:
+            image:
+             securityContext:
+                allowPrivelegeEscalation: false
+                privileged: false
+                runAsUser: 2000
+                readOnlyRootFilesystem: true
+                   
+    Exploring network security:
+       netstat -plnt | grep 8080 # process running in port 8080
+       kill -9 2501
+       rm /usr/bin/app1
+    Kernel level Hardening tools:
+     AppArmor: workernode /etc/apparmor.d    # have profile #appArmor
+     aa-status | grep <profile>
+     apparmor_parser <file>  # activate the profile
+     k label node node01 key=value
+     metadata:
+      name:
+      annotations:
+       container.apparmor.security.beta.kubernetes.io/<nginx>: localhost/<k8s-apparmor-example-allow-write>     
+     spec:
+       nodeName: worker  # static way to assign a pod to node 
+       nodeSelector:
+         key: value    # dynamic way to assign a pod to node
+           
+     AppArmor in Deployment:     
+     
+     Seccomp:  workernode /var/lib/kubelet/seccomp/profiles   #
+       spec:
+         securityContext:
+           type: Localhost
+           localhostProfile: profiles/fine-grained.json 
+         
+         
+Supply Chain(Image Security): 20% 
+    Minimizing base Image Attack:
+    Analysis Dockerfile:
+      :tag   # latest tag
+      light image # remove unnecessary s/w
+      USER   # non root
+      sensitive information
+      
+    Analysis Manifestfile:
+      :tag
+      spec:
+        containers:
+          - name:
+            image:
+            securityContext:
+              runAsUser: non root`
+              allowPrivelegedEscalation: false
+              priveleged: false
+              readOnlyRootFilesystem: true              
+              
+    Scan Image:
+    Trivy:
+     trivy image <image> | grep -Ei 'critical|high'   # trivy image nginx | grep -Ei 'critical|high' #E (extended regix),i (case sensitive)
+    scan pod
+     k get pods -n <ns> -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[].image
+
+    AdmissionConfiguration:   #AdmisionConfiguration
+    apiVersion: apiserver.config.k8s.io/v1
+    kind: AdmissionConfiguration
+    plugins:
+      - name: ImagePolicyWebhook
+        configuration:
+          imagePolicy:
+            kubeConfigFile: <path-to-kubeconfig-file>
+            allowTTL: 50 # 1000
+            denyTTL: 50
+            retryBackoff: 500
+            defaultAllow: true  # false          
+    /etc/kubernetes/manifests/kube-apiserver.yaml    # volumes
+    --admission-control-config-file=/etc/kubernetes/admission/config.yaml
+    --enable-admission-plugins=ImagePolicyWebhook      
+    cat admision-control.conf #    path of ImagePolicyWebhook
+    cat imagepolicy.conf   # path of kubeconfig-file
+    vim kube-config-file   # server path
+    watch kubectl get nodes 
+    
+Behavioral Analytics (Runtime behavior) : 20%  
+  strace intercepts the syscall logs
+  ps -aux | grep etcd # process id
+  starce --list
+  strace -p <pid> -f 
+  starce kill -9 <pid>
+  starce kill -9 <pid> 2>&1 | grep <pid>
+  Falco (Worker Node): rules to find out malicious process inside the container   /etc/falco/falco_rules.local.yaml
+  falco service restart
+  falco -M 20
+  falco --list # running rules
+  falco -M 20> falco-output.log
+  tail -f /var/log/syslog | grep falco
+  
+  Audit: kind: Policy
+    apiVersion: audit.k8s.io/v1 # This is required.
+    kind: Policy
+    # Don't generate audit events for all requests in RequestReceived stage.
+    omitStages:
+      - "RequestReceived"
+    rules:
+     - level: None
+       resources:
+         - group: ""
+           resources: ["configmaps"]
+           resourceNames: ["controller-leader"]   
+      --audit-policy-file=/etc/kubernetes/audit-policy.yaml \
+      --audit-log-path=/var/log/kubernetes/audit/audit.log             
+      --audit-log-maxage
+      --audit-log-maxbackup
+      watch kubectl get nodes
+      
+
+Revision/Practice:
+Trivy: (Scan Pod to Identify Vulnerability)
+k get pods -n <ns> -o custom-columns=""NAME:.metadata.name,IMAGE:.spec.containers[].image"
+trivy image <name> | grep -Ei 'high|critical'   # -E   Exteded-regexp, -i case insensitive
+
+Extract Secrets and Safe into file:
+k create ns <name> -n <ns>
+k create secret generic <secret-demo> --from-literal username=admin --from-literal password=abcd1234
+k get secret <secret-demo> -n <ns> -o yaml  # data
+k get secret <secret-demo> -n <ns> -o jsonpath={.data.username}   # first dot is root element
+k get secret <secret-demo> -n <ns> --template {{.data.username}} # using template
+k get secret <secret-demo> -n <ns> -o yaml | yq .data.username   # using yq
+k get secret <secret-demo> -n <ns> -o jsonpath='{.data.username}' | base64 -d > username.txt
+
+Automount ServiceAccount:
+spec:
+ serviceAccountName: demo
+ automountServiceAccountToken: false  # delete existing volume and volumeMount
+
+gVisor: RuntimeClass   # RuntimeClass  Layer sits between application and host kernel interpret all calls in worker node
+# RuntimeClass is defined in the node.k8s.io API group
+# In master node
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  # The name the RuntimeClass will be referenced by.
+  # RuntimeClass is a non-namespaced resource.
+  name: myclass #gvisor
+# The name of the corresponding CRI configuration
+handler: myconfiguration #runsc
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  runtimeClassName: myclass  #gvisor
+
+k exec <gvisor-pod> -n <ns> -- dmesg
+
+Use in deployment:
+k create deployment <gvisor-deployment> -n <ns> --image=nginx
+k edit deployment <gvisor-deployment> -n <ns>
+
+CIS Benchmarking: # centre for internet security provide rules
+
+kube-bench run --targets master --check 1.2.20  # generates the report
+kubesec scan <pod.yaml>   # generates the report
+
+
+Fix Dockerfile and Deployment.yaml for any security Vulnerability:
+
+ Fix Docker:
+ :tag
+ runAsUser
+ sensitive information
+ unnecessary S/W
+ Fix Yaml:
+ :tag
+ spec:
+  containers:
+    - name:
+      securityContext:
+        runAsUser:   # not 0
+        allowPrivelegeEscalation: false
+        privileged: false
+        readOnlyRootFilesystem: true
+
+tag must be specific not latest
+privileged must be false
+runAsUser must be other than 0
+allowPrivilegeEscalation must be false
+readOnlyRootFilesystem must be true
+
+Audit Logging:  # Auditing  # stages /etc/kubernetes/audit   
+--audit-policy-file
+--audit-log-path specifies the log file path that log backend uses to write audit events. Not specifying this flag disables log backend. - means standard out
+--audit-log-maxage defined the maximum number of days to retain old audit log files
+--audit-log-maxbackup defines the maximum number of audit log files to retain
+--audit-log-maxsize defines the maximum size in megabytes of the audit log file before it gets rotated
+
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+- level: Metadata
+
+
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+- level: Metadata  # None , Request, RequestResponse
+  verbs:
+  namespaces:
+  resources:
+    - group: ""
+      resources: ["pods/log", "pods/status"]
+  - level: None
+    users: ["system:kube-proxy"]
+    verbs: ["watch"]
+    resources:
+      - group: ""
+        resources: ["endpoits","services"]
+ /etc/kubernetes/audit-policy/audit-policy.yaml
+vi /etc/kubernetes/manifests/kube-apiserver.yaml 
+k create secret generic <audit-test-secret7> --from-literal username=admin
+cat /var/log/audit-log/audit.log | grep audit-test-secret7
+
+Falco: # intercepts all system calls, that can be logged have rule file In worker node
+/etc/falco/falco_rules.local.yaml
+/etc/falco/falco-rules.yaml
+
+
+falco --help
+falco --list # evt,user,proc,container
+falco -r <rule_file>
+falco -M <mil-sec> # falco -M 10 # in worker node
+falco -M 30 -r <falco-rules.yaml> > falco-output.log
+service falco restart
+systemctl status falco
+systemctl start falco
+service falco restart
+
+
+AppArmor: Security kernel module, allow to prevent any system calls # worker node
+/etc/apparmor.d/<name of rule file>
+aa-status
+apparmor_parser <file>
+scp /etc/apparmor.d/<profile> node01:/etc/apparmor.d/<profile>  # secure copy from master to worker node
+
+#include <tunables/global>
+
+profile k8s-apparmor-example-deny-write flags=(attach_disconnected) {  # profile name matter, file name can be anything
+  #include <abstractions/base>
+
+  file,
+
+  # Deny all file writes.
+  deny /** w,
+}
+
+apparmor_parser <k8s-apparmor-example-deny-write> # file name
+aa-status | grep <k8s-apparmor-example-deny-write>
+aa-status
+k run pod --image=nginx --dry-run=client -o yaml > pod.yaml --command -- sh -c 'sleep 1d'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-apparmor
+  annotations:
+    # Tell Kubernetes to apply the AppArmor profile "k8s-apparmor-example-deny-write".
+    # Note that this is ignored if the Kubernetes node is not running version 1.4 or greater.
+    container.apparmor.security.beta.kubernetes.io/<name of container hello>: localhost/k8s-apparmor-example-deny-write  # profile name
+spec:
+  nodeName: worker # static way of assiging a pod to a node
+  nodeSelector:  # dynamic way of assiging a pod to a node
+    type: worker # k label nodes worker type=worker
+  containers:
+  - name: hello
+    image: busybox:1.28
+    command: [ "sh", "-c", "echo 'Hello AppArmor!' && sleep 1h" ]
+    
+
+seccomp: Worker node /var/lib/kubelet/seccomp   #/var/lib/kubelet/seccomp/profiles  Restrict a Container's Syscalls with seccomp 
+k run pod --image=busybox --dry-run=client -o yaml > pod.yaml --command - sh -c 'sleep1d'
+
+spec:
+  securityContext:
+    seccompProfile:
+      type: Localhost
+      localhostProfile: profiles/audit.json
+      
+    vim /var/lib/kubelet/seccomp/profiles/custom-profile.json   # append read and write
+    grep -w read /var/lib/kubelet/seccomp/profiles/custom-profile.json
+    grep -w write /var/lib/kubelet/seccomp/profiles/custom-profile.json     
+
+How to implement in Deployment?:
+
+Open Policy Agent or Gatekeeper: Gatekeeper is a customizable admission webhook for k8s that enforce policies executed by  OPA
+
+Policy.yaml
+UC1: Pods must have team and Env label
+kind: ConstraintTemplate   # rego language
+kind: <custom> # name of the constarinttemplete
+spec:
+ match: 
+   kinds:
+     - apiGroups: [""]
+       kind: ["Pod"]
+   parameters: ["team","dev"]    
+create pod without label.   
+
+UC2: Deployment must have min 3 replicas      
+      kind: ["Deployment"]  
+  parameters:  
+      min: 3  
+
+UC3: All Image must come from trusted registry      
+      kind: ["Pod"]  
+   parameters: 
+     registry: 
+        - "docker.io" 
+        
+RBAC:
+ k create ns <demo>
+ k create sa <demo-sa> -n <demo>
+ k create role <demo-role> -n <demo> --resource=pods,namespace,configmaps --verb=list
+ k create rolebinding <demo-rolebinding> --role=<demo-role> --serviceaccount=<demo>:<demo-sa>
+ k describe <demo-rolebinding> -n <demo> # mapping of serviceaccount and role
+ k edit role <demo-role> - n <demo> 
+
+Incorrectly Specified ServiceAccount:
+
+#check the existing pod.yaml
+  spec:
+   serviceAccountName: 
+# check service account exist or not
+k get sa -n <test-sa>
+  
+# Create ns
+k create ns <test>
+#Create SA
+k create sa <test-sa> -n <test>
+
+#Create Role`
+k create role <test-role> -n <test> --resource=pods,namespace,configmap --verb=list
+#Create RoleBinding
+k create rolebinding <test-rolebinding> -n <test>  --role=<test-role> --serviceaccount=<test>:<test-sa>
+#Fix the pod
+
+        
+Fix Overlay Permissions For Pods:
+# check the existing pod
+k get pod <pod name> -n <test> -o yaml | vim -
+#describe the existing role
+k get role -n <test>
+k describe role <role name> -n <test>  # verb [*]
+k get rolebinding -n <test>
+k describe rolebinding <name> -n <test> #  mapping of role with sa
+k edit role <role name> -n <test>
+
+
+AdmisionController: kind: AdmisionConfiguration
+/etc/kubernetes/admision-controller
+/etc/kubernetes/manifests/kube-apiserver.yaml # enable AdmisionConfiguration
+--admission-control-config-file
+--enable-admission-plugins=ImagePolicyWebhook
+apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+  - name: ImagePolicyWebhook
+    configuration:
+      imagePolicy:
+        kubeConfigFile: <path-to-kubeconfig-file>
+        allowTTL: 50
+        denyTTL: 50
+        retryBackoff: 500
+        defaultAllow: true   #false
+ 
+ 
+ 
+ EncryptionConfiguration:
+ --encryption-provider-config= /etc/kubernetes/etcd/ec.yaml
+    apiVersion: apiserver.config.k8s.io/v1
+    kind: EncryptionConfiguration
+    resources:
+      - resources:
+          - secrets
+          - configmaps
+          - pandas.awesome.bears.example
+        providers:
+          - aescbc:
+              keys:
+                - name: key1
+                  # See the following text for more details about the secret value
+                  secret: <BASE 64 ENCODED SECRET>  # echo -n 'passwordpassword'
+          - identity: {} # this fallback allows reading unencrypted secrets;
+                         # for example, during initial migration
+    replace existing secrets:
+    k get secrets -n <ns> -o json | k replace -f -                      
+
+
+#create ns
+#create SA
+#create role
+# create RoleBinding
+#fix the pod
+
+
+NetworkPolicy:
+spec:
+ ingress:
+   - from:
+       - podSelector:
+           matchLabels:
+              key: value
+         namespaceSelector:
+           matchLabels:
+              key2: value2
+       - ipBlock:
+           cidr: 0.0.0.0/0
+           except: 
+            - 169.254.169.254/32           
+              
+ 
+
+NetworkPolicy 1:
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: networkpolicydemo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress: 
+
+
+k get pods -n <ns>
+k get pods -n <ns> --show-labels
+k get ns -n <ns> --show-labels    
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: server-ingress
+  namespace: networkpolicydemo
+spec:
+  podSelector:
+    matchLabels:
+      role: server
+  policyTypes:
+    - Ingress:
+  ingress:  
+        - from:
+           - podSelector:
+               matchLables:
+                role: client
+             namespaceSelector:
+               matchLabels:
+                run: demo               
+      ports: 
+       - protocol: TCP
+         port: 80
+
+
+NetworkPolicy 2:
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: backend
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress: 
+
+
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-np
+  namespace: backend
+spec:
+  podSelector:
+    matchLabels:
+      app: backend    
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+       - namespaceSelector:
+           matchLabels:
+             name: frontend
+       - podSelector:
+           matchLabels:
+              app: administrator
+      ports:
+       - protocol : TCP
+         port: 80
+
+Verify Platform Binaries:
+sha512sum kube-apiserver | grep ******
+rm kube-apiserver
+
+Read Kubernetes Secrets fro ETCD
+
+k create secret generic mysecret --from-literal=username=admin --from-literal=password=password123
+#ETCDCTL_API=3 etcdctl          
+#cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep etcd
+ETCDCTL_API=3 etcdctl --cert= --key= --cacert=  get /registry/secrets/<ns>/<secret name>
+
+Create and Secure Ingress:
+#kubectl create ingress catch-all --class=otheringress --rule="/path=svc:port,tls=secret1" --annotation ingress.annotation2=bla
+#nginx.ingress.kubernetes.io/rewrite-target: /
+
+#create ingress
+k create deployment test-deploy --image =httpd --port=80  # ServiceAccount
+k expose deployment test-deploy --name= test-svc
+k create ingress test-ingress --class=nginx --rule="/*=test-svc:80" --dry-run=client -o yaml
+
+
+#secure ingress
+ #create key and cert
+ openssl genrsa -out ca.key 2048
+ #openssl req -x509 -new -nodes -key ca.key -subj "/CN=${MASTER_IP}" -days 10000 -out ca.crt 
+  openssl req -x509 -new -nodes -key ca.key -subj "/CN=demo.mycompany.com" -days 10000 -out ca.crt
+  k create secret tls <secure-ingress> --key=ca.key --cert=ca.crt
+  k create ingress test-ingress --class=nginx --rule="demo.company.com/=test-svc:80,tls=secure-ingress" --annotation="nginx.ingress.kubernetes.io/rewrite-target= /"
+  
+ Questions:
+     1) NetworkPolicy -2
+     2) CIS Benchmark -1
+     3) Ingress -1
+     4) Verify Binaries-1
+     5) Extract Secrets-1
+     6) RBAC -2
+     7) Falco -1   # /etc/falco
+     8) AppArmor-1  #/etc/apparmor.d/
+     9) Seccomp-1  # /var/lib/kubelet/seccomp/profiles
+     10) kind: policy- 1  # watch kubectl get nodes
+     11) kind:AdmissionConfiguration -1    # watch kubectl get nodes  
+     12) kind: EncryptionConfiguration -1 # watch kubectl get nodes  
+     13) kind: ConstraintTemplate-1
+     14) trivy-1
+     15) Docker and YAML file-1
+     16) Immutable Container  
+     17) Netstat     
+        
+Imp:
+    copy:
+     scp /root/gvisor-install.sh node01:/root/
+    replace existing secrets:
+     k get secrets -n <ns> -o json | k replace -f -
+     k exec gvisor -n <ns> -- dmesg  # check gvisor working fine
+     k get deploy <name> --show-labels
+     k get pods -l <labels> -o yaml | grep -i imageid 
+     k scale deploy <name> -n <ns> --replicas=0
+     
+     docker build -t base-image .
+     docker run --name=c1 -d base-image
+     docker exec c1 ps
+           
+     
+     volumeMounts:
+       - name: temp
+         mountPath: /etc
+                
+     spec:
+       volumes:
+         - name: temp
+           emptyDir: {}   
+
+ 

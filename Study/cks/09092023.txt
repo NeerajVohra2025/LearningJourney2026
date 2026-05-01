@@ -1,0 +1,467 @@
+NetworkPolicy: (NetPol)
+k get pods -n <ns> --show-labels
+k get ns --show-labels
+k label pod <name> -n <ns> key=value
+k label ns <name> key=value
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+	
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+	
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      role: db
+  policyTypes:
+    - Ingress
+  ingress:
+     - from:
+         - ipBlock:
+             cidr: 0.0.0.0/0
+             except: 
+               - 169.254.169.254/32
+         - namespaceSelector:
+               matchLabels:
+                  key: value
+         - podSelector:
+                matchLabels:
+                    key2: value2
+       ports:
+         - port:
+           protocol:	
+---
+Ingress: (Ingress)
+k apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.1/deploy/static/provider/baremetal/deploy.yaml
+k getIngressClass
+#k create ingress <name> --class= --rule="" --annotation="nginx.ingress.kubernetes.io/rewrite-target= /"
+k create ns demo
+k create deployment ing-deploy --image=80 --port=80 -n demo
+k expose deployment ing-deploy --name=ing-svc -n demo
+k create ingress world -n demo --class=nginx --rule="world.universe.mine/europe/=europe:80" --rule="world.universe.mine/asia/=asia:80" --annotation="nginx.ingress.kubernetes.io/rewrite-target= /" --dry-run=client -o yaml
+---
+Secure Ingress : (openssl)
+openssl genrsa -out ingress.key 2048
+openssl req -x509 -new -nodes -key ingress.key -subj "/CN=world.universe.mine/" -days 10000 -out ingress.crt 
+k create secret ing-secret tls --cert=ingress.crt --key=ingress.key
+k create ingress world -n demo --class=nginx --rule="world.universe.mine/europe/=europe:80,tls=ing-secret" --rule="world.universe.mine/asia/=asia:80" --annotation="nginx.ingress.kubernetes.io/rewrite-target= /" --dry-run=client -o yaml
+
+
+---
+CIS Benchmark:
+kube-bench run --targets=master --check=1.2.20 # generates the report
+kubesec scan <pod.yaml> # generates the report
+
+---
+Immutable Container:
+k run pod --image=nginx:alpine --dry-run=client -o yaml > pod.yaml --command -- sh -c 'sleep 1d'
+spec:
+  containers:
+    - name:
+	  image:
+	  securityContext:
+        readOnlyRootFilesystem: true	  
+--- 
+verify Binaries		
+sha512sum kube-apiserver | grep *****
+sha512sum kubelet | grep ***
+rm kubelet
+---
+RBAC
+k create ns demo
+k create sa demo-sa -n demo
+k create role demo-role -n demo --resource=pods -verb=*
+k create rolebinding demo-rolebinding -n demo --role=demo-role --serviceaccount=demo:demo-sa
+k describe rolebinding demo-rolebinding  -n demo # shows relationship between sa and role
+k edit role demo-role -n demo # update the verb to list
+k auth can-i delete pod --as system.serviceaccount:demo:demo-sa
+k create clusterrolebinding pipeline-view --clusterrole view --serviceaccount ns1:pipeline --serviceaccount ns2:pipeline
+k create clusterrole pipeline-crole --verb=create,delete --resource=deployment
+k create rolebinding demo-rolebinding --clusterrole=pipeline-crole --serviceaccount=demo:demo-sa
+
+
+---
+Networking:
+ps-aux | grep etcd # total running process
+netstat -plnt | grep 1234 # process running on port 1234
+strace -p <pid> -f
+strace -p <pid> -f -cw
+strace kill -9 <pid>
+strace kill -9 <pid> 2>&1 | grep <pid>
+rm /usr/bin/app1
+
+---
+AppArmor:(AppArmor) Worker Node
+/etc/apparmor.d/<profile file>
+
+profile k8s-apparmor-example-deny-write flags=(attach_disconnected) {
+  #include <abstractions/base>
+
+  file,
+
+  # Deny all file writes.
+  deny /** w,
+}
+
+aa-status | grep k8s-apparmor-example-deny-write   # profile-name
+#container.apparmor.security.beta.kubernetes.io/<container_name>: <profile_ref>	
+apparmor_parser <file_name> #activate the profie	
+
+k run pod --name=nginx --dry-run=client -o yaml > pod.yaml --command -- sh -c 'sleep 1d'
+metadata:
+  name:
+  annotations:
+     container.apparmor.security.beta.kubernetes.io/<container_name>: <profile_name>	 
+
+k create deploy app-deploy --image=nginx --dry-run=client -o yaml > dep.yaml --command -- sh -c 'sleep 1d'
+template:
+  metadata:
+    name:
+	annotations:
+     container.apparmor.security.beta.kubernetes.io/<container_name>: k8s-apparmor-example-deny-write flags		
+
+
+---
+seccomp: workernode
+/var/lib/kubelet/seccomp/profiles/<audit.json>
+{
+    "defaultAction": "SCMP_ACT_LOG"
+}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: audit-pod
+  labels:
+    app: audit-pod
+spec:
+  securityContext:    # pod's security context
+    seccompProfile:
+      type: Localhost
+      localhostProfile: profiles/audit.json
+	  
+
+grep -w wrie /var/lib/kubelet/seccomp/profiles/<audit.json>
+grep -w read  /var/lib/kubelet/seccomp/profiles/<audit.json>
+vim /var/lib/kubelet/seccomp/profiles/<audit.json>
+
+---
+DockerFile:
+:tag
+unnecessary s/w # light weight
+secure information # save in file
+USER:   # non root user
+---
+manifest.yaml:
+k run pod --image=nginx --dry-run=client -o yaml > pod.yaml --command -- sh -c 'sleep 1d'
+spec:
+  containers:
+    - name:
+	  image:   # must have tag
+      securityContext:
+        privileged: false
+        allowPrivilegeEscalation: false
+        runAsUser: # nonroot
+        readOnlyRootFilesystem: true
+--- 	
+Audit: (Audit) kind: policy
+#vim /etc/kubernetes/manifests/kube-apiserver.yaml
+
+- --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+- --audit-log-path=/var/log/kubernetes/audit/audit.log
+- --audit-log-path= specifies the log file path that log backend uses to write audit events. Not specifying this flag disables log backend. - means standard out
+--audit-log-maxage defined the maximum number of days to retain old audit log files
+
+
+volumeMounts:
+  - mountPath: /etc/kubernetes/audit-policy.yaml
+    name: audit
+    readOnly: true
+  - mountPath: /var/log/kubernetes/audit/
+    name: audit-log
+    readOnly: false
+
+volumes:
+- name: audit
+  hostPath:
+    path: /etc/kubernetes/audit-policy.yaml
+    type: File
+
+- name: audit-log
+  hostPath:
+    path: /var/log/kubernetes/audit/
+    type: DirectoryOrCreate	
+
+apiVersion: audit.k8s.io/v1 # This is required.
+kind: Policy
+# Don't generate audit events for all requests in RequestReceived stage.
+omitStages:
+  - "RequestReceived"
+rules:
+ - level: Metadata
+   verbs:
+   users:
+   namespaces:
+   resources:
+    - group: ""
+      resources: ["pods/log", "pods/status"]	
+---
+Falco:
+/etc/falco/falco_rules.yaml
+/etc/falco/falco_rules.local.yaml
+
+service falco status
+falco --list # list of applied rule
+falco -r <rule_file>
+falco -M 20 > falco_out.log
+service falco start
+cat /var/log/syslog | grep falco | grep shell
+---
+Image scan
+k get pod -n <ns> -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[].image
+trivy image <name> | grep -Ei 'critical|high'
+
+
+---
+AdmisionConfiguration: (AdmisionController)
+
+# /etc/kubernetes/manifests/kube-apiserver.yaml
+- --enable-admission-plugins=ImagePolicyWebhook
+- --admission-control-config-file=/etc/kubernetes/config.yaml
+
+volumeMounts:
+  - mountPath: /etc/kubernetes/config.yaml
+    name: config
+    readOnly: true
+volumes:
+- name: config
+  hostPath:
+    path: /etc/kubernetes/config.yaml
+    type: File	
+
+apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+  - name: ImagePolicyWebhook
+    configuration:
+      imagePolicy:
+        kubeConfigFile: <path-to-kubeconfig-file>  
+        allowTTL: 50   # 100
+        denyTTL: 50
+        retryBackoff: 500
+        defaultAllow: true  # false
+		
+# clusters refers to the remote service.
+clusters:
+  - name: name-of-remote-imagepolicy-service
+    cluster:
+      certificate-authority: /path/to/ca.pem    # CA for verifying the remote service.
+      server: https://images.example.com/policy		
+
+cat admision-control.conf #    path of ImagePolicyWebhook
+cat imagepolicy.conf   # path of kubeconfig-file
+vim kube-config-file   # server path
+watch kubectl get nodes  
+
+---
+EncryptionConfiguration: (EncryptionConfiguration)
+# /etc/kubernetes/manifests/kube-apiserver.yaml
+- --encryption-provider-config=/etc/kubernetes/etcd/ec.yaml
+volumeMounts:
+  - mountPath: /etc/kubernetes/etcd/ec.yaml
+    name: etcd
+    readOnly: true
+volumes:
+- name: etcd
+  hostPath:
+    path: /etc/kubernetes/etcd/ec.yaml
+    type: File	
+echo -n 'passwordpassword' | base64
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+      - configmaps
+      - pandas.awesome.bears.example
+    providers:
+      - aescbc:
+          keys:
+            - name: key1
+              # See the following text for more details about the secret value
+              secret: <BASE 64 ENCODED SECRET>
+      - identity: {} # this fallback allows reading unencrypted secrets;
+                     # for example, during initial migration
+					 
+#replace existing secrets
+k get secret -n <ns> -o json| k replace -f -
+
+
+--- 
+RuntimeClass: (RuntomeClass)
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  # The name the RuntimeClass will be referenced by.
+  # RuntimeClass is a non-namespaced resource.
+  name: myclass #gvisor
+# The name of the corresponding CRI configuration
+handler: myconfiguration  # runsc
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  runtimeClassName: myclass  #gvisor
+
+k create deploy gvisor-deploy --image=nginx --dry-run=client -o yaml > deploy.yaml --command -- sh -c 'sleep 1d'
+k edit deploy gvisor-deploy -n <ns>
+sh gvisor-install.sh
+k exec gvisor-pod -n <ns> -dmesg # check gvisor running fine
+
+---
+OPA (Open Policy Agent) kind: ConstraintTemplate
+
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredlabels
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredLabels
+        listKind: K8sRequiredLabelsList
+        plural: k8srequiredlabels
+        singular: k8srequiredlabels
+      validation:
+        # Schema for the `parameters` field
+        openAPIV3Schema:
+          properties:
+            labels:
+              type: array
+              items: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequiredlabels
+
+        deny[{"msg": msg, "details": {"missing_labels": missing}}] {
+          provided := {label | input.review.object.metadata.labels[label]}
+          required := {label | label := input.parameters.labels[_]}
+          missing := required - provided
+          count(missing) > 0
+          msg := sprintf("you must provide labels: %v", [missing])
+        }   
+					 
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredLabels
+metadata:
+  name: ns-must-have-hr
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Namespace"]
+  parameters:
+    labels: ["hr"]
+
+
+UC1:Pods must have team and Env lab
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pods"]
+  parameters:
+    labels: ["team","dev"] 
+
+UC2: Deployment must have min 3 replicas
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Deployment"]
+  parameters:
+    min: 3 
+   
+UC3: All Image must come from trusted registry	
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pods"]
+  parameters:
+    registry:
+	  - "docker.io"
+---
+Secrets:
+k create ns demo
+k create secret generic mysecret -n demo --from-literal=user=admin --from-literal=password=abcd1234
+k get secret mysecret -n demo -o yaml # data
+k get secret mysecret -n demo -o jsonpath='{.data.user}'| base64 -d > user.txt # first dot is root element
+---
+AutomountServiceAccontToken:
+k run pod --image=nginx --dry-run=client -o yaml > pod.yaml  --command -- sh -c 'sleep 1d'
+spec:
+  serviceAccountName: demo-sa
+  automountServiceAccountToken: false
+---
+Read Secrets from ETCD
+k create ns demo
+k create sa demo-sa -n demo
+k create secret generic mysecret -n demo --from-literal=user=admin
+cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep etcd
+ETCDCTL_API=3 etcdctl --cacert= --cert= --key= get /registry/secrets/damo/mysecret
+---
+Minimizing hostfootprint:
+k run pod --image=nginx --dry-run=client -o yaml > pod.yaml > --command -- sh -c 'sleep 1d'
+spec:
+ hostIPC: false
+ hostNetwork: false
+ hostPID: false
+ containers:
+   - name:
+     image:
+     securityContext:
+       readOnlyRootFilesystem: true
+       privileged: false
+       allowPrivilegeEscalation: false
+       runAsUser: # non root
+---
+Updgrade Kubeadm (Upgrade Kubeadm)
+k drain control-plane
+#
+#
+k uncordon control-plane
+k drain node01
+ssh node01
+#
+#
+exit
+k uncordon node01
+---
+volumes:
+  - name:
+    emptyDir: {}
+mountVolumes:
+   - name:
+     mountPath: /etc   
+  
+
+	  
+	  

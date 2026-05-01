@@ -1,0 +1,326 @@
+CLI: AWS CLI , Kubectl , eksctl
+aws configure
+
+# create cluster
+eksctl create cluster --name=eksdemo1 --region=us-east-1 --zones=us-east-1a,us-east-1b --without-nodegroup
+# Get List of clusters
+eksctl get cluster
+kubectl get nodes
+
+# Template Create & Associate IAM OIDC Provider for our EKS Cluster
+eksctl utils associate-iam-oidc-provider --region=us-east-1 --cluster=eksdemo1 --approve
+eksctl create nodegroup --help
+
+# Create Public Node Group   # remote sg add Http,All
+eksctl create nodegroup --cluster=eksdemo1 --region=us-east-1 --name=eksdemo1-ng-public1 --node-type=t2.micro --nodes-min=2 --nodes-max=4 --node-volume-size=20  --ssh-access --ssh-public-key=eks-key --managed --asg-access --external-dns-access --full-ecr-access --appmesh-access --alb-ingress-access 
+kubectl get nodes
+eksctl get cluster
+eksctl get nodegroup --cluster=eksdemo1                  
+# Delete Node Group
+eksctl delete nodegroup --cluster=eksdemo1 --name=eksdemo1-ng-public1
+# Delete Cluster
+eksctl delete cluster eksdemo1
+
+
+#Pod
+kubectl run my-first-pod --image stacksimplify/kubenginx:1.0.0
+kubectl get pods -o wide
+kubectl describe pod my-first-pod 
+kubectl delete pod my-first-pod
+#Service
+kubectl expose pod my-first-pod  --type=NodePort --port=80 --name=my-first-service
+kubectl get svc
+kubectl get nodes -o wide
+kubectl logs my-first-pod
+kubectl logs -f my-first-pod
+# Sample Commands
+kubectl exec -it my-first-pod -- /bin/bash
+cd /usr/share/nginx/html
+kubectl exec -it my-first-pod env
+kubectl exec -it my-first-pod ls
+kubectl exec -it my-first-pod cat /usr/share/nginx/html/index.html
+kubectl get all
+kubectl delete svc my-first-service
+kubectl delete pod my-first-pod
+kubectl get all
+#ReplicaSet
+kubectl create -f replicaset-demo.yml
+kubectl get rs
+kubectl describe rs/my-helloworld-rs
+kubectl get pods -o wide    
+kubectl get pods my-helloworld-rs-c8rrj -o yaml   # owner of pod ReplicaSet
+kubectl expose rs my-helloworld-rs  --type=NodePort --port=80 --target-port=8080 --name=my-helloworld-rs-service
+kubectl delete rs my-helloworld-rs
+kubectl delete svc my-helloworld-rs-service
+kubectl get all
+#Deployments
+kubectl create deployment my-first-deployment --image=stacksimplify/kubenginx:1.0.0 
+kubectl get deploy
+kubectl describe deployment my-first-deployment
+kubectl scale --replicas=20 deployment/my-first-deployment 
+
+# Verify ReplicaSet
+kubectl get rs
+# Verify Pod
+kubectl get po
+kubectl expose deployment my-first-deployment --type=NodePort --port=80 --target-port=80 --name=my-first-deployment-service
+# Get Container Name from current deployment
+kubectl get deployment my-first-deployment -o yaml   # kubenginx
+# Update Deployment - SHOULD WORK NOW
+kubectl set image deployment/<Deployment-Name> <Container-Name>=<Container-Image> --record=true
+kubectl set image deployment/my-first-deployment kubenginx=stacksimplify/kubenginx:2.0.0 --record=true
+# Verify Rollout Status 
+kubectl rollout status deployment/my-first-deployment
+# Verify Deployment
+kubectl get deploy
+# Descibe Deployment
+kubectl describe deployment my-first-deployment
+# Check the Rollout History of a Deployment
+kubectl rollout history deployment/<Deployment-Name>
+kubectl rollout history deployment/my-first-deployment 
+# Edit Deployment
+kubectl edit deployment/<Deployment-Name> --record=true
+kubectl edit deployment/my-first-deployment --record=true
+# Verify Rollout Status 
+kubectl rollout status deployment/my-first-deployment
+# Check the Rollout History of a Deployment
+kubectl rollout history deployment/<Deployment-Name>
+kubectl rollout history deployment/my-first-deployment 
+# List Deployment Rollout History
+kubectl rollout history deployment/<Deployment-Name>
+kubectl rollout history deployment/my-first-deployment 
+# List Deployment History with revision information
+kubectl rollout history deployment/my-first-deployment --revision=1
+kubectl rollout history deployment/my-first-deployment --revision=2
+kubectl rollout history deployment/my-first-deployment --revision=3
+# Undo Deployment
+kubectl rollout undo deployment/my-first-deployment
+kubectl rollout undo deployment/my-first-deployment --to-revision=3
+# Pause the Deployment
+kubectl rollout pause deployment/<Deployment-Name>
+kubectl rollout pause deployment/my-first-deployment
+# Resume the Deployment
+kubectl rollout resume deployment/my-first-deployment
+# Delete Deployment
+kubectl delete deployment my-first-deployment
+
+# Delete Service
+kubectl delete svc my-first-deployment-service
+kubectl get all
+# Create Deployment for Backend Rest App
+kubectl create deployment my-backend-rest-app --image=stacksimplify/kube-helloworld:1.0.0 
+# Create ClusterIp Service for Backend Rest App
+kubectl expose deployment my-backend-rest-app --port=8080 --target-port=8080 --name=my-backend-service
+# Create Deployment for Frontend Nginx Proxy
+kubectl create deployment my-frontend-nginx-app --image=stacksimplify/kube-frontend-nginx:1.0.0 
+# Create NodePort Service for Frontend Nginx Proxy
+kubectl expose deployment my-frontend-nginx-app  --type=NodePort --port=80 --target-port=80 --name=my-frontend-service
+Important Note: In Nginx reverse proxy, ensure backend service name my-backend-service is updated when you are building the frontend container. 
+Nginx Conf File:
+server {
+    listen       80;
+    server_name  localhost;
+    location / {
+    # Update your backend application Kubernetes Cluster-IP Service name  and port below      
+    # proxy_pass http://<Backend-ClusterIp-Service-Name>:<Port>;      
+    proxy_pass http://my-backend-service:8080;
+    }
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}
+
+#Delete existing Public Node Group in EKS Cluster
+# Get NodeGroups in a EKS Cluster
+eksctl get nodegroup --cluster=<Cluster-Name>
+eksctl get nodegroup --cluster=eksdemo1
+
+# Delete Node Group - Replace nodegroup name and cluster name
+eksctl delete nodegroup <NodeGroup-Name> --cluster <Cluster-Name>
+eksctl delete nodegroup eksdemo1-ng-public1 --cluster eksdemo1
+
+#Create EKS Node Group in Private Subnets
+eksctl create nodegroup --cluster=eksdemo1 --region=us-east-1 --name=eksdemo1-ng-private1 --node-type=t2.micro --nodes-min=2 --nodes-max=4 --node-volume-size=20  --ssh-access --ssh-public-key=eks-key --managed --asg-access --external-dns-access --full-ecr-access --appmesh-access --alb-ingress-access --node-private-networking
+kubectl get nodes -o wide
+kubectl delete -f kube-manifests/      
+
+#Fargate Profiles
+
+kubectl get nodes -o wide
+# Get list of Fargate Profiles in a cluster
+eksctl get fargateprofile --cluster eksdemo1
+
+# Template
+eksctl create fargateprofile --cluster <cluster_name> \
+                             --name <fargate_profile_name> \
+                             --namespace <kubernetes_namespace>
+
+
+# Replace values
+eksctl create fargateprofile --cluster eksdemo1 --name fp-demo --namespace fp-dev
+kubectl apply -f kube-manifests/
+# List Namespaces
+kubectl get ns
+
+# List Pods from fpdev namespace
+kubectl get pods -n fp-dev -o wide
+# List Worker Nodes
+kubectl get nodes -o wide
+
+# List Ingress
+kubectl get ingress -n fp-dev
+
+# Get list of Fargate Profiles in a cluster
+eksctl get fargateprofile --cluster eksdemo1
+
+# Delete Fargate Profile
+eksctl delete fargateprofile --cluster <cluster-name> --name <Fargate-Profile-Name> --wait
+eksctl delete fargateprofile --cluster eksdemo1 --name fp-demo --wait
+# List Pods from fpdev namespace
+kubectl get pods -n fp-dev -o wide
+# Delete
+kubectl delete -f kube-manifests/
+# Delete Node Group
+eksctl delete fargateprofile --cluster eksdemo1 --name fp-demo --wait
+eksctl delete nodegroup --cluster=eksdemo1 --name=eksdemo1-ng-private1
+
+#ALB Ingress controller supports two two traffic modes - Instance (nodes as targets for ALB) ,IP (Register Pods as targets for ALB)
+#AWS Load Balancer Controller cn create ALB ( resource ingress) also can create NLB (resource service)
+1) ekscluster
+2) private nodegroup
+# Verify if any IAM Service Accounts present in EKS Cluster
+eksctl get iamserviceaccount --cluster=eksdemo1
+# Configure kubeconfig for kubectl
+eksctl get cluster # TO GET CLUSTER NAME
+aws eks --region <region-code> update-kubeconfig --name <cluster_name>
+aws eks --region us-east-1 update-kubeconfig --name eksdemo1
+# Verify EKS Nodes in EKS Cluster using kubectl
+kubectl get nodes
+# Download IAM Policy
+## Download latest
+curl -o iam_policy_latest.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+## Verify latest
+ls -lrta 
+
+## Download specific version
+curl -o iam_policy_v2.3.1.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.3.1/docs/install/iam_policy.json
+
+# Create IAM Policy using policy downloaded 
+aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy_latest.json
+# Policy ARN 
+Policy ARN:  arn:aws:iam::180789647333:policy/AWSLoadBalancerControllerIAMPolicy
+
+#Create IAM Role using eksctl
+# Verify if any existing service account
+kubectl get sa -n kube-system
+kubectl get sa aws-load-balancer-controller -n kube-system
+Obseravation:
+1. Nothing with name "aws-load-balancer-controller" should exist
+
+# Template
+eksctl create iamserviceaccount --cluster=my_cluster --namespace=kube-system --name=aws-load-balancer-controller --attach-policy-arn=arn:aws:iam::111122223333:policy/AWSLoadBalancerControllerIAMPolicy --override-existing-serviceaccounts --approve
+# Get IAM Service Account
+eksctl  get iamserviceaccount --cluster eksdemo1
+#install helm binaries
+# Add the eks-charts repository.
+helm repo add eks https://aws.github.io/eks-charts
+
+# Update your local repo to make sure that you have the most recent charts.
+helm repo update
+
+# Install the AWS Load Balancer Controller.
+## Template
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=<cluster-name> \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=<region-code> \
+  --set vpcId=<vpc-xxxxxxxx> \
+  --set image.repository=<account>.dkr.ecr.<region-code>.amazonaws.com/amazon/aws-load-balancer-controller
+
+## Replace Cluster Name, Region Code, VPC ID, Image Repo Account ID and Region Code  
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=eksdemo1 \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=us-east-1 \
+  --set vpcId=vpc-0165a396e41e292a3 \
+  --set image.repository=602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-load-balancer-controller
+  
+# Verify that the controller is installed.
+kubectl -n kube-system get deployment 
+kubectl -n kube-system get deployment aws-load-balancer-controller
+kubectl -n kube-system describe deployment aws-load-balancer-controller
+
+# Verify AWS Load Balancer Controller Webhook service created
+kubectl -n kube-system get svc 
+kubectl -n kube-system get svc aws-load-balancer-webhook-service
+kubectl -n kube-system describe svc aws-load-balancer-webhook-service
+
+# Verify Labels in Service and Selector Labels in Deployment
+kubectl -n kube-system get svc aws-load-balancer-webhook-service -o yaml
+kubectl -n kube-system get deployment aws-load-balancer-controller -o yaml
+Observation:
+1. Verify "spec.selector" label in "aws-load-balancer-webhook-service"
+2. Compare it with "aws-load-balancer-controller" Deployment "spec.selector.matchLabels"
+3. Both values should be same which traffic coming to "aws-load-balancer-webhook-service" on port 443 will be sent to port 9443 on "aws-load-balancer-controller" deployment related pods. 
+#Verify AWS Load Balancer Controller Logs
+# List Pods
+kubectl get pods -n kube-system
+
+# Review logs for AWS LB Controller POD-1
+kubectl -n kube-system logs -f <POD-NAME> 
+kubectl -n kube-system logs -f  aws-load-balancer-controller-86b598cbd6-5pjfk
+
+# Review logs for AWS LB Controller POD-2
+kubectl -n kube-system logs -f <POD-NAME> 
+kubectl -n kube-system logs -f aws-load-balancer-controller-86b598cbd6-vqqsk
+
+#Verify AWS Load Balancer Controller k8s Service Account - Internals
+# List Service Account and its secret
+kubectl -n kube-system get sa aws-load-balancer-controller
+kubectl -n kube-system get sa aws-load-balancer-controller -o yaml
+kubectl -n kube-system get secret <GET_FROM_PREVIOUS_COMMAND - secrets.name> -o yaml
+kubectl -n kube-system get secret aws-load-balancer-controller-token-5w8th 
+kubectl -n kube-system get secret aws-load-balancer-controller-token-5w8th -o yaml
+
+# Create IngressClass Resource
+kubectl apply -f kube-manifests
+
+# Verify IngressClass Resource
+kubectl get ingressclass
+
+# Describe IngressClass Resource
+kubectl describe ingressclass my-aws-ingress-class
+
+#ingress
+kubectl create ingress annotated --class=default --rule="foo.com/bar=svc:port,,tls=my-cert" --rule="foo.com/admin/=svcadmin:portadmin" --annotation ingress.annotation1=foo --annotation ingress.annotation2=bla
+#step 1 create deployment
+k create deployment app1-nginx-deployment --image=stacksimplify/kube-nginxapp1:1.0.0 --port=80 --replicas=1
+# step2 expose Service
+k expose deployment app1-nginx-deployment --name=app1-nginx-svc --type=NodePort
+# step3 create Ingress
+k get ingressClass
+kubectl create ingress <annotated> --class=<default> --rule="foo.com/bar=c:port,,tls=my-cert" --rule="foo.com/admin/=svcadmin:portadmin" --annotation ingress.annotation1=foo --annotation ingress.annotation2=bla
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: ingress-nginxapp1 
+  labels:
+    app: app1-nginx
+  annotations:  #https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/guide/ingress/annotations/#load-balancer-name
+       
+spec:
+
+# ALB Ingress SSL
+# step 1 Register AWS Route53  DNS Domain  hosted zones -> create record sets
+# step 2 Create SSL certificate in AWS Certificate Manager
+# step 3 Update SSL annotation in Ingress Service
+# step 4 SSL redirect annotation
+
+# External DNS
+#UC In AWS Route53 DNS records manually added, with external DNS we can automatically add it for K8s Ingress service by defining its annotations
+

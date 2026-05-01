@@ -1,0 +1,136 @@
+1)create VPC (10.0.0.0/16)- regional service across all AZ (main RT and NACL also created)
+
+2)create two subnets (10.0.1.0/24),(10.0.2.0/24)
+
+3) Create public and private RT (main RT already there)
+3.1) Associate with subnets
+
+4) Create two EC2 Instance (pubilc and private), SG, and key pair
+
+5) Create IGW and attach with VPC
+
+6) update public RT route
+
+
+-------
+1) Create IAM User
+user credetials
+codecommit credentials
+
+2) Create Role
+
+
+---
+Install putty (puttygen .pem->ppk)
+session ubuntu@<publickey>
+ssh->auth-><privatekey>
+Install aws cli
+Install MobaXterm (Installer Edition)
+
+---
+install java
+install maven
+install jenkins
+
+Plug-In
+Warnings Next Generation Plugin.(jenkin plug-in for fancy report)
+Cobertura -> code coverage report (jenkins plug-in)
+Build Pipeline
+Credential
+https://github.com/NeerajVohra/samplejavaapp
+http://<18.234.171.57>:8080/github-webhook/
+---
+Security:
+by default jenkins uses its own database
+project level access (job->configuration->general tab -> Enable Project-based security
+----
+Email:(SMTP External server) managejenkins->configure system->Extended E-mail Notification
+
+How do I remove Google security settings?
+Turn off 2-Step Verification
+Open your Google Account.
+In the "Security" section, select 2-Step Verification. You might need to sign in.
+Select Turn off.
+A pop-up window will appear to confirm that you want to turn off 2-Step Verification. Select Turn off.
+
+Where is security option in Google Account?
+Click on the blue My Account button to access your account's settings. 
+----
+master-slave (java,maven)
+managejenkins-> Manage Nodes and Cloud
+cd /home/devops
+mkdir jslave
+chown devops:devops /home/devops/jslave
+---
+Declarative Pipeline
+
+git 'https://github.com/NeerajVohra/samplejavaapp'
+
+For configuration: use console
+post{
+}
+
+condition
+stage ('test')
+{
+when {
+    expression{
+	}	
+}
+---
+env from Jenkins
+http://54.167.98.195:8080/env-vars.html/
+environment{  //available in all stages of pipeline
+}
+
+===
+Parameters in jenkins
+Execute with Parameter
+Using External Groovy Scripts
+1) define global variable
+#all environment variables available in groovy script
+
+====
+Nexus
+Jenkins Plugin- 
+Nexus Artifact Uploader
+Pipeline Utility Steps
+
+Nexus Setup:
+Install nexus
+Create a repository in Nexus
+Create User in Nexus
+=====
+hostnamectl set-hostname sonarqube-server
+chkconfig jenkins on
+copy link address
+https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.3.0.51899.zip
+cd /opt
+wget 
+tar -xvf <.tz>
+export PATH=$PATH: //opt/maven3/bin
+chown -R ec2-user:ec2-user sonarqube-8/
+sonar.sh ->(run as ec2-user)
+./sonar.sh start (port 9000)
+
+SONAR (sonar8/java11 or sonar7/java8) : as a service (generate token)
+sonar webhook ( jenkins url)
+
+Jenkins Plugin
+SonarQube Scanner
+
+Add SonarQube tool
+Manage Jenkins-> Configure System
+
+Add Sonar-Scanner in Jenkins
+Manage Jenkins-> Global Tool Confoguration
+
+update sonar-scanner.properties
+update pom.xml
+<properties>
+<sonar.host.url>
+</sonar.host.url>
+
+</properties>
+
+In sonar-scanner.properties

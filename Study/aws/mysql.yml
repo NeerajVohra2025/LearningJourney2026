@@ -1,0 +1,112 @@
+kind: Pod
+apiVersion: v1
+metadata:
+spec:
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: 
+spec:
+  replicas:
+  selector:
+  template:
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: 
+spec:
+  type:
+  ports:
+  selector:    
+
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+   name: ebs-sc
+provisioner: ebs.csi.aws.com
+volumeBindinggMode: WaitForFirstConsumer
+---
+kind: PersistenVolumeClaim
+apiVersion: v1
+metadata:
+  name: ebs-mysql-pv-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ebs-sc
+  resources:
+     requests:
+        storage: 4Gi
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+   name: usermanagement-dbcreation-script 
+data:
+  mysql_usermgmt.sql |-
+      DROP DATABASE IF EXISTS usermgmt;
+      CREATE DATABAE usermgmt; 
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: mysql
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+     matchLabels:
+        app: mysql
+     
+  template:
+    metadata:
+      labels:
+         app: mysql         # same as Selector
+    spec:
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+             claimName: ebs-mysql-pv-claim
+        - name: usermanagement-dbcreation-script
+          configMap:
+             name: usermanagement-dbcreation-script
+             
+      containers:
+        - name: mysql
+          image: mysql:5.6 
+          ports:
+            - containerPort: 3306
+              name: mysql 
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: dbpassword11        
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql             
+            - name: usermanagement-dbcreation-script
+              mountPath: / docker-entrypoint-initdb.d                                          ## during docker file initialization   
+              
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: mysql
+spec:
+  ports:
+    - port: 3306
+  selector:
+     app: mysql  
+  clusterIP: None # This means we are going to use Pod IP directly (DNS)
+  
+ ---
+ # Connect to MYSQL Database
+kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h mysql -pdbpassword11
+
+# Verify usermgmt schema got created which we provided in ConfigMap
+mysql> show schemas;

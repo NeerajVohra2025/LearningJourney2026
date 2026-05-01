@@ -1,0 +1,211 @@
+CodeDeploy Agents user guide
+https://docs.aws.amazon.com/codedeploy/latest/userguide/codedeploy-agent-operations-install-linux.html
+
+Region-wise bucket names
+https://docs.aws.amazon.com/codedeploy/latest/userguide/resource-kit.html#resource-kit-bucket-names 
+
+Please note region-wise bucket names, modify accordingly before using, this document uses ap-south-1
+
+Windows User Data - Copy Contents between dotted lines
+---------------------------------------------------------------------------------------------------------------------
+<powershell>  
+New-Item -Path c:\temp -ItemType "directory" -Force
+powershell.exe -Command Read-S3Object -BucketName aws-codedeploy-ap-south-1/latest -Key codedeploy-agent.msi -File c:\temp\codedeploy-agent.msi
+Start-Process -Wait -FilePath c:\temp\codedeploy-agent.msi -WindowStyle Hidden
+</powershell>
+---------------------------------------------------------------------------------------------------------------------
+
+Linux User Data - Copy Contents between dotted lines
+---------------------------------------------------------------------------------------------------------------------
+#!/bin/bash
+sudo yum -y update
+sudo yum install -y ruby
+sudo yum install -y aws-cli
+sudo yum install wget
+CODEDEPLOY_BIN="/opt/codedeploy-agent/bin/codedeploy-agent"
+sudo $CODEDEPLOY_BIN stop
+sudo yum erase codedeploy-agent -y
+cd /home/ec2-user
+sudo wget https://aws-codedeploy-ap-south-1.s3.ap-south-1.amazonaws.com/latest/install
+sudo chmod +x ./install
+sudo ./install auto
+sudo service codedeploy-agent start
+sudo yum install -y httpd
+sudo service httpd start
+sudo echo "<br/><h1 align='center' style='color:DeepSkyBlue;font-size:50px'>Welcome to Edureka</h1><br/><h2 align='center'>Hello there! from EC2 instance</h2><br/><h2 align='center' style='color:blue;font-size:50px'>$(curl -s 'http://169.254.169.254/latest/meta-data/instance-id')<br/>$(curl -s 'http://169.254.169.254/latest/meta-data/local-ipv4')</h2><br/><br/><h2><div id='curdt' align='center'></div></h2><script>var d = new Date(); document.getElementById('curdt').innerHTML=d;</script>" > /var/www/html/index.html
+---------------------------------------------------------------------------------------------------------------------
+
+Check CodeDeploy Agents Status on Linux machine
+sudo /opt/codedeploy-agent/bin/install auto
+sudo service codedeploy-agent start
+sudo service codedeploy-agent status
+
+CodeDeploy Service Role user guide
+https://docs.aws.amazon.com/codedeploy/latest/userguide/getting-started-create-service-role.html
+
+GIT Commands, if new to Git, refer to online free tutorials for Git first
+cd <work directory>
+git init
+git checkout -b main
+git add .
+git commit -m "initial commit"
+git remote add origin codecommit://<repository-name>
+git push origin main
+
+git config --list
+git config --global init.defaultBranch main
+
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+git config --system --unset credential.helper
+git config --global credential.helper store
+
+https://guides.github.com/introduction/flow/
+https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow
+
+CodeBuild User guide
+https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html
+
+Sample Application for Jenkins
+https://github.com/awslabs/AWSCodePipeline-Jenkins-AWSCodeDeploy_windows
+https://github.com/awslabs/aws-codepipeline-jenkins-aws-codedeploy_linux
+
+User guide for Jenkins demo
+https://aws.amazon.com/blogs/devops/setting-up-a-ci-cd-pipeline-by-integrating-jenkins-with-aws-codebuild-and-aws-codedeploy/
+
+Install Jenkins
+https://www.jenkins.io/doc/tutorials/tutorial-for-installing-jenkins-on-AWS/
+
+sudo yum update –y
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+    https://pkg.jenkins.io/redhat-stable/jenkins.repo
+
+-- Import a key file from Jenkins-CI to enable installation from the package:
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+sudo yum upgrade
+
+sudo yum install jenkins java-1.8.0-openjdk-devel -y
+
+sudo systemctl daemon-reload
+sudo systemctl stop jenkins
+sudo systemctl start jenkins
+
+sudo systemctl status jenkins
+
+Configure Jenkins
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+sudo yum install rake
+sudo gem install haml
+
+Jenkins uses port 8080
+
+Create First Admin User
+Username:	demouser
+Password:	demopass1234	
+Full name:	Demo User
+E-mail address:	set your email address
+
+Launch Jenkins EC2, T2-MEDIUM
+IAM role: - create a role using AWS defined policy AWSCodePipelineCustomActionAccess
+-- I have created a role named DemoRoleForJenkinsAccess, your name may be different
+
+In Jenkins Configure
+Provider: DemoFromJenkins-01
+
+-- Docker
+set local aws credentials
+aws configure
+
+sudo yum update -y
+sudo amazon-linux-extras install docker -Y
+sudo service docker start
+sudo usermod -a -G docker ec2-user
+
+-- stop and start EC2 instance here
+
+docker info 
+
+docker run -d -p 90:5000 training/webapp:latest python app.py
+docker run --name some-httpd -d -p 91:80 clearlinux/httpd
+docker run -d -p 92:8000 --name whoami -t training/whoami
+
+docker run -d -p 80:80 demo-image-01:latest
+-- ensure your security group has inbound ports open for above applications to work, port 80, 8080 and 85
+------------------------------------------------------------------------------------------------------------------------------------
+-- Refer to this documentation for Docker ecs-cd-pipeline
+https://docs.aws.amazon.com/codepipeline/latest/userguide/ecs-cd-pipeline.html
+
+-- Set environment variables for codebuild
+AWS_DEFAULT_REGION with a value of region-ID
+AWS_ACCOUNT_ID with a value of account-ID
+IMAGE_TAG with a value of Latest
+IMAGE_REPO_NAME with a value of Amazon-ECR-repo-name
+
+export AWS_ACCESS_KEY_ID=$ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=$SECRET_ACCESS_KEY
+export AWS_SESSION_TOKEN=$SESSION_TOKEN
+
+Add permission AmazonEC2ContainerRegistryPowerUser
+To
+   codebuild-<build-project-name>-service-role
+
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 012345678910.dkr.ecr.us-west-2.amazonaws.com
+      - REPOSITORY_URI=012345678910.dkr.ecr.us-west-2.amazonaws.com/hello-world
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - printf '[{"name":"hello-world","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+artifacts:
+    files: imagedefinitions.json
+------------------------------------------------------------------------------------------------------------------------------------
+
+-- ECR repo creation and push image to the repo
+aws ecr create-repository --repository-name demo-repo-001 --image-scanning-configuration scanOnPush=true --region <region-code> 
+
+docker tag <image-name>:latest <your aws account ID>.dkr.ecr.<your region code>.amazonaws.com/demo-repo-001:latest
+
+aws ecr get-login-password --region <your region code> | docker login --username AWS --password-stdin <your aws account ID>.dkr.ecr.<your 
+region code>.amazonaws.com
+
+docker push <your aws account ID>.dkr.ecr.<your region code>.amazonaws.com/demo-repo-001:latest
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+Check here for Code Samples
+-- CodeDeploy
+https://docs.aws.amazon.com/codedeploy/latest/userguide/tutorials-github.html
+-- CodeBuild
+https://docs.aws.amazon.com/codebuild/latest/userguide/sample-codedeploy.html
+-- CodePipeline
+https://docs.aws.amazon.com/codepipeline/latest/userguide/tutorials-simple-s3.html
+
+-- My own samples collection - recommend use above official references as far as possible
+https://drive.google.com/drive/folders/1P84Unb-5xjqk7KXhn2-UAFIpCFfvLcD8?usp=sharing
+
+-- Useful links Deployment Strategies
+https://harness.io/blog/blue-green-canary-deployment-strategies/
+https://about.gitlab.com/blog/2022/02/03/how-to-keep-up-with-ci-cd-best-practices/
+https://devops.com/
+
+-- DevSecOps Sample
+https://aws.amazon.com/blogs/devops/building-end-to-end-aws-devsecops-ci-cd-pipeline-with-open-source-sca-sast-and-dast-tools/

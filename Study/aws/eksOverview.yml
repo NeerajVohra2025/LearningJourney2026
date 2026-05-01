@@ -1,0 +1,242 @@
+Step1: Install CLI
+         AWS CLI
+         Kubectl
+         eksctl
+Step2: Create a IAM User In AWS and get AccessKey and Secret Key
+Step3: Connect through command line aws configure
+     aws configure
+     aws ec2 describe-vpcs         # validate the connection
+EKS Core Objects:
+     EKS Control Plane
+     Worker Nodes and Node Group
+     Fargate Profile (Serverless)
+     VPC  
+
+EKS Cluster:
+Step1:Create EKS Cluster:
+# Create Cluster Will take 15-20 minutes
+eksctl create cluster --name=eksdemo1 --region=us-east-1 --zones=us-east-1a,us-east-1b --without-nodegroup 
+
+# Get List of clusters
+eksctl get cluster 
+
+Step2: Create & Associate IAM OIDC Provider for our EKS Cluster 
+To enable and use AWS IAM roles for Kubernetes service accounts on our EKS cluster, we must create & associate OIDC identity provider.
+To do so using eksctl we can use the below command.
+
+# Template
+eksctl utils associate-iam-oidc-provider \
+    --region region-code \
+    --cluster <cluter-name> \
+    --approve
+
+# Replace with region & cluster name
+eksctl utils associate-iam-oidc-provider --region us-east-1 --cluster eksdemo1 --approve
+Step3: Create EC2 Keypair
+  Create a new EC2 Keypair with name as kube-demo
+  This keypair we will use it when creating the EKS NodeGroup.
+  This will help us to login to the EKS Worker Nodes using Terminal. 
+
+Step4:Create Node Group with additional Add-Ons in Public Subnets:
+These add-ons will create the respective IAM policies for us automatically within our Node Group role.
+
+# Create Public Node Group  #igw entry in route table
+eksctl create --help 
+eksctl create nodegroup --help
+eksctl create nodegroup --cluster=eksdemo1  \
+                       --region=us-east-1 \
+                       --name=eksdemo1-ng-public1 \
+                       --node-type=t3.medium \
+                       --nodes=2 \
+                       --nodes-min=2 \
+                       --nodes-max=4 \
+                       --node-volume-size=20 \
+                       --ssh-access \
+                       --ssh-public-key=kube-demo \
+                       --managed \
+                       --asg-access \
+                       --external-dns-access 
+                       --full-ecr-access \
+                       --appmesh-access \
+                       --alb-ingress-access    
+eksctl create nodegroup --cluster=eksdemo1 --region=us-east-1 --name=eksdemo1-ng-public1 --node-type=t3.medium --nodes=2 --nodes-min=2 --nodes-max=4 --node-volume-size=20 --ssh-access --ssh-public-key=kube-demo --managed --asg-access --external-dns-access --full-ecr-access --appmesh-access --alb-ingress-access                        
+
+
+Step5: Verify Cluster and Node
+
+kubectl get nodes -o wide
+List Worker Nodes:
+# List EKS clusters
+eksctl get cluster
+
+# List NodeGroups in a cluster
+eksctl get nodegroup --cluster=<clusterName>
+
+# List Nodes in current kubernetes cluster
+kubectl get nodes -o wide
+
+# Our kubectl context should be automatically changed to new cluster
+kubectl config view --minify       
+
+# login into worker node using keypair
+ssh -i "kube-demo.pem" root@ec2-52-87-175-178.compute-1.amazonaws.com
+df -h
+update the SG (Remote), default only SSH allowed
+
+
+Delete EKS Cluster and Nodegroup:
+Step1: Delete Node Group
+We can delete a nodegroup separately using below eksctl delete nodegroup
+# List EKS Clusters
+eksctl get clusters
+
+# Capture Node Group name
+eksctl get nodegroup --cluster=<clusterName>
+eksctl get nodegroup --cluster=eksdemo1
+
+# Delete Node Group
+eksctl delete nodegroup --cluster=<clusterName> --name=<nodegroupName>
+eksctl delete nodegroup --cluster=eksdemo1 --name=eksdemo1-ng-public1
+
+Step2: Delete Cluster
+We can delete cluster using eksctl delete cluster
+# Delete Cluster
+eksctl delete cluster <clusterName>
+eksctl delete cluster eksdemo1
+
+Important Notes:
+Note-1: Rollback any Security Group Changes
+When we create a EKS cluster using eksctl it creates the worker node security group with only port 22 access.
+When we progress through the course, we will be creating many NodePort Services to access and test our applications via browser.
+During this process, we need to add an additional rule to this automatically created security group, allowing access to our applications we have deployed.
+So the point we need to understand here is when we are deleting the cluster using eksctl, its core components should be in same state which means roll back the change we have done 
+to security group before deleting the cluster.
+In this way, cluster will get deleted without any issues, else we might have issues and we need to refer cloudformation events and manually delete few things. In short, 
+we need to go to many places for deletions. 
+
+-----------------------------------------------------------------
+EKS Storage:
+  Drawbacks of EBS CSI for MySQL DE:
+    Complex setup to achieve HA
+    Complex Multi-AZ support for EBS (AZ level resource)
+    Complex Master-Master MySQL setup
+    Complex Master-Slave MySQL setup
+    No Automatic Backup and Recovery
+    No Auto-Upgrade MySQL
+  Advantage of RDS Database:
+    High Availability
+    Backup and Recovery
+    Read Replicas
+    Metrics and Monitoring available out of the box
+    Automatic Upgrades
+    Multi-AZ Support
+    
+  
+RDS Database for Workloads running on AWS EKS Cluster: # 74
+
+VPC Name: eksctl-eksdemo1-cluster/VPC                           # VPC generated through the eksctl
+Step0:Create DB Security Group:
+  Inbound Rules:
+    VPC: ksctl-eksdemo1-cluster/VPC
+    private subnet:
+    Type: MySQL/Aurora
+    Protocol: TPC
+    Port: 3306
+
+Step0.2:Create DB Subnet Group in RDS:
+  Go to RDS->Subnet Groups
+
+Step1: Create RDS Database
+
+Create K8s ExternalName service: # 75
+kind: Service
+apiVersion: v1
+metadata:
+  name: mysql
+spec:
+  type: ExternalName
+  externalNameValue: <DNS URL RDS>
+-----------------------------------------------------------------
+EKS with AWS Load Balancer:
+AWS Load Balancer Introduction:  # 76
+  Whenever we create a service of type LB , by default creates a Classic LoadBalancer
+Create EKS Private NodeGroup:  # 77
+Step1:Introduction:
+  We are going to create a node group in VPC Private Subnets
+  We are going to deploy workloads on the private node group wherein workloads will be running private subnets and load balancer gets created in public subnet and accessible via
+  internet.
+
+Step2:Delete existing Public Node Group in EKS Cluster:
+# Get NodeGroups in a EKS Cluster
+eksctl get nodegroup --cluster=<Cluster-Name>
+eksctl get nodegroup --cluster=eksdemo1
+
+# Delete Node Group - Replace nodegroup name and cluster name
+eksctl delete nodegroup <NodeGroup-Name> --cluster <Cluster-Name>
+eksctl delete nodegroup eksdemo1-ng-public1 --cluster eksdemo1
+ 
+Step3:Create EKS Node Group in Private Subnets:
+  Create Private Node Group in a Cluster
+  Key option for the command is --node-private-networking
+  eksctl create nodegroup --cluster=eksdemo1 \ 
+                        --region=us-east-1 \
+                        --name=eksdemo1-ng-private1 \
+                        --node-type=t3.medium \
+                        --nodes-min=2 \
+                        --nodes-max=4 \
+                        --node-volume-size=20 \
+                        --ssh-access \
+                        --ssh-public-key=kube-demo \
+                        --managed \
+                        --asg-access \
+                        --external-dns-access \
+                        --full-ecr-access \
+                        --appmesh-access \
+                        --alb-ingress-access \
+                        --node-private-networking
+eksctl create nodegroup --cluster=eksdemo1 --region=us-east-1 --name=eksdemo1-ng-private1 --node-type=t3.medium --nodes-min=2 --nodes-max=4 --node-volume-size=20 --ssh-access --ssh-public-key=kube-demo --managed --asg-access --external-dns-access --full-ecr-access --appmesh-access --alb-ingress-access --node-private-networking
+                          
+
+
+
+
+Step4:Verify if Node Group created in Private Subnets:                       
+  Verify External IP Address for Worker Nodes:
+  External IP Address should be none if our Worker Nodes created in Private Subnets
+  kubectl get nodes -o wide
+  Subnet Route Table Verification - Outbound Traffic goes via NAT Gateway:
+  
+Classic Load Balancer:   # 78  
+apiVersion: v1
+kind: Service
+metadata:
+  name: clb-usermgmt-restapp
+  labels:
+    app: usermgmt-restapp
+spec:
+  type: LoadBalancer                        # Regular k8s Service manifest with type as LoadBalancer  NodePort->LoadBalancer, Default CLB
+  selector:
+    app: usermgmt-restapp     
+  ports:
+  - port: 80
+    targetPort: 8095
+user will access endpoint of CLB
+
+Network Load Balancer:   # 79
+apiVersion: v1
+kind: Service
+metadata:
+  name: nlb-usermgmt-restapp
+  labels:
+    app: usermgmt-restapp
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb    # To create Network Load Balancer
+spec:
+  type: LoadBalancer # Regular k8s Service manifest with type as LoadBalancer
+  selector:
+    app: usermgmt-restapp     
+  ports:
+  - port: 80
+    targetPort: 8095
+----------------------------------------------------------------------------------------------
+  

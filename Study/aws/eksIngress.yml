@@ -1,0 +1,180 @@
+ALB Ingress:
+AWS LoadBalancer Controller Install On AWS EKS Cluster:
+AWS LoadBalancer Controller:   # 81
+  AWS LoadBalancer Controller Install
+  Ingress SSL
+  External DNS Install
+  SSL Discovery- Host
+  SSL Discovery- TLS
+  Ingress Groups
+  
+Ingress Intro:   # 82
+   ALB
+   Listeners  
+   Rules   
+AWS LoadBalancer Controller Install on EKS Cluster:   # 83  previously name was AWS ALB Ingress Controller and can create only ALB while now can create ALB/NLB
+  Create AWS Application LoadBalancer Using the K8s Object -K8s Ingress Resource
+  Create AWS Network LoadBalancer Using the K8s Object -K8s Service Resource
+  In EKS Cluster there is kube-system namespace
+step1: Create AWS LoadBalancer Controller Service Account
+step2: Create IAM Policy/ IAM Role ,which annotated within the Service Account 
+step3: AWS LoadBalancer Controller Creates AWS LoadBalancer Deployment,AWS LoadBalancer Controller Webhook ClusterIP service, aws-load-balancer-tls in kube-system namespace
+step4: associate the sa with the Deployment (also with Pod)
+step5: Once user creates a Ingress k8s manifests, automatically it creates ALB
+
+# Verify if any IAM Service Accounts present in EKS Cluster
+eksctl get iamserviceaccount --cluster=eksdemo1
+Observation:
+1. No k8s Service accounts as of now. 
+
+# Configure kubeconfig for kubectl
+eksctl get cluster # TO GET CLUSTER NAME
+aws eks --region <region-code> update-kubeconfig --name <cluster_name>
+aws eks --region us-east-1 update-kubeconfig --name eksdemo1
+
+ALB Ingress :
+Introduction to Ingress Basics:    # 92
+  Ingress Annotations (Load Balancer Settings)
+  Ingress Classs Name (Which Ingress Controller to use)
+  Ingress Spec (Routing rules,Default backend)
+  Ingress creates ALB, Listners and TG  
+  
+k8s deployment and service :  # 93 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1-nginx-deployment
+  labels:
+    app: app1-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app1-nginx
+  template:
+    metadata:
+      labels:
+        app: app1-nginx
+    spec:
+      containers:
+        - name: app1-nginx
+          image: stacksimplify/kube-nginxapp1:1.0.0
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app1-nginx-nodeport-service
+  labels:
+    app: app1-nginx
+  annotations:
+#Important Note:  Need to add health check path annotations in service level if we are planning to use multiple targets in a load balancer    
+#    alb.ingress.kubernetes.io/healthcheck-path: /app1/index.html
+spec:
+  type: NodePort
+  selector:
+    app: app1-nginx
+  ports:
+    - port: 80
+      targetPort: 80  
+      
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: my-aws-ingress-class
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+spec:
+  controller: ingress.k8s.aws/alb
+
+## Additional Note
+# 1. You can mark a particular IngressClass as the default for your cluster. 
+# 2. Setting the ingressclass.kubernetes.io/is-default-class annotation to true on an IngressClass resource will ensure that new Ingresses without an spec.ingressClassName field specified will be assigned this default IngressClass.  
+# 3. Reference: https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.3/guide/ingress/ingress_class/
+
+Review Ingress kube-manifest with Default Backend Option:  # 94
+
+# Annotations Reference: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-nginxapp1
+  labels:
+    app: app1-nginx
+  annotations:
+    #kubernetes.io/ingress.class: "alb" (OLD INGRESS CLASS NOTATION - STILL WORKS BUT RECOMMENDED TO USE IngressClass Resource)
+    # Load balancer Name
+    alb.ingress.kubernetes.io/load-balancer-name: app1ingress
+    # Ingress Core Settings
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # Health Check Settings
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP 
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-path: /app1/index.html    
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/success-codes: '200'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+spec:
+  ingressClassName: ic-external-lb # Ingress Class
+  defaultBackend:
+    service:
+      name: app1-nginx-nodeport-service
+      port:
+        number: 80      
+Deploy Ingress Verify : # 95
+
+# Change Directory
+cd 08-02-ALB-Ingress-Basics
+
+# Deploy kube-manifests
+kubectl apply -f 01-kube-manifests-default-backend/
+
+# Verify k8s Deployment and Pods
+kubectl get deploy
+kubectl get pods
+
+# Verify Ingress (Make a note of Address field)
+kubectl get ingress
+Obsevation: 
+1. Verify the ADDRESS value, we should see something like "app1ingress-1334515506.us-east-1.elb.amazonaws.com"
+
+# Describe Ingress Controller
+kubectl describe ingress ingress-nginxapp1
+Observation:
+1. Review Default Backend and Rules
+
+# List Services
+kubectl get svc
+
+# Verify Application Load Balancer using 
+Goto AWS Mgmt Console -> Services -> EC2 -> Load Balancers
+1. Verify Listeners and Rules inside a listener
+2. Verify Target Groups
+
+# Access App using Browser
+kubectl get ingress
+http://<ALB-DNS-URL>
+http://<ALB-DNS-URL>/app1/index.html
+or
+http://<INGRESS-ADDRESS-FIELD>
+http://<INGRESS-ADDRESS-FIELD>/app1/index.html
+
+# Sample from my environment (for reference only)
+http://app1ingress-154912460.us-east-1.elb.amazonaws.com
+http://app1ingress-154912460.us-east-1.elb.amazonaws.com/app1/index.html
+
+# Verify AWS Load Balancer Controller logs
+kubectl get po -n kube-system 
+## POD1 Logs: 
+kubectl -n kube-system logs -f <POD1-NAME>
+kubectl -n kube-system logs -f aws-load-balancer-controller-65b4f64d6c-h2vh4
+##POD2 Logs: 
+kubectl -n kube-system logs -f <POD2-NAME>
+kubectl -n kube-system logs -f aws-load-balancer-controller-65b4f64d6c-t7qqb
+        

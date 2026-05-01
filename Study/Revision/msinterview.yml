@@ -1,0 +1,387 @@
+Monolith:  all components/modules in one single main components
+SOA: Service Oriented Architecture
+service: task that achieves a functionality
+SOAP: Protocol (follows data standards.,security standards),XML (envelop(header,data standard) +body(payload and response))
+SOAP-> Restful Service (REST)
+REST->: Arcitecture Style of web service which follow http methods
+
+Pros of Microservice:
+ Scaling + Cherry pick
+ Agility-1 Development fast
+ Agility-2 Build fast
+ Agility-3 Testing faster
+ Agility-4 CI/CD
+ Agility-5 Release Faster
+ Reseliency
+ Distributed Nature (Service Load Distribute)
+ Distributed Database Load
+ Technolgy Hetrogenety
+ Database Hetrogenity
+ Security through Segregation-reduce surface area of attack
+
+Cons of Microservice:
+  Latency between ms
+  Distributed Data Access (Aggregation/TxManagement)
+  Complixity in Managing Nodes (servers +DB)
+  Cost(Infra+ Developers/DBA)
+
+Actuator: Is production ready feature, get from spring boot (metrics collection and get inside your application)
+
+Building Blocks of Microservices:
+  Single Responsibility Principles (High Cohesion)
+  Domain Driven Design- Bounded Context
+  Communication Synchronous/Asynchronous
+Caching Strategy:
+   In-Memory (JVM Heap Memory)- In particular service memory: HashMap
+   Distributed Cache (access by multiple services): Redis, Ignite
+      read-through cache (ttl):
+        service read the data from cache.(stale data possible)
+        If data not available in cache, it will read from table and update the cache
+      write-through cache:
+        service first write to cache, then write to table (two calls)
+Security-- How to secure microservice (authentication, authorization) 
+Scale and Make Microserice More Resilence - follow the x-axis model
+
+Microservice Testing:
+  Deployment: Execution through containers
+  Logging and Monitor: health check , resource consumed (cpu,memory usage)
+
+Design Of Microservices:
+ Follow 12 factor principle:
+  Should Implements Design patterns whereever applicable
+  Follow polygot architecture
+  Designing Microservices with proper contracts, interfaces and implementation
+Follow statndards for effective communication (Synchronous/Asynchronous), Scalability, Resilency
+     Service Discovery
+     Service Load Balancing
+     Circuit Breaker
+     Caching
+     Centralized Confoguration
+     Health Checking and Monitoring of Microservices
+     Gateway for Microservices
+     Centrlized Looging
+     Security
+     Testing
+     Deployment- Docker/ Kubernetes
+Advantages:
+  Independent Module
+  Each module running in its own server
+  Horizontal Scaling (HA)
+  Resilence - Circuit Breaker
+  Cost Effective
+
+Design Patterns:   
+  Aggregator Pattern (custom build)/Gateway Aggregator(3rd Party) - seprate ms
+  zuul, Amazon API Gateway, spring cloud gateway
+  Stragler Pattern (Legacy to Microservices)- Microservice - Incremental phases of migration
+  Identify Bounded Context
+       Customer
+       KYC
+       Risk Analysis
+       Report
+       Security
+Proxy Pattern:
+  CQRS (Command Query Responsibility Segrigation)
+  Event Sourcing (Material View) 
+
+SAGA: Distributed Transaction
+Local Transaction:
+     In Single DB (Atomicity-either all or none)- Transaction (executing group of Database operations as a one single logical operation) ACID
+Distributed Transaction:
+  2-phase commit
+         1) Prepare Phase: Transaction mgr will ask the participant nodes whether they are ready to commit their individual local transactions
+         2) Commit Phase: If all the participating nodes reply positively then transaction manager will tell the nodes that commit your transactions
+              Limitation: SPF (Transaction Manager)
+                          Transaction Cordinator has to wait for confirmation from all the nodes     
+SAGA: Distributed transaction for microservices using different DB
+      Choreography
+      Orchestratort
+      Choreography:
+          Every service participate in its own local transaction.
+          If any service transaction fails, responses back to service received the event,so that those services will generate a compensatory transaction that roll back
+       Orchestrator:
+         There will be an orchestrator that manages entire transaction among the services.
+         Orchestrator call services sequentially, if it receives success response from service, it call another service. If one of the service fail then orchestrator will rollback all previous service transactions.
+         Camunda/Apache Camel (mini ESB)
+
+
+Design and Implementation of Microservices?:
+  The design of microservices basically follows 12 factor principles:
+  The implementation of microservice will be developed using spring boot framework:
+  
+Microservices 12 factor principles:
+  Single Code base per microservices for all environments (dev,test,prod)-Git
+  All application should bundle their dependencies along with application bundle - Maven
+  Externalize configuration using Configuration Server - Springboot (GitHub)
+  All backing services should be accessible through an addressable URL
+  Strong Isolation between build, release and run ,e.g. DevOps, CI/CD
+  The application should be stateless for high fault tolerance (JWT-session data at client side)
+  A service able to tolerate fault (Replication)
+  Expose service using port bindings
+  Services should be scale out with concurrency
+  Building applications with minimal startup and shutdown times
+  Keeping all environment Identical as Identical as possible possible
+  Centarlized logging for the microservices (splunk, ELK,EFL(FluentBit))
+    LogStash- parser, agent
+    ElasticSearch- Storage
+    Kibana- Visualization
+  Admin tasks to be bundled with admin code and be packaged with application code
+   Master data, User Data
+Some Tools:
+  eureka server- registry
+  zipkin- tracing and performance metrics
+  ELK- centralized logging
+  micrometer- monitor the system metrics of micrservices (cpu,usage, memory, usage etc)
+  actuator- health of service
+
+Spring Framework:
+   Inversion of control:
+     Factory Design Pattern: take care responsibility of object creation
+      Application don't take responsibility of object creation, container creates object at run time and give to application.
+      Objects are created by container with configuration define and give to the application
+   dependency injection:
+      Dependent Objects Injected automatically
+      Spring Core (IOC/DI)- Business Logic
+
+What is springboot:
+UC: Develop a webservice/webapp/microserices using spring mvc/spring Rest and JPA  .
+    Decide which versions of spring mvc, jpa, hibernate to use.
+    Which version of jms(activemq)/amqp(rabbitmq) , if application uses messaging systems
+    Spring security compatible versions .
+    we needs to define the configurations (beans/objects) to be created, define the wiring (dependeny   injection),application context (spring container creates objects-ioc)
+    setup hibernate in data layer, creates beans/objects to create hibernate session factory (like connection factory   which gives the database conncetion objects 
+    setup logging frame work
+    setup caching
+    setup monitoring and health checkup
+    decide the application server to deploy the application/webservice/microservice
+    BUSINESS LOGIC to accomplish all the business requirements.
+
+If you go with spring boot framework efforts reduced by 25%:
+  Springboot is built on spring only, and spring is build on java.
+  Springboot is not alternative to spring mvc/spring rest/spring security/spring data
+  Springboot uses underneath spring modules and make developers tasks easier and faster in settingup framework.
+  In a summary , spring boot makes easy to create stand alone, production grade spring based applications that we can just run
+  @Configuration
+  @ComponentScan
+  We are telling to spring container in the @Configuration class to create the objects of the classes that are annotated with @Componenet with the help of @ComponentScan
+  @Autowired - for dependency Injection where application contexts containes spring beans through ioc
+  
+Restful Webservice:
+restful api:
+api: piece of code that is exposed where the other piece of code can connect
+REST-it works on the top of HTTP protocol
+     Mainly client-server based communication
+     Client calls the REST API that hosted on the server and server sends the response back
+     Key concepts:
+        Resources and url's
+           Resource: The Object or the entity
+           URL: path location of the resource
+        Http methods
+Implement the api , design the api
+Contract:
+   resource: customer
+   url: path of the api where the other systems can connect
+   GET
+Request:
+  host: where is the host
+  resource
+  GET: retrieve read
+  http://api.mycrm.com/customers
+  request-response between client and server will be in json format
+
+  GET: http method where client reads data from rest api
+  POST: http method where client inserts/creates/sends data to rest api
+  PUT: http method where client updates data to rest api
+  DELETE: http method where client deletes data through rest api
+
+  @Controller- endpoint
+  @Service- business logic
+  @Repository - DAO
+
+ 
+Difference between Controller and RestController?:
+  @Controller- response map with viewResolver (generate a server side view like jsp)customer.jsp
+  @RESTController- dispatcher servlet will not render the response, return the same response to the client
+  @Controller + @ResponseBody = @RestController
+
+Springboot main features:
+  Auto Configuration
+  Starter Packs with version managementg
+  tomcat server (embedded)
+  provides quicker development, comes with more than 40 differenet starter modules, these starter modules provides   integration libraries to many framework such as a database connections, webservices, logging, testing librarires  (Mockito,Hamcrest), Logging , Template rendering. eg. for web and mvc related pack is spring-boot-starter-web,   for data and jpa, the starter related pack is spring-boot-starter-data.
+  When you build a project, when i need to build a spring boot with mvc,security,jdbc then we just add
+    spring boot parent module-2.7.0
+    spring-boot-starter-web
+    spring-boot-starter-jdbc
+    spring-boot-starter-security
+
+  @EnableAutoConfiguration:
+    wil create the bean automatically if it sees the lobrarires in the class path, for example if we include spring-boot-starter-web in the pom.xml,automatically 
+    serverlet dispatcher,handler mapping,default view resolver are automatically created.  
+    will looks for librarires in the class path and creates beans automatically
+    This will auto configure the required components if their dependencies are on the class path, example: if we  have spring-boot-starter-web as a dependency in pom.xml(that means it is in classpath) then web mvc is            automatically configured (dispatcher servlet registration,handler mappings,default view resolver,json to java       and java to json conversions are automatically configured.   
+
+Concepts:
+  Service Registry and Discovery- Netflix Eureka
+  Client Side Load Balancing- Netflix Ribbon/Spring Cloud LoadBalancer
+  Resiliency Implementation Using Circuit Breaker- Hystrix/Resilence4j
+  Monitoring Using Actuator and Micrometer - Prometheous/Grafana
+  API tracing using spring cloud sleuth and Zipkin
+  Centralized Config Using Spring Cloud Config
+  Centralized logging using ELK
+  Security Using OAuth and JWT
+  API Gateway- Zuul/Spring Cloud Gateway
+
+
+Messaging: (We can build ms without REST service)
+one-to-one (point-to-point): Queue (ActiveMQ/RabbitMQ Erlang)
+one-to-many (publisher-subscriber): Topic (Kafka Zookeeper/ActiveMQ/RabbitMQ)
+Kafka: High Throughput,Low Latency,Scalable,by design distributedy,Offset, rese
+Once-message consumed,ack'd the same, can broker resend the message, in case of kafka can request for resend based on offset
+
+
+DDD (Domain Driven Design): (Divide and Conqure)
+(Technical Team and Business Team)
+  1)Domain/ Sub Domain
+  2)Context/Business Context
+  3)Model
+  4)Ubiquitous Language
+
+Granualarity of ms:
+  1)DDD
+  2)Thumb Rule : Every request should not span across (3-5) calls in chain (Latency)
+  3)Bench Mark: Time my request takes on average
+  
+Kafka Components:
+  Broker
+  Topic
+  Record (message)
+  Producer
+  Consumer
+  Consumer Group
+  Partition (Scalable)
+  Replication (HA)
+  OffSet
+  Zookeeper- Manage Kafka Cluster
+  
+  
+Migration Strategy:
+Big Bang Approach (Not recommended in case of migration)
+Strangler Vine Approach (Hybrid): (Incremental and Iterative approach): Spring Cloud Gateway ( URL hidding): eureka-discovery routing->MSA,hard-coded routing->Monolith
+              glue-code on both side: (Only logic of interaction REST/Messaging(AMQP/Kafka))
+step1: migrate monolith database to microservice (one-time activity)eo e.g. userdb
+step2: once data migration is over no write on useddb in monolith side, user module disabled
+step3: Synchronize from microservice to monolith (CDC change data capture , change data flow         
+
+ 
+How database do the data synchronization between its different nodes?:
+
+MongoDB Eventual Consistency (Change Data Capture)
+  Leader Nodes- write/read
+  Follower Nodes- read
+step1: maintain a journel (OpsLogs), leader node write on OpsLogs-short TTL
+step2: CDC component reads the log from OpsLog, and converts those changes into the Event ChangeStream Event, and publish to the follower node as a ChangeStream Event.
+step3: This ChangeStreamEvent is what we are going to make use of.
+step4: In our use case we are going to reuse these ChangeStreamEvents
+
+our solution: same as other follower node receive the ChangeStreamEvent
+
+
+Security (In multiple layer):
+  Data In transit
+  Data In Rest
+opaque token (dump token randon unique string)- Authenticate by auth-server (Access token)
+JWT token (Header,Payload,Signature)
+
+
+oAuth2 Player:
+  Resource Owner (Client)
+  Client : (Application/ms)
+  Authorization Server (Issues Tokens)
+  Resource Server: (data kept here/user or ms needed)
+  
+  
+Testing:
+
+Different testing strategy, for diiferent layers of ms
+1)Unit (Sociable/Solitary):  Functionality
+
+2.1)Integration Testing (Database):
+
+  2.1.1) Dedicated DB: for Integration testing-network call/production like setup
+         used by more than one team
+         managed by different team (data corruption (Impacts agility))
+
+  2.1.2)In-memory DB:
+        Couldn't setup production like load
+        Data Type Mismatch
+  2.1.3)Containerization approach (best):
+
+ 
+2.2)Integration Testing (external service): network call
+    Only Integration boundaries
+    stub generated by serviece owner (WireMock), as a part of service owner who wants to test (consumer).
+
+3)Component Testing:  (Feature testing not the individual ms)
+                  Microservice as a whole component
+
+TDD: Test Driven Development
+BDD: Behavior Driven Development
+DDD: Domain Driven Development
+CUCUMBER: Ubiquitous Laguage Gherkin (feature file)/Integration testing
+  file: calculator.feature
+  Feature: It tests Calculator's add method # heading
+  Scenerio: I want to add two positive number                                                  # key workd to add use case
+  Given I have a special calculator                                                          # pre-requisite
+  When I add two positive numbers 2 and 3                                                                     #Event
+  Then The result should be 5/9                                                                            #Result
+
+Calculatorsteps.java
+  @Given ("I have a special calculator")                                                             
+  public void initiate(){
+  this.calculator=new Calculator();
+}
+@When("I add two positive numbers \\d and \\d")                                                                  
+  public void getNumbers(int a, int b){
+  this.num1=a;
+  this.num2=b;
+ }
+
+@Then("The result should be 5/9")
+  public void verify(int result){
+  this.expectedResult=result
+  }
+
+ 
+4)Contract Testing:  (Testing only contract not the testing functinality) contract between two ms
+   Consumer Driven Contract Testing
+  stub (contract generated by the service, tested by both parties against same expectation)
+  generated by the service developer (service to be tested), not by the consumer
+
+ 
+5)end-to-end testing:
+  Test Every thing
+  Slower
+  Much Execution Time
+
+Distributed Architecture We need every thing in one place.
+
+ 
+
+Testing Tools:
+
+Fortify: (Security vulnerability in your code)
+Black Duck: (Security vulnerability in third party code, not in your code)
+Code Coverage (Jacoco,)
+Mutation test(Testing the test)-PIT
+Sonar lint: (IDE Plugin -code smells, coding standards)
+SonarQube: (Line Coverage, Conditional Coverage, Code Smells, Mutation test, Security test)
+Trufflehog-(check password in plain text)
+Chaos Engineering- (Reseliency Test)- Netflix Chaos Monkey/Gorilla # testing about failure
+  
+  
+
+  
+
+ 
+  
