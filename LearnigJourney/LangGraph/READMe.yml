@@ -1,0 +1,29 @@
+1) uv init --package advanced_agent
+2) requirements.txt
+3) .env
+4) agents.toml
+5) Dockerfile
+6) docker-compose.yml
+
+
+
+
+
+📁 Package Structure:    
+
+advanced_agent/
+├── src/advanced_agent/
+│   ├── main.py           # Enterprise CLI entrypoint
+│   ├── executor.py       # Streaming executor with HITL
+│   ├── agent.py          # Simple agent wrapper
+│   ├── graph.py          # LangGraph builder
+│   ├── nodes.py          # Enterprise nodes (no recursion)
+│   ├── multi_agent.py     # Original multi-agent (complex)
+│   └── config/
+│       ├── llm.py         # LLM configuration
+│       ├── tools.py       # Tool definitions
+│       └── graphvisualizer.py # Graph visualization
+├── agents.toml           # Agent metadata & discovery
+├── pyproject.toml         # Python packaging
+└── Dockerfile            # Containerization
+

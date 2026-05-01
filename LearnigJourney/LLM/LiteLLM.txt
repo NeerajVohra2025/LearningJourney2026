@@ -1,0 +1,9 @@
+Python SDK, Proxy Server (LLM Gateway) to call 100+ LLM APIs in OpenAI format - [Bedrock, Azure, OpenAI, VertexAI, Cohere, Anthropic, Sagemaker, HuggingFace, Replicate, Groq]
+
+LiteLLM manages:
+Translate inputs to provider's completion, embedding, and image_generation endpoints
+Consistent output, text responses will always be available at ['choices'][0]['message']['content']
+Retry/fallback logic across multiple deployments (e.g. Azure/OpenAI) - Router
+Set Budgets & Rate limits per project, api key, model LiteLLM Proxy Server (LLM Gateway)
+
+uv add litellm

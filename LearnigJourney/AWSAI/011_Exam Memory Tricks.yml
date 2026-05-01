@@ -1,0 +1,1115 @@
+Inference is what happens after a machine learning model has been trained. It’s the process of using the trained model to make predictions  or decisions on new, unseen data:
+    Think of it like this:
+    Training = studying for an exam (learning from past examples).
+    Inference = taking the exam (answering new questions using what you learned).
+    
+For detecting suspicious IP addresses entering a network—anomalous or potentially malicious behavior—the most appropriate machine learning technique is typically:
+    Unsupervised Anomaly Detection    
+    
+When implementing Amazon Bedrock, your first task is choosing the right foundation model for your generative AI use case.:
+    Bedrock Model Evaluation helps you:
+        Compare multiple foundation models available in Bedrock
+        Evaluate them using quality, latency, and cost metrics
+        Test models against your prompts and datasets
+        Make an informed, data-driven model selection decision    
+        
+Overfitting = model learns noise/memorizes training data → poor performance on unseen data:
+Underfitting = model is too simple → cannot learn patterns → poor performance everywhere   :
+
+
+Prompt tuning adjusts only a small number of prompt-related parameters, not the entire model:
+    It allows the model to consistently follow an organization’s tone, style, and guidelines
+    It is more efficient and cost-effective than full fine-tuning
+    It avoids retraining the entire model, exactly as the question requires    
+
+Steps to Use a Custom Model with Amazon Bedrock:
+    Prepare your model - Ensure your model is in a supported format and meets Bedrock's requirements
+    Upload to S3 - Store your model artifacts in an Amazon S3 bucket
+    Configure IAM permissions - Set up proper permissions for Bedrock to access your S3 bucket
+    Register the model - Use the Bedrock console or API to register your custom model
+    Deploy and test - Deploy your model and validate it works as expected    
+    
+AWS SageMaker JumpStart is specifically designed to help teams quickly deploy machine learning models using pre-built solutions, while still allowing customization for your own datasets and requirements.:
+    Key benefits:
+    Provides pre-trained models (including image classification)
+    Offers ready-to-use solution templates
+    Allows fine-tuning on your own data
+    Significantly reduces development time, ideal for tight deadlines 
+    
+AWS SageMaker Studio → Integrated IDE for ML development, not pre-built solutions:
+
+AWS SageMaker Data Wrangler → Used for data preparation, not model deployment:
+
+AWS SageMaker Ground Truth → Used for data labeling, not model building :
+
+
+    
+    The dataset is in CSV format with clearly defined fields-> Structured Data
+    K-means is an unsupervised clustering algorithm. #K-means is an unsupervised clustering algorithm.
+    “labeled dataset”, “domain-specific improvement”
+    
+    Prompt engineering-> Control tone & relevance with least effort # Least Efforts
+    Instruction prompting-> Clear task + constraints with least effort
+    Few-shot prompting->  Examples in the prompt
+    Chain-of-thought prompting-> Multi-step reasoning
+    Jailbreak-> Bypass LLM safety controls to generate harmful content
+    Defense against prompt injection → Adversarial prompting
+    Which prompting attack exposes system instructions? #Extracting prompt template
+    
+    RAG->  Need up-to-date answers without retraining  # Personalized GenAI with changing data
+    Vector database → Embeddings + nearest neighbor (k-NN) search
+    
+    Fine-tuning = Labeled data + better FM performance, weights change
+    Fine-tuning an FM → Labeled prompt–completion pairs
+    Domain fine-tuning-> Prompting fails + domain-specific language 
+    
+    
+    Continued pre-training  =   Unlabeled data + domain specialization
+    Unlabeled data + grouping customers → Unsupervised learning
+    
+    Real-time inference-> Live + interactive + low latency 
+    Asynchronous inference =Long processing time + large images
+    Big & slow = Async | Spiky or low-ops real-time = Serverless
+    
+    
+    Overfitting-> memorizes training data, fails on new data
+    Overfitting = memorized training data, poor generalization.    
+    Good training accuracy + poor test accuracy = Overfitting → Fix with more diverse data # Regularization
+    Good training performance + poor production performance → Overfitting → More training data
+    Model accuracy → Compare predictions to labeled benchmark data
+    
+    Lower temperature=Less randomness in LLM output
+    
+    Context = background + situation for the model
+    Conversational AI=Customer conversations + backend integration   # Lex Chatbot
+    
+    Data must stay in the same country= Data residency (data sovereignty)
+    
+    
+   
+    
+        
+    AWS secures the cloud — customers secure their data and access in the cloud
+    People = Fairness | Why = Explainability | Stress = Robustness | Process = Transparency
+    Real person’s voice or face + AI = Consent & IP rights concern
+    
+    Data Collection-> Data Preparation->Testing-> Inference (unseen data)--> Evaluation --> Deployment->Monitoring
+    Train → Tune → Test = Generalization, not memorization
+    Data preparation-> Clean and format data before training
+    Model evaluation-> Accuracy + robustness + toxicity checks in Bedrock
+    Automatic evaluation-> Compare LLM outputs with least overhead
+    Exploratory Data Analysis (EDA)->  Correlation matrices + statistics + visualizations
+    Sensitive data leaked into training → Remove data + retrain model
+    Unbiased ML = Detect imbalance + adjust training
+    
+    
+    Responsible AI = Bias detection + Transparency
+    Bias caused by skewed training data → Data augmentation / rebalancing
+    Bias & fairness evaluation with least effort → Benchmark datasets
+    
+    
+    
+    Monitoring stage-> Production behavior over time
+    Human-in-the-loop->  Humans reviewing, correcting, and approving AI
+    SageMaker Clarify -> Bias & explainability
+    SageMaker Model Cards -> Model risk + audit + leadership review
+    SageMaker Serverless Inference->  Production deployment with least ops
+    SageMaker JumpStart->  Need ML fast with minimal setup # can access Foundation Models
+    SageMaker Studio-> IDE
+    Amazon SageMaker RL-> Interactive + virtual + reinforcement learning
+    SageMaker Serverless Inference-> Real-time ML inference + no infrastructure management
+    SageMaker Canvas-> No coding + no ML knowledge + forecasting
+    SageMaker + no internet + compliance → Network isolation
+    
+    Amazon Bedrock=  Document summarization with LLMs on AWS
+    Amazon Bedrock->Automating recommendations with foundation models
+    Generative AI excels in NLP because it understands context and generates human-like language
+    Conversational search for GenAI-> Vector DB → OpenSearch or Aurora (pgvector)
+    Embeddings improve LLM accuracy by enabling semantic understanding and retrieval of the most relevant context.
+    Guardrails->  Safety, toxicity, and policy enforcement in Bedrock  Prevent sensitive data in Bedrock outputs
+    Bedrock cost optimization + low traffic → Reduce prompt tokens
+    
+    
+    
+    
+    Linear Regression-> Maximum interpretability -> Decision tree
+    ROUGE ->Text summarization quality ,Summarization accuracy 
+    Search by meaning = Embeddings + Vector search
+    Reduce agent effort or steps → Average call duration
+    BERT (Masked Language Model)-> Fill missing words using context 
+    
+    
+    
+    CNN-> Medical images + diagnosis prediction
+    Object detection ->Identify and categorize objects in images
+    
+    Time series forecasting-> Predict future values over time
+    Time series data->Sales over time  DeepAR + forecasting
+       
+    CloudWatch-> AWS metrics + alerts + dashboards 
+    Amazon Polly-> text->Audio + Video # Textbooks → natural audiobooks
+    Amazon Transcribe-> Audio + Video -> Text
+    Video Live captions = Transcribe | Many languages = Translate
+    AWS Artifact->  AWS compliance & audit documents # Compliance reports + auditors/ISVs + notifications
+    AWS Config->  Checking AWS resource compliance with regulations
+    Amazon Q Developer + CodeWhisperer-> GenAI for developers on AWS
+    
+    
+    Large documents in one prompt = Check the model’s context window
+    Need only the first token? → maxTokens = 1
+    Suspicious behavior or threats → Anomaly detection
+    More customization and control → More security responsibility
+    Increase the EPOCs allows the model to continue learning from data potentially improve its accuracy.
+    Plagiarism-> Copying AI-generated content as original work 
+    Team-level data isolation with Bedrock → One service role per team with scoped S3 access
+    Encryption at rest + Customer-managed keys= AWS KMS (always)
+    Which metric tracks chatbot efficiency? AHT
+    
+    
+🧠 AWS AI Practitioner – PROFESSIONAL EXAM TRICKS:
+    1 Start With the INTENT, Not the TECHNOLOGY
+    2️ RAG vs Fine-Tuning vs Prompting (EXAM-CRITICAL):
+        Professional Rule:
+            | Requirement            | Correct Choice         | Why              |
+            | ---------------------- | ---------------------- | ---------------- |
+            | Data changes often     | **RAG**                | No retraining    |
+            | Internal documents     | **RAG**                | Grounded answers |
+            | Tone / style / persona | **Prompt engineering** | Runtime control  |
+            | Domain behavior change | **Fine-tuning**        | Learned behavior |
+            | Bias fix               | **Data + fine-tune**   | Root cause       |
+        
+    3️ “Least Effort” Means NO ML PIPELINE:
+    4️ Overfitting / Underfitting (AWS Tests This Subtly):
+            | Symptom              | Root Cause   | Fix                         |
+            | -------------------- | ------------ | --------------------------- |
+            | Train good, test bad | Overfitting  | **Increase regularization** |
+            | Train bad, test bad  | Underfitting | More features / capacity    |
+    5️ Bias, Fairness, Toxicity (AWS Uses Precise Language):    
+            | Term          | Meaning          | Fix                |
+            | ------------- | ---------------- | ------------------ |
+            | Bias          | Unfair outcomes  | Clarify + data     |
+            | Toxicity      | Harmful language | Guardrails         |
+            | Hallucination | Wrong facts      | RAG                |
+            | Plagiarism    | Copying content  | Policy / detection |  
+
+    6️ Explainability = MODEL CHOICE (Not Tools):
+            | Model               | Explainable? |
+            | ------------------- | ------------ |
+            | Logistic regression | ✅ High       |
+            | Decision tree       | ✅ Medium     |
+            | Neural networks     | ❌ Low        |
+            | Transformers        | ❌ Very low   |
+            
+    7️ AWS Service Mapping (Professional Recall):
+        Images / video → Rekognition
+        Text → Comprehend
+        Speech → Transcribe
+        Forecasting → Forecast / DeepAR
+        Recommendations → Personalize
+        Bias → Clarify
+        No-code ML → Canvas
+        GenAI → Bedrock    
+
+    8️ Security & Compliance Are ARCHITECTURAL:
+        | Requirement             | Correct Tool       |
+        | ----------------------- | ------------------ |
+        | Encrypt model artifacts | AWS KMS            |
+        | Prevent unsafe output   | Bedrock Guardrails |
+        | Detect PII in S3        | Macie              |
+        | Log API calls           | CloudTrail         |
+        | No internet training    | Network isolation  |  
+
+    9️ Cost Questions Are NEVER ABOUT ACCURACY:
+        | Goal             | Metric                |
+        | ---------------- | --------------------- |
+        | Financial impact | Cost per conversation |
+        | Efficiency       | AHT                   |
+        | Volume           | # interactions        |
+
+    10 PROFESSIONAL EXAM DECISION FLOW (MEMORIZE):
+            Is it GenAI?
+             └─ Yes → Bedrock
+                 ├─ Internal docs → RAG
+                 ├─ Style → Prompting
+                 ├─ Safety → Guardrails
+                 └─ Bias → Data + fine-tune
+
+            Is it traditional ML?
+             └─ No ML skills → Canvas
+             └─ Bias → Clarify
+             └─ Forecast → DeepAR
+             └─ Grouping → K-means        
+                
+🔑  Exam Keys:
+        📌 Privacy ≠ Security
+            Privacy = how data is used, not just protected. 
+        📌 Exam cue:
+            Customers complain “no reason given” → Transparency gap  
+        📌 Exam cue:
+            No owner for AI decisions → Accountability failure 
+        📌 Exam mapping
+            Loan approvals differ by location → Fairness issue
+            First action → Run fairness diagnostics
+        📌 Exam mapping
+            Image classifier fails in poor lighting → Robustness risk, not accuracy
+            Action → Robustness stress testing   
+        📌 Exam mapping
+            Customer doesn’t know why rejected” → Transparency gap
+            Fix → Model Cards / Datasheets + Explainability tool  
+        📌 Exam mapping
+            Continuous learning introduced → Re-evaluation trigger   
+        
+        📌 IDE”+Code suggestions-->Amazon CodeWhisperer
+        
+        📌 Dashboards”+“Business insights”->Amazon Q in QuickSight
+        📌 Bedrock guarantees data isolation"
+        📌 Custom training” → SageMaker   
+
+
+  
+         📌 Faster time → managed services
+                Unpredictable traffic → serverless + Pay-per-use
+                Amazon Q = enterprise assistant
+        🔑 Rule #1
+                If generative AI + no customization → Bedrock
+        🔑 Rule #2
+                If private data + chatbot → RAG    
+         🔑 Rule #3
+                If conversation interface → Lex  
+         🔑 Rule #4
+                If imbalanced dataset → F1 / Recall
+         🔑 Rule #5
+                If fast + cheap + scalable → Serverless    
+
+       📌 Redshift ML is for tabular data already in Redshift. It uses AutoML under the hood but exposes via SQL. Not    for CV, GenAI, or real-time.  
+
+       📌  Comprehend has built-in PII detection and redaction for text. Others don’t handle text entities.
+       📌  Glue is for ETL, not generation. SageMaker can run GANs; Bedrock can generate synthetic rows via LLMs (with   caution).
+       📌  Lookout for Metrics is purpose-built for real-time anomaly detection on streaming metrics. Kinesis Analytics preprocesses; Lookout detects.
+       
+       📌 Which metric evaluates LLM guardrail effectiveness?:
+            ✅ Answer: Guardrail violation rate
+       📌 Word Error Rate (WER) is used for:
+            ✅ Answer: Transcribe (speech-to-text accuracy) 
+       📌 Mean Opinion Score (MOS) evaluates:
+            ✅ Answer: Polly (speech naturalness)  
+       📌 To retrain a model automatically on drift, use:
+            ✅ Answer: SageMaker Pipelines + Model Monitor 
+
+       📌  Amazon Comprehend Medical   : A healthcare company wants to extract and analyze medical information from unstructured clinical notes. Which AWS service should they use? 
+       📌  Amazon CodeGuru : AWS service helps you detect security vulnerabilities in your ML code?   
+
+            | Dataset        | Purpose                    |
+            | -------------- | -------------------------- |
+            | **Training**   | Learn weights              |
+            | **Validation** | Tune & prevent overfitting |
+            | **Test**       | Final unbiased evaluation  |
+            
+            
+       📌 Parameters are learned by the model from the data.:
+                They are the internal knobs the model adjusts automatically during training.    
+                    📌 Examples of Parameters:
+                            Linear Regression → weights (w), bias (b)
+                            Neural Network → weights & biases
+                            Decision Tree → split values
+                    Parameters = learned from data:
+          What Are Hyperparameters?:
+            🧠 Simple Definition
+                    Hyperparameters are settings you choose before training starts.
+                    They control how the model learns, not what it learns.
+              📌 Examples of Hyperparameters
+                        Learning rate
+                        Number of epochs
+                        Number of layers
+                        Number of trees (Random Forest)
+                        Max depth (Decision Tree)
+                        Regularization strength    
+                 Hyperparameters = chosen by humans (or tuning tools):           
+            
+            | Aspect                  | Parameters      | Hyperparameters          |
+            | ----------------------- | --------------- | ------------------------ |
+            | Who sets them?          | Model           | Human / tuning algorithm |
+            | Learned from data?      | ✅ Yes           | ❌ No                     |
+            | When defined?           | During training | Before training          |
+            | Change during training? | ✅ Yes           | ❌ No                     |
+            | Purpose                 | Fit the data    | Control learning process |
+
+                   
+                
+############################################################################################      
+        🔁 AI vs ML vs DL vs GenAI:
+    
+            | Type  | Key Idea                           |
+            | ----- | ---------------------------------- |
+            | AI    | Rule-based logic                   |
+            | ML    | Learn from data                    |
+            | DL    | Learn features via neural networks |
+            | GenAI | Generate new content    
+            
+        🔁   Training & Learning Triggers:   
+            | If you see…                   | Choose…                 |
+            | ----------------------------- | ----------------------- |
+            | Update weights                | Backward propagation    |
+            | Prediction only               | Forward propagation     |
+            | Overshoot minimum             | Too large learning rate |
+            | Very slow learning            | Vanishing gradient      |
+            | High train, low test accuracy | Overfitting             |    
+            
+        ️ 🔁 Common Training Problems:   
+            | Symptom                       | Meaning                 |
+            | ----------------------------- | ----------------------- |
+            | Overshoots minimum            | Learning rate too large |
+            | Very slow learning            | Vanishing gradient      |
+            | High train, low test accuracy | Overfitting             |
+            | Poor train & test accuracy    | Underfitting            |  
+
+        🎯 Exam Shortcut:
+            | What You See in Question | Think                   |
+            | ------------------------ | ----------------------- |
+            | Guess / prediction       | Forward propagation     |
+            | Update weights           | Backward propagation    |
+            | Direction of change      | Gradient                |
+            | Overshoot / unstable     | Learning rate too large |
+            | Slow learning            | Learning rate too small |
+            | No learning              | Learning rate = 0       
+
+       🎯 Bias–Variance Tradeoff (Summary Table):   
+
+            | Model Type              | Bias | Variance | Result             |
+            | ----------------------- | ---- | -------- | ------------------ |
+            | Very simple model       | High | Low      | Underfitting       |
+            | Very complex model      | Low  | High     | Overfitting        |
+            | **Well-balanced model** | Low  | Low      | ✅ Best performance |
+            
+GAN (Generative Adversarial Network): Primarily used for generating synthetic data (e.g., images), not classification. GANs require large datasets and are unstable on small data. Not suitable.
+Transformer: Excels in unstructured data (e.g., text, images) but requires massive datasets and computational resources. Transformers overfit easily on small structured/tabular data. Not suitable.
+CNN (Convolutional Neural Network): Designed for grid-like data (e.g., images, time-series). CNNs need large datasets to train effectively and perform poorly on non-spatial structured/tabular data. Not suitable.
+SVM (Support Vector Machine): A classic shallow machine learning model ideal for small structured datasets. It handles high-dimensional feature spaces well, avoids overfitting with limited data, and works efficiently on tabular data (e.g., CSV files). Best fit.
+
+Clustering: Unsupervised technique that groups data without predefined labels. Since it doesn't use class labels, class imbalance does not apply.
+Regression: Predicts continuous numerical values (e.g., house prices). There are no discrete classes, so class imbalance is irrelevant.
+Dimensionality reduction: Techniques like PCA or t-SNE reduce feature dimensions without using class labels. Class imbalance does not directly affect these methods.
+Comprehend: An NLP service for text analysis (e.g., sentiment, entities). Does not process images.
+Rekognition: An AWS computer vision service specifically designed for image and video analysis, including label detection (e.g., identifying objects, scenes, activities like "car," "beach," or "person").
+Transcribe: An automatic speech recognition (ASR) service for converting speech to text. No image capabilities.
+Bedrock: A service providing access to foundation models (e.g., LLMs like Claude, Titan) for text generation, chatbots, or limited image generation (via models like Stable Diffusion). Not designed for label detection; lacks built-in image analysis features.
+SageMaker: A machine learning development platform for building, training, and deploying custom models. While it supports vision tasks via frameworks (e.g., TensorFlow, PyTorch), it does not provide out-of-the-box pre-trained vision APIs. Users must build/train models themselves or use JumpStart (which offers some pre-trained models but isn't API-focused).
+Rekognition: A dedicated computer vision service offering pre-trained APIs for image/video analysis. It requires zero ML expertise and provides immediate access to vision capabilities like:
+Object/scene detection (e.g., "car," "beach")
+Facial analysis (emotion, age range)
+Text detection in images
+Content moderation
+No training or infrastructure management need
+Bedrock: Provides access to foundation models (e.g., Anthropic Claude, Stable Diffusion) for generative AI tasks. While it includes some multimodal models (e.g., for image generation/captioning), it lacks dedicated pre-trained vision APIs for core tasks like object detection or facial recognition. It focuses on LLMs/generative workflows, not turnkey vision APIs.
+Forecast: A time-series forecasting service for predicting numerical trends (e.g., sales, demand). No vision capabilities whatsoever.
+
+Real-time inference: Requires immediate results (low-latency), but processing a 100-MB document typically takes seconds/minutes. This forces users to wait, violating the requirement. ❌
+Streaming: Processes data in chunks as it arrives (e.g., video/audio streams). However, a static 100-MB document is already fully available, making streaming unnecessary. It also doesn’t inherently eliminate wait times for large files. ❌
+Asynchronous inference: Decouples request submission from result retrieval. Users submit the document, receive an immediate acknowledgment (e.g., a job ID), and fetch results later via callbacks/webhooks. Perfectly matches the requirement: no waiting, scalable for large files, and standard in cloud services (e.g., AWS SageMaker batch transform, Azure ML async endpoints). ✅
+
+Edge inference: Runs models on edge devices (e.g., phones, IoT sensors) to reduce latency. However, 100-MB documents overwhelm edge hardware (limited memory/bandwidth), and processing still blocks the user. Edge is for latency-sensitive tasks, not large-file throughput. ❌
+
+GPU training:
+Serverless does not support GPU training. Training requires persistent, long-running GPU instances (e.g., SageMaker training jobs). Inference ≠ training. ❌
+
+A company wants to moderate user-generated content (can be images, videos, and text) for inappropriate material.:
+Audio → Transcribe → Text → Comprehend → Brand Detection:
+
+The company wants to gain insights from diverse data sources and formats:
+
+
+Fine-tuning:
+    Fine-tuning trains the model further
+    Requires labeled, domain-specific data
+    Updates internal parameters (weights)
+    Results in better task/domain accuracy
+    Fine-tuning creates a customized version of the foundation model for the customer:
+        The base FM remains unchanged
+        You get a customized copy of the model 
+        The tuned model is private to your account
+        Used repeatedly without re-providing examples
+        | Technique           | Uses Labeled Data | Changes Weights | Persistent   |
+        | ------------------- | ----------------- | --------------- | ------------ |
+        | Prompt engineering  | ❌ No              | ❌ No            | ❌ No         |
+        | In-context learning | ❌ No              | ❌ No            | ❌ No         |
+        | **Fine-tuning**     | ✅ Yes             | ✅ Yes           | ✅ Yes        |
+        | RAG                 | ❌ No              | ❌ No            | ✅ (via data) |  
+    Fine-tuning is the method that updates (modifies) the internal weights of a large language model (LLM) using additional training data—typically labeled, task- or domain-specific data.
+    This leads to persistent changes in the model’s behavior and improved performance for the targeted use case. 
+    Explanation:
+        Fine-tuning involves continuing the training process of a pre-trained LLM on a task-specific dataset.
+        During this process, the model’s internal parameters (weights) are updated via backpropagation and optimization (e.g., using gradient descent).
+        This allows the model to adapt its knowledge to a specific domain or task (e.g., legal document summarization, medical Q&A).
+        ✅ Result: The model’s weights are permanently modified, leading to improved performance on the target task      
+
+        
+
+What continued pre-training does:
+    Uses unlabeled domain-specific data (e.g., product descriptions, marketing copy)
+    Further trains the FM to better understand the language, style, and terminology of the domain
+    Improves performance without requiring labels
+    Makes the model more specialized while keeping general knowledge
+    This is ideal for advertising, branding, and marketing language adaptation.
+    Continued pre-training is the process of providing unlabeled data to a pre-trained model to expose a model to specific topic areas. Continued pre-training does not increase the consistency of an LLM by providing the model with access to external sources of knowledge.
+    
+What Data Wrangler can do (relevant to this question):
+    Handle missing values (drop, fill, replace)
+    Detect and treat outliers
+    Normalize and transform data
+    Visualize data distributions
+    Prepare datasets for time-series / forecasting models
+    ❌ AWS Glue jobs
+            Require writing custom PySpark or Scala code, which violates the “no custom code” requirement.
+    ❌ Amazon Athena
+            Requires writing SQL queries for transformations and does not provide built-in ML-oriented data cleaning features.
+    ❌ SageMaker Feature Store
+            Used for storing and serving features, not for performing data cleaning or transformations.
+            
+                | Requirement                         | Implication                                             |
+                | ----------------------------------- | ------------------------------------------------------- |
+                | **Near real-time inference**        | User doesn’t need an immediate response in milliseconds |
+                | **High-definition images**          | Large payloads                                          |
+                | **Up to 3 minutes processing time** | ❌ Too long for real-time / synchronous endpoints       |
+                
+                    | Inference Type                    | Why it’s wrong                              |
+                    | --------------------------------- | ------------------------------------------- |
+                    | Real-time (synchronous) inference | Requires low latency (milliseconds–seconds) |
+                    | Batch transform                   | Offline processing, **not near real-time**  |
+                    | Serverless inference              | Still optimized for short execution times   |
+
+Overfitting Remedies:  
+    Regularization (e.g., L1/L2)
+    Cross-validation
+    Feature selection or reduction
+    Increasing training data diversity
+    Early stopping (for neural networks)
+    Simplifying the model architecture   
+    To fix overfitting and improve generalization, the most effective action is to:
+        Add more diverse training examples
+        Ensure the data better represents real-world scenarios
+        Retrain the model so it learns general patterns, not noise
+        Retrain the model with a larger, more diverse, and representative dataset (to reduce overfitting).:
+        ❌ Why other actions are wrong (exam traps)    
+        
+            | Parameter / Action   | Why wrong                          |
+            | -------------------- | ---------------------------------- |
+            | Increase temperature | ❌ Increases randomness             |
+            | Increase max tokens  | ❌ Controls length, not randomness  |
+            | Change top-k only    | ❌ Indirect, temperature is primary |
+            | Fine-tune the model  | ❌ Much higher effort               |
+            | Change training data | ❌ Not inference-time control       |
+
+            | Feature                  | Why it doesn’t fit                         |
+            | ------------------------ | ------------------------------------------ |
+            | Text summarization       | Condenses text, doesn’t generate code      |
+            | Sentiment analysis       | Classifies emotion                         |
+            | Text translation         | Converts between languages, not code       |
+            | Embeddings               | Used for search/similarity, not generation |
+            | Named entity recognition | Extracts entities, no code output          |
+       
+
+A well-structured prompt typically has several parts:     
+            | Prompt Part   | Purpose                                                           |
+            | ------------- | ----------------------------------------------------------------- |
+            | **Context**   | **Sets up the situation, background, and scenario for the model** |
+            | Instruction   | Tells the model what to do                                        |
+            | Input / Data  | Provides the content to act on                                    |
+            | Output format | Specifies how the answer should look                              |    
+
+          ❌ Common exam traps
+            | Option        | Why it’s wrong                        |
+            | ------------- | ------------------------------------- |
+            | Instruction   | Describes the task, not the situation |
+            | Output format | Controls structure of the response    |
+            | Examples      | Demonstrate behavior, not setup       |
+            | Constraints   | Limit the response                    |
+            
+            
+                    Requirement                     | What it implies                  |       
+                | ------------------------------- | -------------------------------- |
+                | Summarize questions and answers | **Text summarization**           |
+                | Car manual content              | Large unstructured text          |
+                | Application for drivers         | On-demand, interactive responses |
+                | AWS managed solution            | No infrastructure management     |
+                
+SageMaker JumpStart:
+    ❌ Offers pre-built models and solutions, but no bias detection or analysis tools.
+    SageMaker Model Monitor:
+    ❌ Monitors for data drift, concept drift, and model performance degradation over time—but not bias across demographic or customer groups.
+    Amazon Bedrock Guardrails:
+    ❌ Focuses on content safety (e.g., blocking harmful outputs in generative AI), not model fairness or accuracy disparities in predictive models.    
+            | Service                   | Why it’s not correct               |
+            | ------------------------- | ---------------------------------- |
+            | Amazon CloudWatch         | Monitoring metrics, not bias       |
+            | Amazon SageMaker Debugger | Training performance, not fairness |
+            | Amazon Comprehend         | Text NLP only                      |
+            | Amazon Bedrock            | Model hosting, not bias analysis   |
+            | Amazon Forecast           | Time-series forecasting            |   
+
+                | Requirement                   | AWS capability                 |
+                | ----------------------------- | ------------------------------ |
+                | **Broadcast sports programs** | Live audio stream              |
+                | **Real-time captioning**      | Speech → text in real time     |
+                | **Many languages**            | Automatic language translation |    
+                
+SageMaker Model Cards help you create standardized, structured documentation for ML models, including:
+    📌 Model purpose and intended use
+    📊 Training data and evaluation metrics
+    ⚠️ Model risks, bias, and limitations
+    🔍 Explainability and monitoring notes
+    🏛️ Governance and compliance information
+    They are ideal for:
+        Audits
+        Risk reviews
+        Executive and regulatory reporting  
+
+    Amazon QuickSight:
+    ❌ Excellent for business dashboards and operational metrics, but not designed for documenting model risk, ethics, or governance policies.
+    SageMaker Model Dashboard:
+    ❌ Focuses on real-time monitoring of deployed models (latency, invocations, errors)—useful for DevOps, not for audit-ready governance documentation.
+    SageMaker Endpoints:
+    ❌ These are inference endpoints for running models—no documentation or audit capabilities.    
+        | Option               | Why it’s wrong                                                   |
+        | -------------------- | ---------------------------------------------------------------- |
+        | Amazon CloudWatch    | Monitoring, not governance documentation                         |
+        | SageMaker Debugger   | Training diagnostics, not audits                                 |
+        | SageMaker Clarify    | Bias/explainability analysis, but **not presentation/reporting** |
+        | Custom documentation | Higher effort, not an AWS governance feature                     |    
+        
+ROUGE (Recall-Oriented Understudy for Gisting Evaluation) is specifically designed for evaluating text summarization systems.:
+    | Metric             | Why it’s not correct                    |
+    | ------------------ | --------------------------------------- |
+    | Accuracy           | Not suitable for free-form text         |
+    | Precision / Recall | For classification, not generation      |
+    | BLEU               | More common for **machine translation** |
+    | Perplexity         | Measures fluency, not summary quality   |
+    | F1 score           | Not used for summarization quality      |     
+Convolutional Neural Networks (CNNs) are specifically designed to:
+    Automatically learn visual patterns (edges, shapes, textures)
+    Understand spatial relationships in images
+    Perform image classification with high accuracy    
+    
+    | Technique           | Why it’s not suitable                |
+    | ------------------- | ------------------------------------ |
+    | Linear regression   | ❌ For numeric prediction, not images |
+    | Logistic regression | ❌ Requires manual feature extraction |
+    | Decision trees      | ❌ Poor at raw image data             |
+    | RNNs                | ❌ Designed for sequences, not images |
+    | Clustering          | ❌ Unsupervised, no prediction target |    
+    
+👉 Prompt engineering is the fastest and lowest-effort way to control tone, relevance, and style without retraining or managing data.:
+
+    | Option                    | Why it’s not least effort          |
+    | ------------------------- | ---------------------------------- |
+    | Fine-tuning               | Requires datasets, training, cost  |
+    | Continued pre-training    | Heavy training with unlabeled data |
+    | RAG                       | Extra retrieval pipeline           |
+    | Post-generation filtering | Additional logic and ops           |
+    | Human review loops        | Manual and not scalable            |  
+
+    | Requirement                                     | What it implies                                           |
+    | ----------------------------------------------- | --------------------------------------------------------- |
+    | Predict electricity load usage                  | **Forecast a future numeric value**                       |
+    | Data includes load, temperature, cloud coverage | **Historical, time-dependent data with external factors** |
+    | Load changes over time                          | **Temporal patterns (trends, seasonality)**        
+    
+    ✅ What time series forecasting handles well
+        📈 Trends (daily, weekly, seasonal load patterns)
+        🔁 Seasonality (peak hours, summer vs winter)
+        🌡️ Exogenous variables (weather conditions)
+        ⏳ Temporal dependency (time matters)    
+    
+        | Technique              | Why it’s not suitable               |
+        | ---------------------- | ----------------------------------- |
+        | Classification         | ❌ Output is numeric, not categories |
+        | Clustering             | ❌ No prediction target              |
+        | Image recognition      | ❌ Not image data                    |
+        | NLP                    | ❌ Not text                          |
+        | Reinforcement learning | ❌ No sequential decision-making     |
+        
+        | Requirement                | What it implies          |
+        | -------------------------- | ------------------------ |
+        | **Consistent predictions** | Always-on endpoint       |
+        | **Live**                   | Immediate responses      |
+        | **Interactive**            | Request/response pattern |
+        | **Low latency**            | Milliseconds to seconds  |
+        
+        
+        | Inference type         | Why it doesn’t fit               |
+        | ---------------------- | -------------------------------- |
+        | Batch transform        | ❌ Offline, not live              |
+        | Asynchronous inference | ❌ Designed for long-running jobs |
+        | Serverless batch jobs  | ❌ Not interactive                |
+        | Scheduled inference    | ❌ Not real-time                  |
+        
+Which components of the ML pipeline are performed during or after model training? (Select TWO.):
+        An ML pipeline is typically divided into before, during, and after training stages.:  
+            Components performed during or after model training are:
+               ✅ 1. Model evaluation
+                        Happens during and immediately after training   
+                        Assesses how well the model performs
+                        Uses metrics such as:
+                            Accuracy
+                            Precision / Recall
+                            RMSE, MAE
+                        Helps decide whether the model is good enough to deploy
+                        📌 Exam keyword trigger: “evaluate”, “assess performance”, “metrics” 
+              ✅ 2. Model deployment
+                      Happens after training and evaluation
+                        Makes the trained model available for:
+                            Real-time inference
+                            Batch inference
+                            Exposes the model through an API or endpoint
+                        📌 Exam keyword trigger: “deploy”, “endpoint”, “inference”    
+
+
+The applications must meet the company's data privacy, infrastructure security, and compliance goals:
+    ✅ Data Privacy → AWS Key Management Service (AWS KMS):
+        Why: AWS KMS enables you to encrypt data at rest and in transit using customer-managed keys.
+            In SageMaker, you can use KMS keys to encrypt:
+                Model artifacts,
+                Training data in S3,
+                Notebook instances,
+                Endpoints and batch transform jobs.
+                This ensures sensitive data (e.g., PII, health records) remains confidential and compliant with privacy regulations    
+
+    ✅ Infrastructure Security → AWS PrivateLink:    
+        Why: AWS PrivateLink allows private, secure connectivity between SageMaker (and other AWS services) and your VPC without traversing the public internet.
+        You can:
+            Access SageMaker endpoints privately,
+            Connect to data sources (e.g., S3, RDS) over private networks,
+            Reduce exposure to threats like MITM attacks.
+            Enhances network-level security of your ML infrastructure.    
+
+    ✅ Compliance Goals → Amazon CloudWatch:
+        Why: CloudWatch provides logging, monitoring, and audit trails essential for compliance (e.g., SOC 2, HIPAA, GDPR).
+        In SageMaker, you can:
+            Log API calls via CloudWatch Logs (integrated with AWS CloudTrail),
+            Monitor model endpoints for anomalies,
+            Set alarms for unusual activity.
+        These capabilities support auditing, accountability, and operational transparency required by compliance frameworks.
+
+    ✅ Access Control (Foundational to All Three) → AWS Identity and Access Management (IAM):
+    Why: IAM enforces least-privilege access to SageMaker resources (notebooks, training jobs, endpoints).
+    You can:
+        Define who can access what data/models,
+        Apply permissions based on roles (e.g., data scientist vs. auditor),
+        Integrate with corporate identity providers.
+        Critical for data privacy, infrastructure security, and compliance—ensures only authorized users and systems interact with sensitive ML assets.
+
+CloudWatch?:
+    Native integration with Amazon Bedrock:
+        CloudWatch automatically captures operational metrics from Bedrock, including:
+            Input token count
+            Output token count
+            Invocation counts, latency, and errors
+        Custom dashboards:
+            You can create real-time, customizable dashboards to visualize token usage per interaction, over time, or by user group.
+        Monitoring & alerting:
+            Set up alarms for unusual activity (e.g., spike in token usage) and track cost or performance trends.
+    This directly fulfills the requirement to show input and output tokens for each chatbot interaction in a visual dashboard.
+    
+    ❌ Why other services are wrong (exam elimination):   
+    AWS CloudTrail:
+    ❌ Logs API calls (who did what and when) for audit/compliance, but does not provide token-level metrics or dashboarding for application usage.
+    Trusted Advisor:
+    ❌ Offers general best-practice recommendations (cost, security, fault tolerance)—not application telemetry or dashboards.
+    AWS Config:
+    ❌ Tracks resource configuration changes (e.g., “Was this S3 bucket public?”)—not runtime metrics like token counts.   
+    
+    | Service           | Why it’s not correct                  |
+    | ----------------- | ------------------------------------- |
+    | Amazon QuickSight | BI analytics, not operational metrics |
+    | AWS Cost Explorer | Cost reporting only                   |
+    | Amazon OpenSearch | Search and logs, not primary metrics  |
+    | Amazon S3         | Storage only                          |
+    | Bedrock console   | No custom dashboards                  |    
+
+                
+Database services to support a generative AI model  ?:
+   🔎 Amazon OpenSearch Service:
+        Supports vector search (k-NN / semantic search)
+        Optimized for search experiences  
+   🗄️ Amazon Aurora PostgreSQL:
+            Supports pgvector extension for vector embeddings
+    📌 Exam trigger words: “database”, “vector embeddings”, “LLM support”    
+    | Service          | Why it’s not the best fit                         |
+    | ---------------- | ------------------------------------------------- |
+    | Amazon DynamoDB  | No native vector search                           |
+    | Amazon S3        | Object storage, not search                        |
+    | Amazon RDS MySQL | No strong vector support                          |
+    | Amazon Kendra    | Managed enterprise search, not a general database |
+    | Amazon Redshift  | Analytics, not conversational search              |    
+    
+👉 Instruction prompting directly tells the model what to do and how to do it, without any training, datasets, or pipelines. :
+    | Technique                  | Why it’s not MOST efficient   |
+    | -------------------------- | ----------------------------- |
+    | Few-shot prompting         | Requires maintaining examples |
+    | Chain-of-thought prompting | Adds verbosity, not concision |
+    | Fine-tuning                | High effort and cost          |
+    | RAG                        | Extra infrastructure          |
+    | Continued pre-training     | Heavy training workload       |  
+
+How do embeddings help improve the accuracy of large language models (LLMs)?:   
+    🧠 How embeddings help (step by step)
+            1️ Convert text into meaning-aware vectors:
+                Embeddings turn words, sentences, or documents into high-dimensional vectors where:
+                    Similar meanings → vectors are close together
+                    Different meanings → vectors are far apart
+                This captures semantic similarity, not just keywords.
+            2️ Enable semantic search and retrieval:
+                When an LLM is paired with embeddings:
+                    User queries are embedded
+                    The system retrieves most relevant documents/chunks
+                    The LLM generates answers using accurate, relevant context
+                    This is the foundation of Retrieval Augmented Generation (RAG)  
+           3️ Reduce hallucinations and irrelevant answers:
+                Because the model:
+                    Grounds its response in retrieved, relevant data
+                    Uses domain-specific knowledge instead of guessing
+                    👉 Accuracy improves and hallucinations decrease. 
+           4️ Improve understanding of context and intent:
+                Embeddings help the system understand:
+                    Synonyms (“price” ≈ “cost”)
+                    Related concepts (“engine” ≈ “horsepower”)
+                    User intent beyond exact wording     
+      Embeddings transform text into numerical vectors that represent semantic meaning, not just symbols.:
+        In modern LLMs, contextual embeddings (like those from Transformers) allow the same word (e.g., “bank”) to have different vector representations depending on whether it appears in “river bank” or “bank account.” 
+     This context-aware representation enables the model to:
+            Better understand user input,
+            Generate more relevant and accurate responses,
+            Handle ambiguity and nuance in language.
+        This deep semantic grounding is foundational to the performance of LLMs in tasks like question answering, summarization, and dialogue. :
+
+A company wants to evaluate a large language model (LLM) from Amazon Bedrock. Select the correct model evaluation type from the following list for each use case. Each model evaluation type should be selected one or more times. (Select FOUR.):
+     When evaluating LLMs in Amazon Bedrock, the choice depends on:  
+        What is being measured (objective vs subjective)
+        Whose dataset is used (built-in vs company-provided)       
+        
+        1️ Accuracy of the text summarization on the built-in dataset:
+            ✅ Automatic model evaluation:
+                Why?
+                    Accuracy on summarization can be measured using automated metrics (for example ROUGE)
+                    Uses a built-in dataset
+                    No human judgment required
+                📌 Objective + built-in dataset → Automatic
+        
+        2️ Toxicity of the text generation on the built-in dataset  :
+            ✅ Automatic model evaluation:
+                Why?
+                    Toxicity detection uses automated classifiers
+                    AWS provides built-in safety/toxicity benchmarks
+                    No subjective business context needed
+                📌 Safety metric + built-in dataset → Automatic
+                
+        3️ Factual correctness of the generated response on the company-provided dataset:    
+            ✅ Human-in-the-loop model evaluation
+                Why?
+                    “Factual correctness” depends on company-specific knowledge
+                        The dataset is company-provided
+                        Requires human judgment to verify facts
+            📌 Company data + correctness → Human-in-the-loop
+            
+        4️ Linguistic quality of the text generation on the company-provided dataset:
+            ✅ Human-in-the-loop model evaluation    
+                Why?
+                    Linguistic quality (clarity, tone, fluency) is subjective
+                    Company standards vary
+                    Best assessed by humans
+                📌 Subjective quality + company data → Human-in-the-loop   
+
+            | Use Case                                       | Correct Evaluation Type                |
+            | ---------------------------------------------- | -------------------------------------- |
+            | Accuracy of summarization (built-in dataset)   | **Automatic model evaluation**         |
+            | Toxicity of text generation (built-in dataset) | **Automatic model evaluation**         |
+            | Factual correctness (company dataset)          | **Human-in-the-loop model evaluation** |
+            | Linguistic quality (company dataset)           | **Human-in-the-loop model evaluation** |
+                                
+The train/validation/test split is a fundamental best practice to measure true model performance and avoid overly optimistic results due to overfitting:
+
+A company has built an ML model to categorize different products. The company wants to deploy the model to production. The company wants a solution with the least operational overhead to deploy to production. Which solution will meet these requirements?:
+        Serverless inference in Amazon SageMaker:
+            ✅ No server or infrastructure management
+            ✅ Automatic scaling (including scale to zero)
+            ✅ Pay only for inference usage
+            ✅ Ideal for simple production deployments like product categorization
+          This makes it the lowest-ops way to deploy an ML model to production.   
+       Why SageMaker AI Endpoints?:
+            Fully managed service: AWS handles infrastructure provisioning, scaling, monitoring, and security.
+            One-click deployment: You can deploy a trained model (from SageMaker or custom) to a real-time HTTP endpoint with minimal code.
+            Auto-scaling: Automatically scales to handle traffic spikes—no manual intervention.
+            Production-ready: Supports A/B testing, canary deployments, model monitoring, and integrates with IAM, VPC, and CloudWatch.
+            Low operational overhead: No need to manage servers, containers, or load balancers.
+        Ideal for a company that wants to quickly and reliably serve predictions without building or maintaining ML serving infrastructure. 
+
+        | Stage            | Why it’s wrong            |
+        | ---------------- | ------------------------- |
+        | Training         | Happens before deployment |
+        | Evaluation       | Pre-production testing    |
+        | Deployment       | Initial release only      |
+        | Data preparation | Upstream activity         |    
+
+Why Amazon Bedrock Guardrails?:
+    Purpose-built for safety and compliance:
+        Guardrails allow you to define and enforce responsible AI policies directly within your generative AI application.
+    What it does:
+        Scans both user inputs and model outputs in real time.
+    Blocks or filters content related to:
+        Toxicity, hate speech, violence, or self-harm,
+        Inappropriate or offensive language,
+        Unwanted topics (e.g., politics, profanity).
+        Supports custom deny lists and sensitivity thresholds aligned with your company’s policies.
+    No model retraining needed:
+        Works as a policy layer on top of any foundation model in Bedrock—zero operational overhead for content safety.
+    This makes Guardrails ideal for public-facing chatbots where brand safety and user trust are critical.   
+        ❌ Why other options are wrong (exam traps):  
+        Amazon Bedrock Agents:
+            ❌ Focus on task automation and orchestration (e.g., calling APIs, retrieving data)—not content moderation.
+        Amazon Bedrock Knowledge Bases:
+            ❌ Enable RAG by connecting to company data—improves accuracy, but does not monitor or filter toxic language.
+        Custom Models:
+            ❌ Fine-tuning can improve domain relevance, but doesn’t reliably prevent harmful outputs unless explicitly trained for safety (which is complex and less effective than runtime guardrails).  
+        | Option             | Why it’s wrong                           |
+        | ------------------ | ---------------------------------------- |
+        | Fine-tuning        | ❌ High effort, not primarily for safety  |
+        | Prompt engineering | ❌ Helps, but **not a robust safeguard**  |
+        | Human review       | ❌ Manual, not scalable                   |
+        | Amazon Comprehend  | ❌ NLP analysis, not generative filtering |
+        | Model retraining   | ❌ Not needed for moderation              |
+    
+        | Requirement                                     | How Bedrock fits                                      |
+        | ----------------------------------------------- | ----------------------------------------------------- |
+        | Automate product descriptions & recommendations | Uses **foundation models (LLMs)** for text generation |
+        | Based on customer location                      | Location can be provided as **context in the prompt** |
+        | Customer service center use case                | Supports **conversational and generative AI**         |
+        | Use of foundation models                        | Bedrock provides **managed access to FMs**            |
+        | Low operational overhead                        | Fully **serverless, managed service**                 |
+
+    ❌ Why other AWS services are not the best fit:
+        | Service                         | Why it’s not correct                                    |
+        | ------------------------------- | ------------------------------------------------------- |
+        | Amazon Lex                      | Conversational interface, but not core generative logic |
+        | Amazon Comprehend               | Text analysis, not text generation                      |
+        | Amazon Polly                    | Text-to-speech only                                     |
+        | Amazon SageMaker (custom model) | Higher operational effort than Bedrock                  |
+        | Amazon Connect alone            | Contact center, not generative intelligence             |
+    (Amazon Connect can integrate with Bedrock, but Bedrock is the service that fulfills the FM requirement.)   
+
+Perform trend analysis:
+    Decision trees are the most interpretable ML models because:
+        🌳 The logic is explicit and visual
+        🔍 Each prediction follows a clear path of rules (if–then decisions)
+        👩‍  Business users can easily understand why a prediction was made
+        📊 Feature importance is straightforward to explain   
+
+The company wants to check the accuracy, robustness, and toxicity of the FM:
+    ✅ What Amazon Bedrock model evaluation can assess
+        Model evaluation in Amazon Bedrock allows you to evaluate FMs using automatic and human-in-the-loop approaches.
+        It can measure:
+            📊 Accuracy
+                Quality of summaries (for example, relevance and correctness)
+            🛡️ Robustness
+                How the model behaves with edge cases or varied inputs
+            🚫 Toxicity & safety
+                Detection of harmful, biased, or unsafe outputs
+        These evaluations can be run on:
+            Built-in datasets (quick benchmarking)
+            Company-provided datasets (custom evaluation)
+        ❌ Why other options are not sufficient alone (exam traps)
+                Amazon Lex: Builds chatbots and voice interfaces—not for model evaluation.
+                Amazon Transcribe: Converts speech to text—unrelated to evaluating summarization quality or toxicity.
+                Amazon Polly: Converts text to speech—used for audio output, not model assessment.
+                Amazon Translate: Translates text between languages—does not evaluate model behavior.
+                | Option                 | Why it’s not correct                         |
+                | ---------------------- | -------------------------------------------- |
+                | Guardrails for Bedrock | Focuses on filtering outputs, not evaluation |
+                | Prompt engineering     | Improves outputs but doesn’t assess quality  |
+                | Fine-tuning            | Customizes models, not evaluates them        |
+                | Amazon CloudWatch      | Operational metrics, not model quality       |
+                | Amazon Comprehend      | NLP analysis, not FM evaluation              |    
+A music company wants to build a system to search for songs by the meaning of the lyrics. Which solution will meet this requirement?:
+    The key phrase in the question is:
+        “search for songs by the meaning of the lyrics”
+        This is semantic search, not keyword search.
+    👉 This is exactly what embeddings + vector search are designed for.:
+            ✅ How the solution works (step by step):
+                1️ Generate embeddings:
+                        Use Amazon Bedrock embedding models
+                        Convert each song’s lyrics into numerical vectors that capture meaning
+                2️ Store embeddings:
+                        Store vectors in Amazon OpenSearch Service (vector index)
+                3️  Search by meaning:
+                        Convert the user’s search query into an embedding
+                        Perform similarity search to find songs with the closest meaning
+                4️   Return relevant songs:
+                        Results are based on semantic similarity, not exact words  
+            Amazon OpenSearch Service supports k-nearest neighbor (k-NN) vector search, allowing you to:
+                Index embeddings of song lyrics,
+                Convert a user’s query (e.g., “songs about heartbreak”) into an embedding,
+                Retrieve songs whose lyrics have similar semantic meaning.
+                This directly fulfills the requirement of searching by the meaning of the lyrics. 
+        ❌ Why other options are wrong (exam traps)
+            QuickSight: A BI and visualization tool—not designed for semantic search.
+            Amazon Lex: Used for building chatbots and voice assistants—not a search or embedding engine.
+            | Option               | Why it doesn’t work                    |
+            | -------------------- | -------------------------------------- |
+            | Keyword-based search | ❌ Matches words, not meaning           |
+            | Amazon Transcribe    | ❌ Speech → text, not semantic search   |
+            | Amazon Comprehend    | ❌ NLP analysis, not retrieval          |
+            | SQL text search      | ❌ No semantic understanding            |
+            | Audio fingerprinting | ❌ Identifies songs, not lyrics meaning |   
+
+Amazon SageMaker JumpStart?:
+    SageMaker JumpStart is a quick-start hub inside Amazon SageMaker that lets you:
+        🚀 Get started fast with ML
+        🧠 Use pretrained models (including foundation models)
+        🧩 Deploy models with just a few clicks
+        📓 Explore ready-made notebooks and solutions
+    It’s designed to reduce time, complexity, and operational effort.
+        ✅ Key capabilities (exam highlights)
+            Pretrained models for:
+                NLP
+                Computer vision
+                Tabular ML
+            Foundation models you can:
+                Deploy
+                Fine-tune
+                End-to-end solution templates
+                Integrated directly into Amazon SageMaker   
+ AWS DeepRacer is specifically designed to teach reinforcement learning (RL) in an interactive and virtual environment.:
+        | Service            | Why it’s not correct           |
+        | ------------------ | ------------------------------ |
+        | Amazon Bedrock     | Generative AI, not RL training |
+        | Amazon Rekognition | Computer vision only           |
+        | Amazon Lex         | Conversational AI              |
+        | Amazon Polly       | Text-to-speech                 |
+        | Amazon Comprehend  | NLP analysis                   | 
+
+        | Requirement                             | What’s needed                        |
+        | --------------------------------------- | ------------------------------------ |
+        | **Generative AI**                       | Foundation models (LLMs)             |
+        | **Individualized / targeted marketing** | Personalized generation per customer |
+        | **Product catalog**                     | Structured knowledge source          |
+        | **Customer profiles**                   | Dynamic, customer-specific context   |
+        | **Up-to-date content**                  | Avoid retraining for every change    |
+          👉 RAG is the best-fit approach.: 
+
+AWS Artifact is the official AWS portal that provides on-demand access to:
+    📄 Compliance reports (SOC, ISO, PCI, etc.)
+    🔐 Security and audit documentation
+    📜 AWS agreements and attestations
+    These documents are required for risk assessments, audits, and regulatory reviews. 
+    Explanation:
+    AWS Artifact is the official AWS service that provides on-demand access to AWS security, compliance, and audit documentation, including for Amazon Bedrock. This includes  
+    AWS Config: Monitors and records your own AWS resource configurations over time—useful for compliance tracking, but does not provide official AWS compliance documents.
+    Amazon Inspector: Scans your workloads (e.g., EC2, ECR, Lambda) for vulnerabilities—not a source of compliance documentation.
+    Trusted Advisor: Offers best-practice recommendations (e.g., security checks, cost optimization), but is not a repository for formal compliance reports.  
+    | Service             | Why it’s not correct                  |
+    | ------------------- | ------------------------------------- |
+    | Amazon CloudWatch   | Monitoring, not compliance documents  |
+    | AWS Shield          | DDoS protection                       |
+    | AWS Config          | Configuration compliance, not reports |
+    | AWS Trusted Advisor | Best-practice checks                  |
+    | AWS Security Hub    | Security findings aggregation         |
+
+Interpretability refers to how easily a human can understand the relationship between the model’s inputs and its predictions.:  
+
+Responsible AI:
+    🟢 Fairness
+            Focuses on equitable treatment
+            Identifies and mitigates bias
+            Ensures outcomes don’t disadvantage specific groups
+        
+    🔍 Explainability
+            Helps humans understand and evaluate outputs
+            Answers “why did the model do this?”
+            Critical for trust, audits, and debugging    
+   
+    🛡️ Veracity and robustness
+            Ensures outputs are correct and reliable
+            Handles unexpected, noisy, or adversarial inputs
+            Reduces hallucinations and brittle behavior
+        
+    📢 Transparency
+            Promotes clarity across the AI supply chain
+            Covers documentation, disclosures, and usage expectations
+            Helps users understand how and where AI is used  
+| Objective                                                                                      | Responsible AI Core Dimension |
+| ---------------------------------------------------------------------------------------------- | ----------------------------- |
+| **Considering impacts on different groups of people involved**                                 | **Fairness**                  |
+| **Understanding and evaluating system outputs**                                                | **Explainability**            |
+| **Achieving correct system outputs, even with unexpected or adversarial inputs**               | **Veracity and robustness**   |
+| **Incorporating best practices into the AI supply chain, including model providers and users** | **Transparency**              |      
+Which prompt engineering:
+    | Technique              | Uses examples? | How many?                  |
+    | ---------------------- | -------------- | -------------------------- |
+    | Zero-shot prompting    | ❌ No           | 0                          |
+    | **Few-shot prompting** | ✅ Yes          | 1–10 (typically)           |
+    | Fine-tuning            | ✅ Yes          | Many (training dataset)    |
+    | Chain-of-thought       | Sometimes      | Focuses on reasoning steps |    
+    
+🧑‍💻 Amazon Q Developer:
+     Conversational AI for developers
+        Can:
+            Generate code from natural language
+            Explain existing code
+            Help debug issues
+            Answer AWS and application questions
+            Big productivity boost across the SDLC
+        📌 Exam trigger: “optimize programming productivity”, “generative AI for developers”   
+
+✍️ Amazon CodeWhisperer:
+    AI-powered code completion
+    Works inside IDEs (VS Code, IntelliJ, etc.)
+    Provides:
+        Real-time code suggestions
+        Security vulnerability detection
+        Open-source license reference tracking
+        Speeds up coding and improves quality
+    📌 Exam trigger: “reduce development time”, “write code faster”     
+    
+AWS Audit Manager is the AWS service designed specifically to: # application is in compliance
+        Continuously assess AWS resource configurations,
+     AWS Artifact: Provides compliance reports from AWS (e.g., SOC, ISO)—but does not assess your own application’s compliance.
+     Amazon Bedrock Guardrails: Enforces content safety (e.g., blocks harmful outputs)—not regulatory compliance auditing.
+     Amazon Bedrock Model Evaluation: Measures model accuracy, toxicity, robustness, etc.—not compliance of the AWS workload    
+     
+Context length (or context window) is:
+    The maximum number of tokens (input + output) a model can process in one request   
+        | Model factor         | Why it’s not the primary concern  |
+        | -------------------- | --------------------------------- |
+        | Training data source | Doesn’t determine input size      |
+        | Temperature          | Controls randomness, not capacity |
+        | Inference latency    | Not the core requirement          |
+        | Fine-tuning support  | Not needed for summarization      |
+        | Cost per token       | Secondary, not functional         |    
+        
+        | Option                    | Why it’s wrong                      |
+        | ------------------------- | ----------------------------------- |
+        | Lower temperature         | ❌ Controls randomness, not length   |
+        | Use stop sequences        | ❌ Unreliable for “first token only” |
+        | Prompt engineering        | ❌ Doesn’t strictly limit output     |
+        | Post-process the response | ❌ Extra work and cost               |
+        | Streaming and truncation  | ❌ Still generates extra tokens      |
+        
+Feature engineering includes feature creation, feature transformation, feature extraction, and feature selection. Feature engineering enhances the data by increasing the number of variables in the training dataset to ultimately improve model performance.:
+
+Amazon Bedrock is a fully managed service that provides access to high-performing foundation models (FMs) through an API. Amazon Bedrock provides capabilities such as text summarization and question answering. You can use Amazon Bedrock language models to build applications that understand and generate human-like text. Therefore, this is the most suitable solution to create a question-answering application:   
+
+RAG is a process that retrieves and incorporates relevant information from external sources before generating a response, enabling LLMs to produce more accurate, grounded, and contextually relevant outputs—especially for specialized or up-to-date knowledge.:
+
+Model Evaluation:
+    Automatic model evaluation is the process of assessing the performance of an AI model by using predefined metrics, without direct human intervention
+    Human-in-the-loop model evaluation involves direct engagement of human evaluators to assess the performance of an AI model. This approach relies on human judgment and a subjective assessment of the model's outputs
+    
+    
+
+The company wants to check the accuracy, robustness,:
+        Amazon Bedrock model evaluation
+        
+SageMaker JumpStart is a hub with models, built-in algorithms, and prebuilt ML solutions. You can use SageMaker JumpStart to select the best solutions for your specific use case.: 
+
+RLHF is a technique that can help the chatbot learn and improve its responses based on human input. By incorporating human feedback, you can train the chatbot to align its responses with the specific rules and guidelines of the online grocery store.: 
+
+Application is in compliance with regulations:
+    AWS Audit Manager

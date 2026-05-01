@@ -1,0 +1,91 @@
+🧠 KEY ENTERPRISE INSIGHT:
+Registry is NOT a business registry.
+Registry is a runtime discovery registry.
+It does not care if a service is:
+Tool
+Agent
+Orchestrator
+Webhook
+
+It only cares about:
+identity
+endpoint
+capabilities
+discovery metadata
+
+Your AgentCard already supports that.
+So we do NOT change it.
+We enhance usage patterns.
+
+🟢 STEP 1 — Register Tool-LLM AS AgentCard (No Schema Change)
+
+Tool-LLM registers like this:
+{
+  "name": "tool-llm",
+  "version": "1.0.0",
+  "description": "Enterprise LLM Tool",
+  "capabilities": ["llm.generate"],
+  "tools": [],
+  "endpoint": "http://localhost:9101/a2a",
+  "agent_id": "tool-llm-01",
+  "framework": "internal-tool",
+  "tags": ["tool", "llm"],
+  "metadata": {
+    "role": "tool",
+    "category": "llm",
+    "stateless": true
+  }
+}
+No schema change required.
+Registry accepts it.
+
+
+🟢 STEP 2 — Register Orchestrator
+{
+  "name": "control-orchestrator",
+  "version": "1.0.0",
+  "description": "Workflow Orchestrator",
+  "capabilities": ["workflow.execute"],
+  "tools": [],
+  "endpoint": "http://localhost:9200/a2a",
+  "tags": ["orchestrator"],
+  "metadata": {
+    "role": "orchestrator",
+    "graph_engine": "langgraph"
+  }
+}
+
+Still valid AgentCard.
+
+🟢 STEP 3 — Register Ingress
+{
+  "name": "ingress-gateway",
+  "version": "1.0.0",
+  "description": "External event ingress",
+  "capabilities": ["event.ingest"],
+  "tools": [],
+  "endpoint": "http://localhost:8000/api/v1/events",
+  "tags": ["ingress"],
+  "metadata": {
+    "role": "ingress"
+  }
+}
+
+
+🟢 STEP 4 — Enhance Discovery WITHOUT Changing Model
+
+Your current:
+def discover(self, capability: str)
+
+Already works for:
+agent capabilities
+skill alignment
+Now we enhance orchestrator logic — NOT registry.
+
+Example:
+tools = registry.discover("llm.generate")
+
+If you want only tools:
+Filter:
+[t for t in tools if "tool" in (t.tags or [])]
+

@@ -1,0 +1,36 @@
+About: 		
+uv add chainlit
+chainlit hello
+platform:
+	**UV + chainlit + litellm (google)+ MCP+ Docker and Cloud
+
+
+uv init --package open_agentic_agent
+cd open_agentic_agent
+code .
+uv add chainlit
+uv  run chainlit hello  #  If this opens the hello app in your browser, you're all set!
+
+cd open_agentic_agent
+chatbot.py
+uv run chainlit run chatbot.py -w      # -w flag don't restart the server
+
+@on_chat_start
+@cl.on_message    # will take text from your entry  asynchronous message
+
+import chainlit as cl
+
+@cl.on_chat_start
+async def start():
+    await cl.Message(
+        content="Hello! I'm your AI assistant. How can I help you today?"
+    ).send()
+	
+# using keywords async and await can make function asynchronous
+@cl.on_message
+async def main(message: cl.Message):   # asynchronous message add async and return replace with await
+      # our custom logic goes here
+      # send a fake response back to the user
+      await cl.Message(
+            content=f"Received: {message.content} " 
+           ).send()

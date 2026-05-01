@@ -1,0 +1,52 @@
+Step1: Custom MCP Server:
+	uv add 'mcp[cli]'
+from mcp.server.fastmcp import FastMCP
+mcp=FastMCP("Weather Server")  
+Install MCP Inspector # @modelcontextprotocol/inspector	
+uv run mcp dev .\13_openai_agent_sdk_custom_mcp.py
+
+Step2: MCP Client, Consumed the Tools provided by MCP server
+from agents.mcp import MCPServer, MCPServerStdio
+###############
+Step3: SSE Transport Protocol
+MCP Server
+Only one change
+if __name__ == "__main__":
+    mcp.run(transport="sse")  # add the parameter transport="sse"
+Step4: SSE Transport Protocol
+MCP Client
+from agents.mcp import MCPServer, MCPServerSse
+params= {
+            'url':"http://localhost:8000/sse",  # Replace with your actual SSE endpoint
+        },
+		
+		
+##
+MCP Docker Toolkit
+
+		
+############################################################################
+mcp=> wiring system which connect llm-agent
+mcp connect local server and also remote server	
+
+step1: Install Claude
+step2: create a folder MCP
+step3: create a two files h1.txt and hello.txt in MCP folder
+step4: ask to claude in which location MCP and h1.txt is saved?  No llm model can answer where hi.txt and hello.txt is available
+
+** There a thing called MCP server**
+step5: Install MCP server 
+https://github.com/modelcontextprotocol
+https://github.com/modelcontextprotocol/servers
+https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem
+
+file->setting->developer
+
+**************************
+Airbnb Server:
+https://smithery.ai/server/@openbnb-org/mcp-server-airbnb
+
+*****
+Cline:
+#########################################################################################################
+

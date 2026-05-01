@@ -1,0 +1,48 @@
+The Three Waves of AI:
+Predictive AI:
+	Focus of  analyzing data to predict outcomes.
+	Analyze past data to predict future outcome.
+	Why It matterered Enabled data-driven decision-making.
+	
+Generative AI:
+	Focus on creating contents from data.
+	Creating Contents (text,image,code,videos).
+	Why it mattered: Empowered creativity and productivity.
+
+Agentic AI:
+	Focus on autonomous actions and learning Iteratively.
+	Autonomous actions, environment interaction,Iterative learning.
+	Why it mattered AI become proactiove ,managing complex tasks.	
+	
+Difference between LLM/GenAI?
+
+Difference between GenAI/AgenticAI?
+
+Generative AI:
+	Requires human intervention.
+	Can only respond when given a prompt.	
+
+Agentic AI:
+	Performs tasks anonymously.
+	Analyzes data to make informed decision.	
+
+LLM->Compound AI Systems->AI Agents
+
+Compound AI Systems?
+	Compound AI systems represents a significant shift in the way we approach AI development .Instead of relying on a single monolith model, these systems 
+	combine multiple AI models,tools,and techniques to create more robust,flexible and efficient solutions to complex problems.
+	Unlike traditional AI models that rely on single model, compound AI systems combine various models,retrievers,databases and external tools to enhance
+	performance ,flexibility,and robustness.	
+	
+AI Agents?
+	AI Agents represent a further evolution,embodding autonomous systems that can perceive their environment ,make decisions,and execute actions to achieve
+	specific objective.
+	They can utilize LLMs decision-making and can interact with various tools and APIs to perform tasks such as booking appointments,managing emails.	
+	
+CPU:	
+GPU: multiple task at a time (Parallel Processing)
+Memory:
+Network:
+Disk:
+
+What is NVIDIA's CUDA?	

@@ -1,0 +1,28 @@
+Assume a role of senior principle GenAI architect review the platform-protocol package Follow Level 5 Enterprise Clean Architecture re-write step by step 1 currently saying A2A protocol seems as for agent but its used for Agents
+Tools
+LLM services
+Orchestrators
+Ingress / Webhooks
+
+as senior principle GenAI architect  follow Level 5 Enterprise Clean Architecture 
+
+uv add pydantic
+
+platform-protocol/
+│
+├── pyproject.toml
+│
+└── src/
+    └── platform_protocol/
+        │
+        ├── __init__.py
+        │
+        ├── domain/
+        │   ├── message_type.py
+        │   ├── service_metadata.py
+        │   ├── routing_metadata.py
+        │   └── service_message.py
+        │
+        └── application/
+            └── message_validator.py
+uv build

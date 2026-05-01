@@ -1,0 +1,786 @@
+
+The 5 Generative AI Deployment Approaches:  
+        🔹 1. Consume – GenAI Embedded in Apps:
+                (Example: ChatGPT, Copilot, Salesforce Einstein)
+                ✅ What you do:
+                        Just use the AI as-is
+                        No customization
+                        ❌ What you don’t do:
+                        No model tuning
+                        No data integration
+                    📌 Who should use this:
+                        Business users
+                        Quick productivity wins
+                    🧠 Example:
+                        HR uses ChatGPT for JD writing
+                        Developer uses GitHub Copilot
+                        
+        🔹 2. Embed – GenAI APIs in a Custom App:
+                    (Example: OpenAI API, Bedrock API)      
+                        ✅ What you do:
+                            Call LLM APIs from your app
+                            Control prompts
+                        ❌ What you don’t do:
+                            No private data grounding
+                            No model training
+                        📌 Who should use this:
+                            Simple chatbots
+                            FAQ bots
+                        🧠 Example:
+                            Spring Boot app calling OpenAI API for customer support   
+
+        🔹 3. Extend – GenAI + LLMs + RAG:      
+                    (Most popular in enterprises 🚀)
+                    ✅ What you do:
+                        Add Data Retrieval (RAG)
+                        Use vector databases
+                        Prompt engineering
+                    ❌ What you don’t do:
+                        No heavy model training
+                    📌 Who should use this:
+                        Enterprise knowledge bots
+                        Internal document Q&A
+                    🧠 Example:
+                        “Ask HR Policy” bot using PDFs + Vector DB + LLM
+                        👉 This is where 70–80% enterprise GenAI use cases sit        
+                        
+        🔹 4. Extend – GenAI Models via Fine-Tuning:
+                    ✅ What you do:
+                        Fine-tune foundation models
+                        Customize behavior
+                    ❌ What you don’t do:
+                        You still don’t train from scratch
+                    📌 Who should use this:
+                        Domain-specific tone or format
+                        Repetitive structured outputs
+                    🧠 Example:
+                        Fine-tuned model for legal clause generation  
+
+        🔹 5. Build – Custom AI Models from Scratch:
+                    (Hardest, most expensive)
+                    ✅ What you do:
+                        Train your own model
+                        Own everything
+                    ❌ What you don’t get:
+                        Speed
+                        Low cost
+                    📌 Who should use this:
+                        FAANG-level companies
+                        Highly regulated domains
+                    🧠 Example:
+                        Custom LLM trained for pharma research        
+                        
+🧠 Agentic AI Classification & Autonomy Levels
+    (What decisions AI can take by itself, and how much human control is needed)     
+        “How much freedom do we allow an AI agent to act on its own?”:
+            It combines:
+                Autonomy → What the AI can do alone
+                Control maturity → How strong the organization’s governance is
+                Risk management → When humans must intervene
+
+            👉 As autonomy increases, governance maturity MUST increase
+            
+    The 5 Autonomy Levels (Bottom → Top):
+            🔹 Level 1: No Autonomy
+                (AI = Insight provider only)
+                
+            🔹 Level 2: Advisory
+                 (AI suggests, human executes)
+
+            🔹 Level 3: Supervised Execution
+                 (AI acts, but waits for approval)
+                 
+                 
+            🔹 Level 4: Conditional Autonomy
+                  (AI acts independently within limits)     
+                  
+            🔹 Level 5: Full Autonomy
+                  (AI plans + executes end-to-end)  
+                  
+            Key message hidden in the slide ⚠️
+            ❗ You CANNOT jump to high autonomy without governance maturity      
+            
+            N → A → S → C → F
+            N: No autonomy (Insights only)
+            A: Advisory (Suggests)
+            S: Supervised (Acts with approval)
+            C: Conditional (Acts within limits)
+            F: Full autonomy (Acts end-to-end)
+            
+            
+🧠 AI Lifecycle Model:
+        System Impact Assessment | Risk Assessment | Responsible AI (RAI) Checks     
+            “How do we identify, assess, control, and continuously reduce AI risks across the AI lifecycle?”
+                It ensures:
+                    Responsible AI
+                    Regulatory compliance
+                    Safe scaling of Agentic & GenAI systems
+                    
+    Big blue box: AI Risk Management:
+        🔵 “Control & Minimize RAI Risks @ Project”:
+        This means:
+            Risk management is not a one-time step
+            It runs throughout the AI lifecycle
+            Applies at project level, not just model level
+            RAI = Responsible AI:
+            (includes fairness, bias, privacy, explainability, safety, misuse)
+            
+        ✅ 1. Risk Identification & Analysis:
+                Ask:
+                    What can go wrong?
+                    Who can be harmed?
+                    Which AI dimensions are affected?
+                Examples:
+                    Bias in recommendations
+                    Hallucinations
+                    Privacy leakage
+                    Automation without human oversight        
+                    
+        ✅ 2. Risk Handling | Contingency:
+
+                Ask:
+                    How do we prevent this risk?
+                    What controls do we add?
+                Examples:
+                    Human-in-the-loop
+                    Prompt filters
+                    Confidence thresholds
+                    Kill switches
+                    Escalation rules       
+
+        ✅ 3. Risk Remediation & Opportunity Management:
+                Ask:
+                    What if the risk happens?
+                    How do we recover?
+                    Can we improve the system?
+                Examples:
+                    Model rollback
+                    Incident response
+                    Retraining
+                    Improving prompts or data    
+        
+        ✅ 4. The table: AI Risk Assessment Template
+                This is how risks are documented formally.
+            
+                🔹 Column-by-column explanation
+                    
+                    | Column                 | Meaning                                              |
+                    | ---------------------- | ---------------------------------------------------- |
+                    | Category               | Type of risk (Policy, Governance, Ethical, Security) |
+                    | Risk                   | What exactly can go wrong                            |
+                    | Potential Consequences | Business / legal / ethical impact                    |
+                    | Dimension Impacted     | Which RAI dimension is affected                      |
+                    | Impact                 | Severity of damage                                   |
+                    | Likelihood             | Probability of happening                             |
+                    | Risk Rating            | Overall risk level                                   |
+
+                    
+        ✅ 5. “Dimensions Impacted” (center of the table):   
+                    These are standard Responsible AI dimensions, such as:
+                        Fairness & Bias
+                        Privacy & Data Protection
+                        Transparency & Explainability
+                        Safety & Security
+                        Reliability & Robustness
+                        Regulatory Compliance
+                👉 Each risk is mapped to one or more dimensions  
+
+        ✅ 6. Example risks:
+
+                🟥 Risk 1: Lack of clear responsible AI objectives
+                        Category: Policy & Governance
+                        Consequence: Ethical issues, customer trust loss
+                        Impact: Moderate
+                        Likelihood: Likely
+                🟥 Risk 2: AI solution not aligned with org policies
+                        Category: Policy & Governance
+                        Consequence: Legal / compliance issues
+                        Impact: Extreme
+                        Likelihood: Likely
+                    📌 This shows governance risks can be higher than technical risks
+                    
+                    
+        ✅ 7. When is this assessment done?:
+                🔁 Frequency:
+                    Initiation | Every Risk Trigger | Any Change to AI
+                Meaning:
+                    At project start
+                    When model changes
+                    When autonomy level increases
+                    When new data is added
+                    When regulations change        
+                    
+        “AI risk management is a continuous lifecycle process that identifies, assesses, mitigates, and remediates Responsible AI risks across system impact, autonomy, and deployment changes.”
+                        I → H → R
+                        Identify risks
+                        Handle with controls
+                        Remedy & improve
+
+                    Repeated throughout the AI lifecycle        
+                    
+How Responsible AI (RAI) is actually enforced step-by-step across the AI lifecycle   :
+            🔹 The 9 Responsible AI Principles
+                Accountability:
+                → Who owns the AI decisions?
+                → Who is responsible if something goes wrong?
+
+                Fairness & Inclusiveness:
+                → Is the data biased?
+                → Are all user groups treated fairly?
+
+                Reliability:
+                → Does the AI work consistently?
+
+                Robustness & Resilience:
+                → Does it handle edge cases, bad inputs, failures?
+
+                Security & Privacy:
+                → Is data protected?
+                → Is PII safe?
+
+                Explainability:
+                → Can we explain why the AI gave an output?
+
+                Safety & Ethics:
+                → Could the AI cause harm or unethical outcomes?
+
+                Sustainability:
+                → Is the compute usage efficient and responsible?
+
+                Truthfulness:
+                → Does the AI hallucinate or fabricate?
+
+        📌 These principles never change, regardless of model or vendor.  
+
+
+        RAI checks are not done once.:
+            They are repeated at every lifecycle stage 👇   
+                🔁 AI Lifecycle Stages
+                    Proof of Concept (POC):
+                        Early risk identification
+                        Is AI even appropriate?
+                    AI System Requirements Management:
+                        Define scope, purpose, limitations
+                        Define autonomy level & human oversight
+                    AI System Architecture Design & Development:
+                        Model choice
+                        RAG vs fine-tuning
+                        Security controls
+                    AI Verification & Validation + Deployment:
+                        Bias testing
+                        Accuracy testing
+                        Safety testing
+                    AI Operation, Monitoring, Retrospection & Retirement:
+                        Drift detection
+                        Incident handling
+                        Safe shutdown or retirement
+
+            👉 RAI is continuous, not a gate at the end.    :   
+
+
+Responsible AI (RAI) Checklist:
+       This is how governance becomes real and auditable.
+        Example: AI System Requirements Management – Checklist
+                    Each RAI principle becomes questions like:
+                    🔹 Accountability (sample questions)
+                        Is responsibility for legal, ethical, and regulatory compliance defined?
+                        Is data ownership clearly documented?
+                        Is decision accountability traceable?
+                    🔹 Fairness & Inclusiveness (sample questions)
+                        Is the data representative?
+                        Are bias mitigation techniques applied?
+                        Are vulnerable groups protected?
+                    Each question is marked:
+                        ✔ Compliant
+                        ⚠ Partially compliant
+                        ❌ Non-compliant
+                        📌 This creates audit evidence.
+                        
+    “Responsible AI checks are embedded across the AI lifecycle, ensuring accountability, fairness, security, explainability, and safety at every stage from POC to retirement.”
+
+            P → R → A → V → O
+            POC
+            Requirements
+            Architecture
+            Validation
+            Operations
+            At every stage, apply:
+            Accountability, Fairness, Security, Explainability, Safety
+            
+            
+⚠️ Enterprises don’t trust AI systems without this framework
+        This is what enables:
+            Scaling GenAI
+            Deploying Agentic AI
+            Passing regulatory audits (EU AI Act, ISO, internal audits)  
+
+        What is System Impact Assessment (SIA)?:
+            System Impact Assessment is done to understand:
+                Who will be affected by this AI system, how, and how badly — before and after deployment.
+            It goes beyond technical risk and looks at:
+                Humans
+                Society
+                Business
+                Ethics
+                Compliance
+
+            📌 Think of SIA as “AI due diligence”
+        
+        What SIA assesses:
+        
+        🔹 “Assess AI impact on:”
+                Stakeholders (users, employees, customers)
+                Society (bias, discrimination, misinformation)
+                Business (brand, trust, legal exposure)
+                
+        🔹 Impacted AI System & Key RAI Principles (Values)
+
+        This connects directly to the Responsible AI pillars you saw earlier:
+            Fairness
+            Accountability
+            Privacy
+            Safety
+            Explainability
+            Reliability
+        👉 SIA checks whether these values are at risk      
+
+Key components of System Impact Assessment:
+        ✅ 1. AI Objectives & Stakeholders
+                Ask:
+                    Why are we building this AI?
+                    Who benefits?
+                    Who could be harmed?
+                Example:
+                    Customer support bot → customers, agents, compliance team
+                    
+        ✅ 2. Risk Analysis
+                Ask:
+                    What unintended outcomes are possible?
+                    What happens if the AI fails or hallucinates?
+                Example:
+                    Wrong financial advice
+                    Biased hiring recommendations      
+
+        ✅ 3. Data Quality Assessment
+                Ask:
+                    Is the data accurate, representative, up-to-date?
+                    Any missing or skewed data?
+                Example:
+                    Historical hiring data biased against certain groups    
+
+        ✅ 4. Compliance Check
+                Ask:
+                    Does this violate regulations?
+                    GDPR, EU AI Act, internal policies?
+                Example:
+                    Using PII without consent   
+
+        ✅ 5. Impact Analysis
+                Ask:
+                    Severity of harm if things go wrong?
+                    Individual vs societal impact?
+                Example:
+                    One wrong answer vs systemic discrimination     
+
+        ✅ 6. Governance
+                Ask:
+                    Who approves?
+                    Who monitors?
+                    Who shuts it down if needed?
+                Example:
+                    AI review board approval required    
+
+        🧩 End-to-end view How SIA fits     
+                    | Stage                        | What it answers                   |
+                    | ---------------------------- | --------------------------------- |
+                    | Deployment Model             | How are we building AI?           |
+                    | Autonomy Level               | How much freedom does AI have?    |
+                    | Risk Assessment              | What can go wrong?                |
+                    | **System Impact Assessment** | **Who is affected and how?**      |
+                    | RAI Checks                   | Are values enforced continuously? |
+                            
+            “System Impact Assessment evaluates how an AI system affects individuals, society, and business, ensuring ethical, compliant, and responsible deployment beyond technical risk.” 
+
+                        O → R → D → C → I → G
+                        Objective & stakeholders
+                        Risks
+                        Data quality
+                        Compliance
+                        Impact
+                        Governance            
+            🚨 You cannot deploy high-impact or agentic AI without SIA   
+                    This is mandatory for:
+                    High-autonomy agents
+                    Public-facing GenAI
+                    Regulated industries
+                    EU AI Act compliance     
+
+🧠 AI Dev | AMS Lifecycle — Plan & Monitor
+            “Once AI is approved (risk, SIA, RAI), how do we run, monitor, and improve it in production?”
+            Think of it as AI = Software + Operations + Governance + People. 
+                Overall structure:
+                    The lifecycle is split into three pillars:
+                        Life Cycle Execution → Build & run AI
+                        Performance Management → Measure & control AI
+                        AI-Specific Enablement → People, skills & adoption
+                        All three must exist — missing one = AI failure.
+                Pillar 1: Life Cycle Execution
+                        This is how AI is engineered and operated.
+                        🔹 AI in CI/CD | Service Architecture
+                            AI models are deployed like software
+                        Pipelines for:
+                            Model updates
+                            Prompt updates
+                            RAG data refresh
+                        👉 MLOps / LLMOps  
+            
+                        🔹 AI Life Cycle Model
+                            Follows the lifecycle you saw earlier:
+                            POC → Design → Deploy → Monitor → Retire
+                        
+                        🔹 AI Risk Assessment
+                            Continuous risk reviews
+                            Triggered by:
+                                New data
+                                Model changes
+                                Increased autonomy    
+                            
+                        🔹 Capacity | Availability | Transition    
+                            Ensure:
+                                Compute availability
+                                Scalability
+                                Failover readiness     
+                        
+                        🔹 Data | Change Management   
+                            Control:
+                                Data updates
+                                Schema changes
+                                Vector DB refreshes
+                            📌 This block = “AI as a production system”                        
+                                                                                                        
+                Pillar 2: Performance Management
+                        This is how leadership controls AI.
+                        🔹 Goals & Objectives
+                                Why does this AI exist?
+                                What success looks like?
+                            Example:
+                                Reduce support tickets by 30%
+                                Improve response accuracy to 95%
+                        
+                        🔹 AI Metrics Selection   
+                                Metrics go beyond accuracy:
+                                Quality (hallucination rate)
+                                Safety (toxic output rate)
+                                Latency
+                                Cost per request
+                                User satisfaction   
+                        
+                        🔹 AI Infrastructure, Environment & Resources        
+                                Monitor:
+                                    Cloud cost
+                                    GPU usage
+                                    API limits
+                                    
+                        🔹 Configuration Management
+                                Version control for:
+                                    Prompts
+                                    Models
+                                    RAG datasets
+                                    Guardrails  
+
+                        🔹 AI Governance & Improvement
+                                Feedback loops
+                                    Audit reviews
+                                    Continuous improvement
+                                📌 This block = “AI doesn’t drift out of control”   
+
+                Pillar 3: AI-Specific Enablement
+                    This is about people and adoption, often ignored — but critical.
+                    
+                        🔹 AI Agency Setup
+                                Define:
+                                    Who owns AI?
+                                    Who approves changes?
+                                    Who responds to incidents?
+                                    
+                                    
+                        🔹 AI Capability | Skills
+                                Upskill:
+                                    Engineers
+                                    Product owners
+                                    Risk teams      
+
+                        🔹 AI Awareness
+                                Train users on:
+                                    Limitations
+                                    Safe usage
+                                    Escalation paths      
+                        🔹 AI Customer Collaboration
+                                Feedback from:
+                                    End users
+                                    Business teams  
+                    “The AI Dev & AMS lifecycle ensures AI systems are built, monitored, governed, and continuously improved with clear metrics, operational controls, and responsible oversight.”
+                                        E → M → P
+                                Execute (build & run)
+                                Measure (metrics & governance)
+                                People (skills & adoption)
+                                If one is missing → AI fails.
+                                                    
+
+
+
+AI Design Decisions:
+        🔹 AI Design Decisions:
+            Examples:
+                RAG vs fine-tuning
+                Single agent vs multi-agent
+                Human-in-the-loop or not
+            👉 These decisions drive risk, cost, and autonomy.
+            
+        🔹 AI Risks:
+                Hallucination
+                Bias
+                Over-automation
+                Data leakage
+            👉 Risks are explicitly tracked, not assumed away.   
+
+        🔹 Assumptions, Dependencies & Constraints:
+            Examples:
+                Assumption: Data is up-to-date
+                Dependency: External LLM API
+                Constraint: Regulatory approval
+            👉 This avoids silent failures later   
+
+        🔹 Transition:
+                POC → Pilot → Production
+                Clear handover to operations (AMS)
+            👉 AI doesn’t “die after demo”.        
+    
+Measurement & Control:
+            This is where Plan turns into Monitor.
+            🔹 AI Metrics
+                    Not just accuracy
+                    Hallucination rate
+                    Bias indicators
+                    Latency
+                    Cost per request
+                    User satisfaction
+                    
+            🔹 Estimation
+                    Effort
+                    Cost
+                    Time
+                    Compute usage
+                👉 Helps leadership plan realistically.   
+
+            
+            🔹 Audits & Improvement
+                    RAI audits
+                    Security reviews
+                    Model behavior reviews
+                👉 Continuous trust-building.  
+
+            🔹 Delivery Progress | Capacity | Availability
+                    Are we delivering as planned?
+                    Is AI available when needed?
+                    Any bottlenecks?  
+
+Analysis & Governance (Decision Layer):
+    This is where management and governance act.       
+
+        🔹 Outcome Analysis
+                What went wrong?
+                    Root cause analysis
+                    Improvement actions
+                Example:
+                Hallucinations increased → poor retrieval quality → fix embeddings
+                
+        🔹 Metrics Analysis
+                    Trends over time
+                    Drift detection
+                    Performance steering
+                
+                👉 Metrics drive decisions, not dashboards.
+                
+        🔹 Decision Analysis
+                    Change design?
+                    Reduce autonomy?
+                    Add human review?
+                👉 Architecture evolves based on evidence. 
+
+        🔹 Governance
+                    Progress reviews
+                    Risk reviews
+                    Approval gates
+                 👉 This connects back to:
+                    RAI Risks
+                    SIA
+                    Compliance  
+
+                    PLAN
+                     ├─ Requirements
+                     ├─ RAI principles
+                     ├─ Design decisions
+                     ├─ Risks & assumptions
+
+                    EXECUTE
+                     ├─ CI/CD
+                     ├─ Data & model changes
+                     ├─ Capacity & availability
+
+                    MONITOR
+                     ├─ Metrics
+                     ├─ Outcome analysis
+                     ├─ Audits
+                     ├─ Governance
+                    
+ 🧠 DBS AI QMS – Development Lifecycle
+            (QMS = Quality Management System)
+            This slide answers one key question:
+            “How do we build AI systems in a controlled, repeatable, and compliant way?”       
+        Think of it as SDLC + MLOps + Responsible AI.:  
+
+1️⃣ POC (Proof of Concept) – Should we even do this?
+
+Purpose: Validate feasibility with minimum risk.
+
+What happens here:
+
+Define objectives
+
+Due diligence & RACI (who owns what)
+
+Identify AI use case
+
+Define success criteria
+
+Run initial training
+
+Pilot implementation
+
+📌 Key idea:
+👉 No governance-heavy deployment yet — just learning.
+
+2️⃣ Requirements – What exactly are we building?
+
+Purpose: Lock down scope + responsibility.
+
+Activities:
+
+Business & AI objectives
+
+Functional & non-functional requirements
+
+Risk assessment
+
+Risk treatment plan
+
+Policies & compliance (privacy, ethics, security)
+
+📌 Key idea:
+👉 AI risks are identified BEFORE design.
+
+3️⃣ Design / Technical Solution – How will it work?
+
+Purpose: Architecture + controls.
+
+Activities:
+
+System architecture
+
+Sequence diagrams
+
+Training & validation data strategy
+
+Risk treatment implementation
+
+Examples:
+
+RAG vs fine-tuning
+
+Human-in-the-loop
+
+Guardrails & thresholds
+
+📌 Key idea:
+👉 Design choices directly affect risk & autonomy.
+
+4️⃣ Development – Build the AI
+
+Purpose: Implementation with controls.
+
+Activities:
+
+Code
+
+Unit testing
+
+Training & validation data usage
+
+Ongoing risk monitoring & review
+
+📌 Key idea:
+👉 Risk doesn’t stop once coding starts.
+
+5️⃣ Verification & Validation – Does it really work safely?
+
+Purpose: Prove correctness, safety, and performance.
+
+Activities:
+
+Test data preparation
+
+Integration testing
+
+Performance testing
+
+User Acceptance Testing (UAT)
+
+Risk monitoring & review
+
+📌 Key idea:
+👉 AI must be validated technically AND ethically.
+
+6️⃣ Deployment – Release to production
+
+Purpose: Controlled go-live.
+
+Activities:
+
+Runtime deployment
+
+Deployment risk treatment
+
+Approval gates
+
+📌 Key idea:
+👉 Deployment is a risk event, not a formality.
+
+7️⃣ Operation & Monitoring – Run AI in the real world
+
+Purpose: Keep AI safe and effective.
+
+Activities:
+
+Live data input monitoring
+
+Model execution tracking
+
+Model updates
+
+Risk management
+
+Examples:
+
+Drift detection
+
+Hallucination monitoring
+
+Cost & latency tracking
+
+📌 Key idea:
+👉 AI behavior changes over time — monitor continuously.   
+
+#######################################################
+
+    Inclusiveness

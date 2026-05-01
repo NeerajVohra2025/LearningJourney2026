@@ -1,0 +1,79 @@
+p001_mcp_streamable_greeting_server
+
+docker build -t greeting-server .
+ docker build --no-cache -t mcp-math-server . 2>&1 | Tee-Object build.log
+docker run -d 8001:8001 greeting-server
+Image Management:
+docker pull [image]: Downloads an image from a registry (e.g., docker pull ubuntu:20.04).
+docker images: Lists all locally stored images.
+docker build -t [name:tag] .: Builds an image from a Dockerfile in the current directory (e.g., docker build -t my-app:latest .).
+docker rmi [image]: Removes an image (use -f to force if containers are using it).
+docker tag [source] [target]: Tags an image for a registry (e.g., docker tag my-app:latest myrepo/my-app:v1).
+docker push [image]: Pushes an image to a registry (e.g., docker push myrepo/my-app:v1).
+
+Container Management:
+docker run [image]
+docker run -d -p 80:80 nginx runs Nginx in detached mode, mapping port 80)
+docker exec -it [container] [command]: Runs a command inside a running container interactively (e.g., docker exec -it my-container bash).
+docker logs [container]: Displays logs of a container.
+docker inspect [container]: Shows detailed info about a container (e.g., configuration, network settings).
+
+Network Management:
+docker network ls: Lists all Docker networks.
+docker network create [name]: Creates a custom network (e.g., docker network create my-network).
+docker network connect [network] [container]: Connects a container to a network.
+docker network rm [network]: Removes a network.
+
+Volume Management:
+
+docker volume ls: Lists all Docker volumes.
+docker volume create [name]: Creates a named volume.
+docker volume rm [name]: Removes a volume (must not be in use).
+docker volume inspect [name]: Shows details about a volume.
+
+System-Wide Commands:
+
+docker info: Displays system-wide Docker info (e.g., number of containers, images).
+docker system prune: Removes unused containers, networks, and dangling images (add -a to remove all unused images).
+docker-compose up: Starts services defined in a docker-compose.yml file (add -d for detached mode).
+docker-compose down: Stops and removes services from a docker-compose.yml file.
+
+Tips for Usage:
+
+Use --help with any command for more options (e.g., docker run --help).
+Combine flags for efficiency (e.g., docker run -d -p 8080:80 --name my-app nginx).
+For docker run, common flags include:
+
+-d: Detached mode.
+-p: Port mapping (host:container).
+--name: Assign a name to the container.
+-v: Mount a volume (e.g., -v my-volume:/app).
+-e: Set environment variables (e.g., -e MYSQL_ROOT_PASSWORD=secret).
+
+version: '3.8'
+services:
+  app1:
+    image: app1:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - my-network
+  app2:
+    image: app2:latest
+    ports:
+      - "5000:5000"
+    networks:
+      - my-network
+networks:
+  my-network:
+    driver: bridge
+    
+Explanation:
+
+services: Defines the two containers (app1 and app2).
+image: Specifies the images built earlier (app1:latest, app2:latest).
+ports: Maps host ports to container ports (e.g., 3000:3000 maps host port 3000 to container port 3000).
+networks: Places both containers on a custom bridge network (my-network) for communication.
+
+docker-compose up -d
+docker-compose down    

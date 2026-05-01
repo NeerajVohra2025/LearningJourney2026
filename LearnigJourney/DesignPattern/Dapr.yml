@@ -1,0 +1,7 @@
+What is Dapr?:
+    Dapr(Distributed Application Runtime), a tool that simplifies building distributed 
+    applications like microservices. It’s part of the Dapr Agentic Cloud Ascent (DACA)
+    learning path, which focuses on creating scalable, resilient AI systems.
+    Its a portable, event-driven runtime that makes it easy for developers to build 
+    resilient, stateless, and stateful applications for cloud and edge environments. It
+    supports any programming language and abstracts complex distributed system challenges.

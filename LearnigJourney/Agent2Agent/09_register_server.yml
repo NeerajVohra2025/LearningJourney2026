@@ -1,0 +1,18 @@
+Registry Service
+├── app.py          # API
+├── registry.py     # rules + state contract
+├── server.py       # env-driven runtime
+└── .env            # deployment config
+
+netstat -ano | findstr :7002
+taskkill /F /PID 14796
+
+# Build and run in one command
+docker build --build-arg SERVER_PORT=7002 -t agent-registry:latest . 
+docker run -d -p 7002:7002 --name registry agent-registry:latest
+
+
+
+
+
+

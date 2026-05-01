@@ -1,0 +1,9 @@
+Load Models:
+    BertModel is like a ordering a specific dish at restaurant: BERT Using Pytorch
+    TFBertModel: BERT Using TensorFlow 
+    AutoModel is like ordering from whole menu- just say the dish name and its served correctly.: All Tranformer Architecture
+    
+How to access LLM Models?:
+    Using Transformers
+    Using LangChain
+    Using Model's owm libraries

@@ -1,0 +1,59 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/27.0.9 Chrome/134.0.6998.205 Electron/35.4.0 Safari/537.36" version="27.0.9">
+  <diagram name="Page-1" id="C9MrZ9A4i11kDBAKFfqW">
+    <mxGraphModel dx="872" dy="529" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="MFQAflXJCryGQHBoNdVy-1" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="80" width="350" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-2" value="v1" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="308" y="110" width="235" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-3" value="v2" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="308" y="170" width="235" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-4" value="v3" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="308" y="210" width="235" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-5" value="v..." style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="308" y="300" width="235" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="MFQAflXJCryGQHBoNdVy-6" target="MFQAflXJCryGQHBoNdVy-2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="100" y="120" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="MFQAflXJCryGQHBoNdVy-6" target="MFQAflXJCryGQHBoNdVy-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" edge="1" parent="1" source="MFQAflXJCryGQHBoNdVy-6" target="MFQAflXJCryGQHBoNdVy-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="MFQAflXJCryGQHBoNdVy-6" target="MFQAflXJCryGQHBoNdVy-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-6" value="question Vector" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="140" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-8" value="cosine similerty" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="110" y="100" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-10" value="Vector Database" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="240" y="50" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-14" value="General Nearest Neighbours Searches through Every Vector and Compute Similerties:&lt;div&gt;&lt;ul&gt;&lt;li&gt;This process is slow , but 100% accurate&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="370" width="750" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-15" value="&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;Aurate Nearest Neighbours :&lt;/font&gt;&lt;div&gt;&lt;ul&gt;&lt;li&gt;&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;Builds an Index Structure (like a graph tree)&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;For example assume your text book , if want to search specific information .&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;We no need to turn every page&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;In text book starting there is an index available&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;If you see that index we can get an Idea, our information on which page it exist.&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;Thats why ANN method used in&amp;nbsp;&lt;/font&gt;&lt;/li&gt;&lt;ul&gt;&lt;li&gt;&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;Vector databases&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;semantic searches&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;Image and Audio retrieval&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;font color=&quot;#ff0000&quot;&gt;Recommendation systems&lt;/font&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/ul&gt;&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="50.5" y="500" width="750" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="MFQAflXJCryGQHBoNdVy-16" value="Some ANN algorithims:&lt;div&gt;&lt;ul&gt;&lt;li&gt;HNSW (Hierachical Navigable Small world)&lt;/li&gt;&lt;li&gt;IVF (Inverted file Index)&lt;/li&gt;&lt;li&gt;Annoy ( Approximate nearest neighbour oh yeah)&lt;/li&gt;&lt;li&gt;scaNN(scallable nearest neighbours)&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="640" width="770" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

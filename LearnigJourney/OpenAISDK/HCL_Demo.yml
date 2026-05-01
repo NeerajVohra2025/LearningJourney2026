@@ -1,0 +1,42 @@
+Demo on :
+OpenAI Agents SDK:
+    The OpenAI Agents SDK enables you to build agentic AI apps in a lightweight, easy-to-use package with very few abstractions
+Subject: Invitation to Proof of Concept (POC) Presentation on OpenAI Agents SDK  
+
+Dear Mandar,
+
+I hope this message finds you well.
+
+As part of my ongoing commitment to continuous learning and innovation, I have been actively upskilling in the field of Artificial Intelligence, particularly in emerging technologies such as AI agents, LLMs, automation, and responsible AI practices .
+
+I would like to take this opportunity to share my learning journey and insights through a short internal presentation and demo , where I will walk through a Proof of Concept (POC) I recently developed using OpenAI Agents SDK modern AI frameworks.
+
+The session aims to not only highlight my technical growth but also to explore how these capabilities could be leveraged within our organization for future innovation initiatives  
+My learning path has included:
+    Core Programming & Tooling :
+    Strengthening proficiency in Python , leveraging it as the foundation for AI/ML workflows. I've also adopted UV (Python package manager) for faster dependency management and environment setup, significantly improving development efficiency.
+    Agent-Based Architectures :
+    Exploring frameworks like Crew AI and the OpenAI Agents SDK to design autonomous systems capable of reasoning, planning, and executing complex tasks through tool integrations and dynamic workflows.
+    LLMs & Interaction Design :
+    Experimenting with Large Language Models (LLMs) for natural language understanding, code generation, and workflow automation. This includes prompt engineering, function calling, and context-aware response generation.
+    User Interface & Debugging Tools :
+    Using Chainlit to build interactive UIs for agent-based applications, enabling real-time visualization and debugging of conversations and workflows — making them more transparent and user-friendly.
+    Continuous Learning & Community Engagement :
+    Staying current with advancements in AI through online courses, documentation deep dives, open-source contributions, and participation in developer communities. I'm committed to lifelong learning and applying cutting-edge techniques to solve real-world problems.
+    This journey has not only enhanced my technical capabilities but also equipped me with the tools to contribute meaningfully to our organization’s innovation goals — especially in areas such as automation, intelligent workflows, and data-driven decision-making.
+Agenda:
+    Demo: Proof of Concept Using OpenAI Agents SDK
+        Showcase of a working agent-based system
+
+        Key Features Explored in the SDK:
+            Agent Loop : Automated reasoning, tool calling, and execution flow
+            Python-First Design : Seamless integration with existing codebases and logic
+            Agent Handoffs : Coordination between multiple agents for complex workflows
+            Guardrails : Input validation and safety checks to ensure responsible AI behavior
+            Function Tools : Easily turn Python functions into AI tools with auto-generated schemas
+            Tracing & Debugging : Visualize and monitor workflows for transparency and optimization
+    Discussion: 
+        Potential Applications for Our Organization
+        Where this technology could add value across teams or processes
+    
+    Feedback ?: 

@@ -1,0 +1,57 @@
+Documents: Google Drive
+Database: PineCone 
+    Whenever converts text to vector we need embedding model
+    
+    step1:
+     Drive
+      Google Drive
+       searchfiles and folder    
+
+Observability:
+ langsmith
+    tracing
+    monitoring
+.env
+
+ 
+MCP:
+ Model Context Protocol
+
+Agentic Workflows:
+ Cluster Node: Agent Node
+   LLM model
+   Tools
+   
+   
+LLM-> Tools/Action
+Standard Interface to connect LLM with Tools
+MCP Client
+MCP Server
+
+
+Tools-> 
+HTTP request Tools
+MCP Client Tools
+
+
+
+New Work Flow:
+MCP server trigger (MCP Server Tool Node)
+    - Tools
+    - Workflows
+    
+    
+Authentication:
+server:
+  
+
+client:    
+
+
+ 
+
+
+
+ 
+ 
+  

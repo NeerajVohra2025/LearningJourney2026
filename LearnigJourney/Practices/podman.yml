@@ -1,0 +1,516 @@
+OCI - Open Contianer Initiative
+For Windows developer machines I recommend:
+Podman Desktop (UI)
++
+Podman engine inside WSL
+
+>> Write-Host "=== Cleanup complete. Restart your PC before reinstalling Podman CLI ==="
+=== Podman Deep Cleanup (with confirmation) ===
+>>> Found Notifications key: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\Podman Desktop
+Delete this key? (Y/N): y
+>>> Found Protocol handler key: HKCU:\SOFTWARE\Classes\podman-desktop
+Delete this key? (Y/N): y
+=== Cleanup complete. Restart your PC before reinstalling Podman CLI ===
+PS C:\WINDOWS\system32>
+
+#####
+Write-Host "=== Podman Cache Cleanup ==="
+
+# Kill Explorer to release cache files
+Stop-Process -Name explorer -Force
+Write-Host "Explorer stopped..."
+
+# Paths to clear
+$cachePaths = @(
+    "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\iconcache*",
+    "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache*",
+    "$env:LOCALAPPDATA\TileDataLayer"
+)
+
+foreach ($path in $cachePaths) {
+    if (Test-Path $path) {
+        Write-Host ">>> Deleting cache: $path"
+        Remove-Item $path -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# Restart Explorer
+Start-Process explorer.exe
+Write-Host "Explorer restarted."
+
+Write-Host "=== Cleanup complete. Please restart your PC once more before reinstalling Podman CLI ==="
+
+####
+
+
+
+
+Install Podman engine manually inside WSL first, then Podman Desktop will detect it automatically.:
+systemctl --user enable podman.socket
+systemctl --user start podman.socket\
+podman system service --time=0 &
+podman system service --time=0 tcp:0.0.0.0:8888 &
+ss -lntp | grep 8888
+hostname -I
+172.28.9.0  # 172.28.9.0
+
+Connection name: wsl-podman
+Connection URI: tcp://172.28.48.1:8888
+
+
+echo $XDG_RUNTIME_DIR
+ls $XDG_RUNTIME_DIR/podman
+
+podman system connection add wsl-podman unix:///run/user/1000/podman/podman.sock
+podman system connection default wsl-podman
+
+taskkill /IM "Podman Desktop.exe" /F
+
+
+
+C:\Users\neera\.local\share\containers
+C:\Users\neera\.config
+
+C:\Users\neera\.local\share\containers\podman
+C:\Users\neera\.config\containers
+C:\Users\neera\.ssh\podman-machine-default
+
+C:\Users\neera\AppData\Local\Programs
+
+
+Install Podman Desktop
+        │
+        ▼
+Create container-compose.yml
+        │
+        ▼
+podman compose -f container-compose.yml up -d
+        │
+        ▼
+podman ps
+        │
+        ▼
+http://localhost:8080
+        │
+        ▼
+podman compose down
+
+winget install RedHat.Podman-Desktop
+
+
+
+wsl
+username@DESKTOP:~$
+
+sudo apt update
+sudo apt install -y podman
+podman --version
+
+sudo apt install -y podman-compose
+podman-compose --version
+podman run hello-world
+podman ps -a
+Now run from PowerShell:
+wsl podman ps
+wsl podman run hello-world
+Optional — Create PowerShell alias: In powershell not in linux
+notepad $PROFILE
+function podman { wsl podman $args }
+function podman-compose { wsl podman-compose $args }
+
+
+Restart PowerShell.:
+uv init --package podman-poc
+def main():
+    print("Hello from Podman Python container!")
+
+if __name__ == "__main__":
+    main()
+    
+[project.scripts]
+podman-poc = "podman_poc.main:main"
+
+FROM python:3.13-slim AS builder
+
+WORKDIR /app
+
+# Install uv and build dependencies
+RUN pip install uv
+
+# Copy only necessary files for build
+COPY pyproject.toml README.md ./
+COPY src/ ./src/
+
+# Install dependencies in builder
+RUN uv pip install --system .
+
+# --- Final lightweight image ---
+FROM python:3.13-slim
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy only runtime files
+COPY pyproject.toml README.md ./
+COPY src/ ./src/
+
+CMD ["podman-poc"]
+
+
+podman build -t podman-poc .
+podman images
+podman run podman-poc
+
+
+compose.yml:
+
+version: "3"
+
+services:
+  python-app:
+    build: .
+    container_name: podman-poc
+
+podman-compose up
+Windows
+   │
+Podman Desktop (UI)
+   │
+WSL Ubuntu
+   │
+Podman Engine
+   │
+Containers
+
+
+podman --version
+podman machine list
+
+    
+
+
+
+
+
+systeminfo | findstr /i "Virtualization"
+
+wsl --list --verbose
+wsl --unregister podman-machine-default2
+wsl --unregister podman-net-usermode
+wsl --list
+Remove Podman Residual Directories:
+Remove-Item "$env:USERPROFILE\.local\share\containers" -Recurse -Force -ErrorAction Ignore
+Remove-Item "$env:USERPROFILE\.config\containers" -Recurse -Force -ErrorAction Ignore
+Remove-Item "$env:USERPROFILE\.podman" -Recurse -Force -ErrorAction Ignore
+
+Remove Podman Program Folder (if exists):
+Remove-Item "C:\Program Files\RedHat\Podman" -Recurse -Force -ErrorAction Ignore
+Remove-Item "C:\Program Files\Podman" -Recurse -Force -ErrorAction Ignore
+
+Confirm Podman Is Completely Removed:
+podman --version
+where podman
+Your machine state is now:
+Windows
+   │
+WSL
+   │
+(no Podman VM)
+(no Podman CLI)
+(no Podman Desktop)
+(no containers)
+
+🚀 Next Step (Clean Installation):
+Now install Podman correctly using one method only
+winget install RedHat.Podman-Desktop
+
+💡 Important Enterprise Tip:
+When using Podman on Windows, always remember:
+Podman Desktop
+   └── manages Podman CLI
+   └── manages Podman Machine (WSL VM)
+   └── manages Compose
+   
+Never install Podman CLI separately, otherwise upgrade conflicts occur (like the one you faced).:
+
+
+podman --version
+podman machine list
+podman info
+podman compose version
+podman run hello-world
+
+Windows
+   │
+Podman Desktop
+   │
+Podman CLI
+   │
+Podman Machine (WSL VM)
+   │
+Podman Engine
+   │
+Containers
+
+💡 Enterprise Tip
+
+Developers often forget to start the Podman machine after installation.
+Always run once:   
+
+podman machine init
+podman machine start
+
+
+STEP 1 — Verify WSL2:
+wsl --status
+If WSL not installed:
+wsl --install
+
+STEP 2 — Install Podman desktop:
+https://podman-desktop.io/downloads
+
+Step 1 — Verify Podman Installation:
+Check podman:
+podman --version
+Check podman machine:
+podman machine list
+Start machine if not running:
+podman machine start
+Test container runtime:
+podman run hello-world
+
+Step 2 — Verify Compose Support:
+podman-compose --version
+
+Step 3 — Create Test Project:
+mkdir podman-compose-demo
+cd podman-compose-demo
+
+Step 4 — Create container-compose.yml:
+version: "3.9"
+
+services:
+
+  nginx:
+    image: docker.io/library/nginx:latest
+    container_name: podman-nginx
+
+    ports:
+      - "8080:80"
+
+    restart: always
+    
+
+Step 5 — Start Containers:
+podman compose -f container-compose.yml up
+
+Step 6 — Verify Container:
+podman ps
+
+Step 7 — Test Application:
+http://localhost:8080
+
+Step 8 — Check Logs:
+podman logs podman-nginx
+or
+podman compose -f container-compose.yml logs
+
+Step 9 — Stop Containers:
+podman compose -f container-compose.yml down
+
+
+Step 11 — Validate Network:
+Check network created by compose
+podman network ls
+
+Inspect:
+podman network inspect podman-compose-demo_default
+
+Step 12 — Clean Environment:
+Remove everything.
+podman compose -f container-compose.yml down --volumes
+
+Remove images:
+podman rmi nginx
+
+
+Complete Flow Summary:
+Install Podman Desktop
+        │
+        ▼
+Create container-compose.yml
+        │
+        ▼
+podman compose -f container-compose.yml up -d
+        │
+        ▼
+podman ps
+        │
+        ▼
+http://localhost:8080
+        │
+        ▼
+podman compose down
+
+
+Enterprise CI/CD architecture:
+with:
+Containerfile
+container-compose.yml
+GitLab CI
+Podman build
+Kind Kubernetes
+
+
+
+
+
+
+################################################################
+Enterprise Architecture Overview:
+Enterprise pipeline we will build
+Developer (Windows + Podman)
+ Developer
+   │
+   │ git push
+   ▼
+
+GitLab Repository
+   │
+   ▼
+
+GitLab CI/CD Pipeline
+   │
+   ├── Stage 1 : Code Quality
+   │        (Lint / Unit Tests)
+   │
+   ├── Stage 2 : Secure Image Build
+   │        (Buildah)
+   │
+   ├── Stage 3 : Image Scan
+   │        (Trivy)
+   │
+   ├── Stage 4 : Image Sign
+   │        (Cosign)
+   │
+   ├── Stage 5 : Push Image
+   │        (Skopeo → GCR)
+   │
+   └── Stage 6 : Deploy
+            (GKE Kubernetes)
+
+   │
+   ▼
+
+Google Container Registry (GCR)
+
+   │
+   ▼
+
+Google Kubernetes Engine (GKE)
+
+   │
+   ▼
+
+Running Pods
+
+
+What Gets Installed When You Install Podman Desktop:
+| Component         | Installed |
+| ----------------- | --------- |
+| Podman CLI        | ✅         |
+| Podman Machine    | ✅         |
+| WSL integration   | ✅         |
+| Container runtime | ✅         |
+
+
+Initialize Podman Machine (Required Step):
+podman machine init
+Then start it:
+podman machine start
+Verify:
+podman info
+Test Podman Build:
+Test with a simple container:
+podman run hello-world
+Expected output:
+Hello from Podman!
+Install Podman Compose (Not Included):
+Unlike Docker, compose is not bundled.
+Install manually:
+pip install podman-compose
+Verify:
+podman-compose --version
+
+Verify Everything Before Pipeline
+Run these commands:
+
+podman info
+podman build .
+podman run -p 8000:8000 image-name
+podman-compose up
+podman build
+podman run
+podman push
+podman-compose
+
+Enterprise CI/CD Pipeline Behavior:
+In your GitLab CI, Podman CLI runs inside the runner image:
+image: quay.io/podman/stable   # quay.io free contianer registry
+So the runner already contains Podman CLI.
+
+| Question                       | Answer |
+| ------------------------------ | ------ |
+| Do we need Podman CLI?         | ✅ Yes  |
+| Installed with Podman Desktop? | ✅ Yes  |
+| Need to install separately?    | ❌ No   |
+| Need Podman Machine?           | ✅ Yes  |
+| Need podman-compose?           | ✅ Yes  |
+
+
+
+
+
+
+Enterprise Container Toolchain:
+| Tool          | Purpose                |
+| ------------- | ---------------------- |
+| **Podman**    | Container runtime      |
+| **Buildah**   | Secure image building  |
+| **Skopeo**    | Registry copy          |
+| **Trivy**     | Vulnerability scanning |
+| **Cosign**    | Image signing          |
+| **GitLab CI** | Pipeline automation    |
+
+
+This is called:
+Secure Container Supply Chain
+
+Enterprise Project Structure:
+sample-podman-platform
+│
+├── pyproject.toml
+├── README.md
+│
+├── Containerfile
+│
+├── container-compose.yml
+│
+├── .gitlab-ci.yml
+│
+├── security
+│   ├── trivy.yaml
+│   └── cosign.pub
+│
+├── deploy
+│   ├── namespace.yaml
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+└── src
+    └── sample_podman
+        ├── __init__.py
+        └── app.py
+https://chatgpt.com/c/69aef1ad-a004-83ab-a05e-05e6d1783d46

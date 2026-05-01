@@ -1,0 +1,143 @@
+What is Portkey AI?:
+ Portkey is an open-source AI Gateway designed for developers building Gen AI apps. It sits between your code and LLM providers (like OpenAI or Anthropic), adding features like:
+ Routing: Send requests to the best/cheapest LLM automatically.
+ Observability: Track usage, costs, and errors in a dashboard.
+ Guardrails: Block harmful outputs or enforce rate limits.
+ It's not a model itself—it's the "plumbing" that makes your AI apps reliable and production-ready.
+ 
+🎯 What is Portkey AI?
+Portkey is a developer platform for LLMs that provides:
+
+Unified API to access multiple LLMs (OpenAI, Anthropic, Mistral, etc.)
+Observability (logs, latency, cost tracking)
+Guardrails (content filtering, PII redaction)
+Caching, fallbacks, and A/B testing
+Think of it as a "control plane" for your Gen AI apps—like a smart router + dashboard for LLMs.
+ 
+ 
+Level Up with Advanced Features:
+ Add Routing: In the code, set virtual_key="my-route" in the request to auto-switch models if one fails.
+ Guardrails: Enable content filters in the dashboard to block toxic responses.
+ Integrate with LangChain: If you're into chains, pip install langchain-openai, then use ChatOpenAI with openai_api_key=portkey_key and openai_api_base="https://api.portkey.ai/v1".
+ 
+ Example Extension: Add this to your code for retries: 
+ response = client.chat.completions.create(
+    # ... same as above ...
+    extra_headers={"X-Portkey-Retry": "true"}  # Auto-retry on failure
+)
+
+Guardrails: Think of them as the bouncers at your AI party's door—scanning inputs and outputs to block trouble (like toxic content or sneaky prompt injections) before it crashes the vibe. They're crucial for production apps, especially as a student building something ethical and scalable.
+Portkey's Guardrails aren't just filters; they're a full orchestration system built on their Gateway. They run real-time checks, trigger actions (like denying bad requests), and even help you build eval datasets for fine-tuning. And the best part? They're available on all plans—free Developer tier gets basics, while Production/Enterprise unlocks pro features like custom ones.
+
+What Are Guardrails and Why Bother?:
+ Guardrails enforce "rules of the road" for your LLM interactions. LLMs are powerful but brittle—they might spit out a 200 OK with gibberish or biased junk. Guardrails intercept requests/responses at the Gateway level, running checks (e.g., "Does this contain code?") and actions (e.g., "Deny if yes").
+Purpose for You as a Student:
+ Safety: Block harmful outputs (e.g., hate speech via moderation checks).
+ Reliability: Catch prompt injections where users try to hijack your AI.
+ Compliance: Ensure outputs match schemas or regs (great for capstone projects).
+ Observability: Log failures to datasets for debugging or evals.
+They're deterministic (regex-based) or LLM-powered (e.g., "Is this gibberish?"), and run async (no latency) by default. Pro tip: Start with INPUT checks (prompts) to prevent bad seeds.
+
+Setting Up Guardrails (The 4-Step Ritual):
+ Portkey makes this dead simple—no PhD required. Head to your Portkey Dashboard > Guardrails tab.
+ Create Guardrail Checks:
+  Click "Create Guardrail".
+  Pick checks from the sidebar (20+ options—more below).
+  Choose INPUT (prompt) or OUTPUT (response)—not both per guardrail.
+  Add config (e.g., for "Word Count": set min=5, max=100).
+  Save. Each check outputs a boolean (PASS/FAIL). Pro: Chain multiple checks per guardrail.
+Add Guardrail Actions:
+  Define what happens on PASS/FAIL (e.g., Deny, Log, Retry).
+  Name it (e.g., "No-Code-Outputs") and save—you get a $GUARDRAIL_ID.
+Enable via Configs:
+  Go to Configs tab > Create Config.
+  Attach your Guardrail ID (two ways—see config section below).
+  Save for a $CONFIG_ID. Async mode (default) runs in parallel; sync adds latency but blocks upfront.
+Attach to Your Code:
+  Use the Config ID in your Portkey client. Boom—guardrails activate on every request.
+  
+  
+Configuration Deep Dive:
+ Configs are your "recipe" for requests—attach guardrails here. Two flavors:
+ Option 1: Simplified (Recommended—Clean!):
+  {
+  "retry": { "attempts": 3 },
+  "input_guardrails": ["gr-abc123"],  // INPUT checks
+  "output_guardrails": ["gr-def456"]   // OUTPUT checks
+  }
+  
+  Option 2: Hooks (More Granular):
+  {
+  "before_request_hooks": [{ "id": "gr-input-xyz" }],  // INPUT
+  "after_request_hooks": [{ "id": "gr-output-uvw" }]   // OUTPUT
+}
+
+############################################
+Full Python Example: Guarded Chat Completion
+Install: pip install portkey-ai
+
+Advanced: Fallback on Fail
+{
+  "strategy": {
+    "mode": "fallback",
+    "on_status_codes": [246, 446]  // Trigger on guardrail fails
+  },
+  "targets": [
+    {"provider": "@openai-gpt"},
+    {"provider": "@anthropic-claude"}  // Backup
+  ],
+  "input_guardrails": ["gr-injection-check"]
+}
+
+Limitations:
+ Per-guardrail: INPUT or OUTPUT, not both.
+ Async results? Logs only (no response JSON).
+ Enterprise for customs; basics free.
+ No full-convo history scanning yet.
+ 
+Exploring JSON Schema Checks in Portkey Guardrails:
+ JSON Schema validation—a killer feature for ensuring your LLM outputs are structured and reliable.
+ JSON Schema Checks are a cornerstone of Portkey's deterministic guardrails, letting you enforce structured output formats (e.g., ensuring a response is a valid JSON object with specific fields.
+ 
+ Step 1: What Are JSON Schema Checks and Why Use Them?
+  A JSON Schema Check in Portkey validates that an LLM's output (or input) matches a predefined JSON schema—a blueprint for your data's structure. Think of it as a contract: "Hey, LLM, your response must look like this, or it's getting rejected." This is crucial for production apps where downstream systems expect consistent formats.
+  Why It’s Awesome for You:
+   Reliability: Forces LLMs to output structured JSON (e.g., {"title": "string", "score": number}) instead of freeform text.
+   Error Prevention: Catches malformed outputs early (e.g., missing fields, wrong types).
+   Use Cases: Perfect for API responses, database inserts, or eval datasets for your ML coursework.
+  How It Works:
+   You define a JSON Schema (standard format, see json-schema.org).
+   Portkey runs it as a guardrail check on INPUT (prompt) or OUTPUT (response).
+   If the JSON doesn’t match, you can deny (HTTP 446), warn (246), log, or trigger fallbacks.
+  Example Use Case: You’re building a study app that generates quiz questions. You want every response to be a JSON like {"question": "string", "answer": "string"}. A JSON Schema Check ensures no rogue text slips through
+  
+ Step 2: Setting Up a JSON Schema Check in Portkey
+  You can configure this in the Portkey Dashboard or inline in code. Let’s start with the dashboard for clarity, then show inline configs.
+   Log into Portkey Dashboard: .
+    Go to Guardrails tab > Create Guardrail.
+    Select Check Type: json_schema.
+    Pick Side: OUTPUT (most common for response validation; INPUT for prompts).
+   Define the Schema in JSON. Example for a quiz app: 
+      {
+      "type": "object",
+      "properties": {
+        "question": { "type": "string", "minLength": 5 },
+        "answer": { "type": "string", "minLength": 1 }
+      },
+      "required": ["question", "answer"],
+      "additionalProperties": false
+    } 
+   This enforces: JSON object with question and answer as strings, no extra fields.
+   Set Action: Deny (block on fail), Log Only (monitor), or Feedback (build eval datasets).
+   Save—get a $GUARDRAIL_ID (e.g., gr-json-quiz).
+   Create a Config in the Configs tab
+    {
+    "output_guardrails": ["gr-json-quiz"],
+    "retry": { "attempts": 2 }
+    }
+    Save for a $CONFIG_ID (e.g., pc-quiz-check).
+  Async vs. Sync:
+   Async (default): Checks run in parallel, logged to dashboard (no latency hit).
+   Sync: Blocks request until validated (adds ~10ms). Use for strict enforcement.
+    
+   

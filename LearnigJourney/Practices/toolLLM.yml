@@ -1,0 +1,242 @@
+uv add fastapi uvicorn pydantic httpx tomli
+uv add ../platform-protocol
+
+tool-llm/
+│
+├── pyproject.toml
+├── config.toml
+├── tool.toml
+├── Dockerfile
+│
+└── src/tool_llm/
+    │
+    ├── main.py
+    │
+    ├── bootstrap/
+    │   ├── lifecycle.py
+    │   └── startup.py
+    │
+    ├── configuration/
+    │   └── settings.py
+    │
+    ├── domain/
+    │   ├── llm_request.py
+    │   └── llm_response.py
+    │
+    ├── application/
+    │   └── llm_service.py
+    │
+    ├── providers/
+    │   ├── base_provider.py
+    │   ├── openai_provider.py
+    │   ├── azure_provider.py
+    │   ├── anthropic_provider.py
+    │   └── provider_factory.py
+    │
+    ├── infrastructure/
+    │   ├── logging_config.py
+    │   └── security.py
+    │
+    ├── interface/
+    │   └── llm_controller.py
+    │
+    └── utilities/
+        └── response_mapper.py
+        
+        
+ 🏛 ENTERPRISE PROPERTIES ACHIEVED
+
+✔ Provider-agnostic
+✔ Dynamic config via .toml
+✔ A2A compliant
+✔ Independently deployable
+✔ Clean architecture
+✔ No vendor lock-in
+✔ Tool contract driven
+✔ Registry compatible
+✔ Container secure
+✔ Horizontal scaling ready       
+
+
+bootstrap/
+│
+├── startup.py        # Initialization logic
+├── register.py       # Self registration to registry
+├── heartbeat.py      # Optional TTL heartbeat
+└── lifecycle.py      # FastAPI lifespan wiring
+        
+ uv run uvicorn tool_llm.main:app --port 9101  
+
+
+🟢 1️⃣7️⃣ POSTMAN TEST (STEP BY STEP)
+Step 1 — Open Postman
+Method: POST
+URL:
+http://localhost:9101/a2a
+Step 2 — Headers
+Content-Type: application/json
+Step 3 — Body (RAW JSON)
+{
+  "correlation_id": "test-123",
+  "source": "agent-incident",
+  "target": "tool-llm",
+  "message_type": "REQUEST",
+  "capability": "llm.generate",
+  "payload": {
+    "prompt": "Explain microservice architecture in simple terms",
+    "temperature": 0.2,
+    "max_tokens": 200
+  }
+}
+ 
+ 
+ Step 4 — Expected Response:
+ {
+  "correlation_id": "test-123",
+  "source": "tool-llm",
+  "target": "agent-incident",
+  "message_type": "RESPONSE",
+  "capability": "llm.generate",
+  "payload": {
+    "content": "...generated text...",
+    "provider": "dynamic",
+    "model": "dynamic"
+  }
+}
+
+
+🏛 FINAL ENTERPRISE CHARACTERISTICS
+
+✔ Self-registering
+✔ Provider-agnostic
+✔ Clean architecture
+✔ Registry compliant
+✔ A2A compliant
+✔ Fully testable
+✔ Stateless
+✔ Horizontally scalable
+✔ Enterprise Docker ready
+
+
+🏛 OVERALL TEST FLOW:
+
+Step 1 → platform-registry
+Step 2 → tool-llm (auto self-register)
+Step 3 → Verify registry entry
+Step 4 → Health check tool
+Step 5 → Send A2A request
+Step 6 → Receive LLM response
+
+✅ STEP 1 — START PLATFORM REGISTRY:
+Go to your platform-registry project.
+🔎 Verify Registry Health
+Open browser or Postman:
+🔎 Verify Registry Health
+Open browser or Postman:
+Registry is ready.
+
+✅ STEP 2 — START TOOL-LLM:
+Now open a new terminal.
+cd tool-llm
+uv run uvicorn tool_llm.main:app --port 9101
+
+🔁 What Happens Automatically:
+During startup:
+lifespan() executes
+Registrar.register() runs
+tool.toml is read
+Metadata is sent to:
+POST http://localhost:8500/register
+Registry stores tool entry
+If working properly, you should see log:
+
+✅ STEP 3 — VERIFY REGISTRATION:
+Now check registry.
+
+Option A — If you have /services endpoint:
+GET http://localhost:8500/services
+
+Expected response should include:
+
+[
+  {
+    "service": {
+      "name": "tool-llm",
+      "version": "1.0.0",
+      "type": "tool"
+    },
+    "capabilities": {
+      "list": ["llm.generate"]
+    },
+    "network": {
+      "endpoint": "http://localhost:9101/a2a"
+    }
+  }
+]
+
+This confirms:
+
+✔ Self-registration
+✔ Capability metadata stored
+✔ Endpoint registered
+
+
+✅ STEP 4 — VERIFY TOOL HEALTH
+Check tool health:
+GET http://localhost:9101/health
+{
+  "status": "UP"
+}
+Tool is running properly.
+
+✅ STEP 5 — SEND A2A REQUEST (POSTMAN)
+
+Now we test real LLM call.
+
+🟢 POSTMAN CONFIGURATION
+Method:
+
+POST
+
+URL:
+http://localhost:9101/a2a
+Headers:
+Content-Type: application/json
+
+🟢 BODY (RAW JSON)
+{
+  "correlation_id": "test-llm-001",
+  "source": "agent-test",
+  "target": "tool-llm",
+  "message_type": "REQUEST",
+  "capability": "llm.generate",
+  "payload": {
+    "prompt": "Explain enterprise microservice architecture in simple terms.",
+    "temperature": 0.2,
+    "max_tokens": 200
+  }
+}
+
+✅ STEP 6 — EXPECTED RESPONSE
+
+If everything works, you should receive:
+{
+  "correlation_id": "test-llm-001",
+  "source": "tool-llm",
+  "target": "agent-test",
+  "message_type": "RESPONSE",
+  "capability": "llm.generate",
+  "payload": {
+    "content": "Enterprise microservice architecture is...",
+    "provider": "dynamic",
+    "model": "dynamic"
+  }
+}
+
+That confirms:
+
+✔ A2A contract works
+✔ Provider abstraction works
+✔ Prompt execution works
+✔ Tool is fully functional
+

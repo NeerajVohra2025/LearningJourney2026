@@ -1,0 +1,86 @@
+# Community Edition
+#---------------------------------------------
+Prompt Engineering
+n8n Workflow
+n8n agent 
+#---------------------------------------------
+# Level 1 certification
+#   Editor UI
+#   - Active/Inactive  # scheduled/manual
+#   - save as json
+#   - import json file
+#   - scope personal 
+#   - node panel  # tab
+#   - settings
+#   - node name   # F2
+
+#----------------------------------------------------------------------
+# Every node is a function, must have parameters
+#   - setting of nodes
+#   - Docs
+#----------------------------------------------------------------------
+# Nodes
+#   - A node is an individual step(function) in our workflow.
+#   - Types:
+#       - Trigger node  # execute workflow
+#       - App or Action node # external application
+#       - Core node # profides logic , api calls 
+#       - Cluster Node # group of nodes        
+########################################################################################################################
+# Level 1 Exam:
+#   - credentials warehouse (API keys) getting after signup for level 1 exam
+#   - Airtable like google sheet credentials (API Key)
+#   - Discord channel (API Key)
+# Steps:
+#   1) select Trigger node
+#   2) app node (hacker news)
+# Data Analysis: Analysis the historical Data
+# Data Analytics: Predicts the missing based on historical using ML
+# Data Scientist: Find solution of the current problem using the best available algorithim
+#---------------------------------------------------
+Example:
+ 1) Get the relevant data (Order Id,Order Status, Order Value, Employee Name) from the DataWare House
+ 2) Filter the Order by their Status
+ 3) Calculate the total value of all the booked orders
+ 4) Notify the team members about the booked orders in the compan'y Discord channel
+ 5) Insert the details about the processing orders in Airtable for follow_up
+ 6) Schedule this workflow to run every Monday morning
+ 
+ Workflow involves sending data from company's dataware house to two external services
+    Discord/ email/Whatsup
+    Airtable/Googlesheet
+ Before that , the data has to be wrangled with general functions (conditional filtering, calculation,scheduling)
+n8n provides integration for all these steps
+
+Steps/Nodes:
+    1) Getting data from Datawarehouse (endpoints known)
+    2)Inserting data into Airtable
+    3) Filtering orders
+    4) Setting valuse for processing orders
+    5) Calculating booked orders
+    6) Notifying the team
+    7) Scheduling the Workflow
+    8) Actiating and examing the Workflow
+step1: access data from data ware house
+ We don't have any dataware house node available?
+ We have core nodes to access api, can use Httprequest core node
+    Authorization: 
+        Generic Credential Types    
+            Header Authorization
+                Header Auth
+                    send header
+step2:
+https://docs.n8n.io/integrations/builtin/credentials/airtable/
+    create an Airtable Account
+    create workspace
+    create table
+    get token:
+       builder hub-> personal access token     
+       create token , add scope   
+       acess ->base-> 
+step3: Edit
+       
+step4: Discord (Using Webhook)
+# core node returun list of dictionary
+
+       

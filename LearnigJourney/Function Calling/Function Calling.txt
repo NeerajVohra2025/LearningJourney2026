@@ -1,0 +1,25 @@
+Fine tunning: Change LLMs existing behavior
+	Autheticated Data Validated by Business Owner
+	Algorithim for fine tunning
+		PEFT: Parameter Edoption fine tuning
+		LORA (Lower ranking adoption)  # used by gemini
+		
+Google AI Studio:
+	Tune a model:
+		import: chose a base Model # select best model
+	Advance Settings:
+		Tuning epoch :
+			suger Cane Machine (Number of times pass through neuro network)
+	Learning Rate multiplier:
+			If pass our new data through neuro network once , then difference between actual data and prediction data is called the loss
+		    steps from point A to pointB is called learning rate
+	Batch Size
+	Local Minima
+	Global Minima
+		wrong training	
+		underfit:
+			Gain # loss rate is less
+		overfit # variance focuced on only book
+			biased capability problem
+		Idlefit (Generalized)
+			Optimization	

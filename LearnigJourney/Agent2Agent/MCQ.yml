@@ -1,0 +1,310 @@
+    Q1. What is the primary role of the A2A protocol?
+        A. To manage LLM prompts and memory
+        B. To standardize communication between autonomous agents
+        C. To fine-tune foundation models
+        D. To replace LangGraph and OpenAI SDKs
+        ✅ Correct Answer: B
+        Why:
+        A2A defines how agents discover and communicate, not how they reason.
+        ❌ A – Reasoning is handled by LLM frameworks
+        ❌ C – Training is out of scope
+        ❌ D – A2A is framework-agnostic
+        
+    Q2. Which endpoint allows agents to discover another agent’s capabilities?
+        A. /tasks
+        B. /health
+        C. /.well-known/agent-card.json
+        D. /skills/list    
+        
+        ✅ Correct Answer: C
+        Why:
+        Agent Cards are always exposed at a well-known URL.
+        
+    Q3. Which AgentSkill attribute is REQUIRED and often missed, causing validation errors?    
+        A. examples
+        B. tags
+        C. security
+        D. version
+        ✅ Correct Answer: B
+        Why:
+        tags is mandatory in AgentSkill. Missing it causes Pydantic validation errors
+        
+    Q4. What does capabilities in an AgentCard primarily describe?
+        A. The LLM model used by the agent
+        B. Supported interaction features like streaming or push notifications
+        C. API authentication credentials
+        D. The internal executor logic
+        ✅ Correct Answer: B
+        Why:
+        Capabilities advertise how an agent can be interacted with.    
+        
+    Q5. Which OAuth flow is MOST appropriate for secure Agent-to-Agent communication?
+        A. Authorization Code Flow
+        B. Implicit Flow
+        C. Client Credentials Flow
+        D. Device Code Flow    
+        ✅ Correct Answer: C
+        Why:
+        A2A is machine-to-machine, no user involved.
+        
+    Q6. In secure A2A, where is the OAuth token validated?
+        A. In the A2A protocol layer
+        B. In the calling agent
+        C. In the worker agent’s API layer
+        D. In the LLM framework
+        ✅ Correct Answer: C
+        Why:
+        The resource agent (worker) validates tokens.    
+        
+    Q7. Two agents use different frameworks (LangGraph and OpenAI Agents SDK). Why can they still communicate?
+        A. Both frameworks share the same memory model
+        B. A2A abstracts communication via HTTP and JSON
+        C. LangGraph automatically converts prompts
+        D. OpenAI SDK proxies all calls
+
+        ✅ Correct Answer: B    
+        Why:
+        A2A is LLM-agnostic and works over HTTP.
+        
+    Q8. Where should LLM-specific logic reside in an A2A agent?
+        A. In the Agent Card
+        B. In the executor
+        C. In the A2A client
+        D. In the OAuth middleware
+        ✅ Correct Answer: B
+        Why:
+        The executor is the agent’s brain.    
+        
+    Q9. How should the OpenAI API key be provided in an enterprise A2A system?
+        A. Hard-coded in the executor
+        B. Stored in agent.toml
+        C. Passed via .env and environment variables
+        D. Embedded in the Agent Card
+        ✅ Correct Answer: C
+        Why:
+        Environment variables are secure, rotatable, and compliant.
+        
+    Q10. Why did the OpenAI Agents SDK fail even though .env existed?
+        A. .env files are ignored by FastAPI
+        B. uv does not automatically load .env
+        C. Agent Cards override environment variables
+        D. OAuth blocks environment access
+        ✅ Correct Answer: B
+        Why:
+        uv run does not auto-load .env.    
+        
+    Q11. A Swagger request returns HTTP 500. What is the FIRST thing to check?
+        A. Agent Card definition
+        B. OAuth provider configuration
+        C. Terminal logs for stack trace
+        D. Browser cache
+        ✅ Correct Answer: C        Why:
+        Swagger hides Python exceptions — logs reveal the real issue.
+        
+    Q12. Why did response.json() raise a JSONDecodeError?
+        A. Worker agent returned malformed JSON
+        B. Worker agent returned plain text or an error
+        C. HTTP headers were missing
+        D. The request body was invalid
+        ✅ Correct Answer: B
+        Why:
+        Error responses like 401 or 500 are often not JSON    
+        
+    Q13. Which statement about A2A is TRUE?
+        A. A2A manages agent reasoning loops
+        B. A2A replaces LangGraph
+        C. A2A standardizes agent discovery and communication
+        D. A2A stores agent memory
+        ✅ Correct Answer: C    
+        
+    Q14. Why is FastAPI commonly used with A2A?
+        A. It is required by the protocol
+        B. It provides automatic Swagger UI
+        C. It handles LLM prompts efficiently
+        D. It includes OAuth providers
+        ✅ Correct Answer: B  
+   
+   Q15. Which failure most commonly causes 500 errors during A2A integration?
+        A. Missing Agent Card
+        B. Missing tags in skills
+        C. Unhandled exceptions in executor logic
+        D. Incorrect HTTP method
+        ✅ Correct Answer: C
+        
+    🧠 FINAL EXAM MANTRA (30-Second Memory Hack)
+        A2A = communication
+        Executor = intelligence
+        OAuth = trust
+        Agent Card = discovery
+        Env vars = secrets
+        Swagger = testing    
+        
+    Q1. In an Agent-to-Agent (A2A) architecture, which component is responsible for enforcing authentication?
+        A. A2A Client
+        B. A2A Protocol specification
+        C. Agent Executor
+        D. A2A Server (Worker Agent)    
+        Trap logic:
+            ❌ A: Client sends credentials but does not enforce
+            ❌ B: Protocol defines rules, not enforcement
+            ❌ C: Executor handles logic, not auth
+            ✅ D: Server validates OAuth tokens    
+            
+    Q2. An A2A Agent Card primarily enables which capability?
+        A. Secure task execution
+        B. LLM prompt routing
+        C. Agent discovery and capability understanding
+        D. Memory persistence        
+        Trap:
+            ❌ A: Security is enforced at API layer
+            ❌ B: Prompt routing is executor logic
+            ❌ D: Memory is framework-specific
+            
+    Q3. Which statement about A2A interoperability is TRUE?
+        A. All agents must use the same LLM provider
+        B. All agents must use the same framework
+        C. Agents can use different frameworks if they share HTTP contracts
+        D. A2A automatically translates prompts across frameworks
+        ✔ Correct: C
+        Trap:
+            ❌ A / B: False — A2A is framework-agnostic
+            ❌ D: No prompt translation occurs
+            
+    Q4. Which OAuth flow is MOST suitable for secure Agent-to-Agent communication?  
+        A. Authorization Code
+        B. Implicit
+        C. Device Code
+        D. Client Credentials
+        ✔ Correct: D
+        Trap:
+            ❌ A / B / C: Require user interaction
+            ✅ D: Machine-to-machine    
+            
+    Q5. Where should OAuth access tokens be transmitted in secure A2A communication?
+        A. Request body
+        B. Query parameters
+        C. Agent Card
+        D. HTTP Authorization header
+        ✔ Correct: D
+        Trap:
+            ❌ A / B: Insecure
+            ❌ C: Agent Card is metadata only
+            
+    Q6. A secure worker agent returns HTTP 401 instead of JSON. What is the MOST likely cause?
+        A. Agent Card missing capabilities
+        B. Executor returned invalid output
+        C. OAuth token missing or invalid
+        D. Wrong LLM model selected
+        ✔ Correct: C
+        Trap:
+            ❌ A: Discovery issue, not auth
+            ❌ B: Would return 500
+            ❌ D: Model errors occur later
+            
+    Q7. Which layer should contain LangGraph or OpenAI Agents SDK logic?
+        A. Agent Card
+        B. OAuth middleware
+        C. Agent Executor
+        D. A2A Client
+        ✔ Correct: C
+        Trap:
+            ❌ A: Metadata only
+            ❌ B: Security only
+            ❌ D: Communication only
+            
+    Q8. Why does A2A NOT care which LLM framework an agent uses?
+        A. A2A manages prompts internally
+        B. A2A standardizes reasoning flows
+        C. A2A only defines communication contracts
+        D. A2A automatically converts embeddings
+        ✔ Correct: C
+        Trap:
+            ❌ A / B / D: Out of A2A scope
+           
+    Q9. Why did OpenAI Agents SDK fail even though .env existed?
+        A. .env is ignored by FastAPI
+        B. uv does not auto-load environment variables
+        C. Agent Card overrides environment variables
+        D. OAuth blocks OpenAI key access
+        ✔ Correct: B
+        Trap:
+            ❌ A: FastAPI doesn’t load .env, but dotenv does
+            ❌ C / D: Not related
+            
+    Q10. Which approach is enterprise-correct for handling LLM API keys?
+
+        A. Hardcode in executor
+        B. Store in agent.toml
+        C. Pass as function argument
+        D. Load from environment variables
+        ✔ Correct: D
+        Trap:
+            ❌ A / B / C: Security & compliance violations 
+
+    Q11. Swagger returns HTTP 500 when calling /tasks. What should you check FIRST?
+        A. Agent Card JSON
+        B. OAuth provider configuration
+        C. Terminal stack trace
+        D. Browser cache
+        ✔ Correct: C
+        Trap:
+            ❌ A / B: Secondary checks
+            ❌ D: Irrelevant
+            
+    Q12. Why did response.json() throw JSONDecodeError?
+        A. Worker agent returned malformed JSON
+        B. Worker agent returned plain-text error
+        C. Caller agent sent invalid headers
+        D. HTTP timeout occurred
+        ✔ Correct: B
+        Trap:
+            ❌ A: Rare
+            ❌ C: Would not affect JSON parsing
+            ❌ D: Different exception       
+
+    Q13. Which statement about Agent Executors is TRUE?
+        A. Executors must be stateless
+        B. Executors replace FastAPI routes
+        C. Executors encapsulate agent reasoning
+        D. Executors handle OAuth validation
+        ✔ Correct: C
+        Trap:
+            ❌ A: Can be stateful
+            ❌ B: HTTP layer is separate
+            ❌ D: Security layer handles auth    
+
+    Q14. What is the PRIMARY benefit of separating Agent Card and Executor?
+        A. Faster LLM inference
+        B. Better prompt quality
+        C. Clear separation of discovery vs logic
+        D. Automatic model fine-tuning        
+        ✔ Correct: C
+
+    Q15. Which failure is MOST likely in early A2A implementations?
+        A. Incorrect TLS certificates
+        B. Missing tags in AgentSkill
+        C. Wrong OAuth grant type
+        D. Incorrect Agent Card URL
+        ✔ Correct: B
+        Trap:
+            This is a very common real-world + exam trap. 
+
+    🧠 FINAL ULTRA-HARD EXAM RULES (MEMORIZE)
+        ❌ A2A ≠ reasoning
+        ❌ A2A ≠ LLM framework
+        ✅ A2A = discovery + communication
+        ✅ Executor = intelligence
+        ✅ OAuth = trust
+        ✅ Env vars = secrets     
+
+    
+
+    
+                        
+                    
+            
+        
+        
+        
+                    
+            

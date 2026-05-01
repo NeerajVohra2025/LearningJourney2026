@@ -1,0 +1,208 @@
+gcloud container clusters delete hello-cluster
+gcloud container clusters create hello-cluster --num-nodes=2 --machine-type=e2-standard-4 --enable-network-policy
+kubectl get nodes
+
+🧠 1. What is NetworkPolicy (Simple Definition):
+👉 NetworkPolicy = Firewall for Pods
+It controls who can talk to whom inside Kubernetes
+
+🏗️ 2. Why we need NetworkPolicy (Problem):
+👉 By default in Kubernetes:
+All Pods can talk to each other (open network)
+❌ Problem:
+No security
+No isolation
+Any pod can call backend
+
+🎯 3. Desired Behavior:
+client → frontend → backend
+👉 Restriction:
+client ❌ cannot talk to backend
+client ✅ can talk to frontend
+
+🔥 4. Solution:
+👉 Use:
+NetworkPolicy (NetPol)
+
+
+⚙️ 5. Pre-requisite:
+gcloud container clusters create hello-cluster --enable-network-policy
+👉 This enables:
+CNI plugin that enforces NetworkPolicy
+Without this → NetPol does NOTHING ❌
+
+🏗️ 6. Clean Architecture View:
+🔷 Layer 1 — Pod Layer
+🔷 Layer 2 — Network Layer
+CNI (Calico / GKE Dataplane)
+🔷 Layer 3 — Security Layer
+NetworkPolicy (Firewall Rules)
+
+🧠 7. Key Concepts (Very Important):
+🔷 1. podSelector (SOURCE)
+👉 Defines:
+Which pods this policy applies to
+
+🔷 2. policyTypes
+Ingress → Incoming traffic
+Egress  → Outgoing traffic
+
+🔷 3. Rules
+| Type    | Keyword |
+| ------- | ------- |
+| Ingress | from    |
+| Egress  | to      |
+
+⚙️ 8. First Example:
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: hello-allow-from-foo
+spec:               # source, policy type (Ingress/Egress) , Rule (Ingress(from), Egress(to))
+  policyTypes:      # policy type
+  - Ingress
+  podSelector:  # source on which pod's policy apply
+    matchLabels:
+      app: hello
+  ingress:          # rule incomming that will be applied
+  - from:           
+    - podSelector:
+        matchLabels:
+          app: foo
+
+
+🧠 Explanation Step-by-Step:
+Step 1 — Target Pods
+podSelector:
+  app: hello
+👉 Policy applies to:
+hello pods
+  
+Step 2 — Policy Type
+policyTypes:
+- Ingress
+👉 Only control:
+Incoming traffic
+
+Step 3 — Rule
+from:
+- podSelector:
+    app: foo
+👉 Meaning:
+Only pods with label app=foo can access hello pods
+🔥 Result
+foo → hello ✅ allowed
+others → hello ❌ blocked
+
+⚠️ Important Behavior (Most Important Rule):
+👉 The moment you apply NetworkPolicy:    
+Default = DENY ALL (for selected pods)
+Then you allow explicitly
+
+
+⚙️ 9. Advanced Example:
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-network-policy
+  namespace: default
+spec:       # podSelector (source), Policy Type (Ingress/Egress), Rule (from/to)
+  podSelector:   # on which pod policy will apply
+    matchLabels:
+      role: db
+  policyTypes:    # which policy will be apply
+  - Ingress
+  - Egress
+  ingress:      # rule that will be apply
+  - from:
+    - ipBlock:
+        cidr: 172.17.0.0/16
+        except:
+        - 172.17.1.0/24
+    - namespaceSelector:
+        matchLabels:
+          project: myproject
+    - podSelector:
+        matchLabels:
+          role: frontend
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 10.0.0.0/24
+    ports:
+    - protocol: TCP
+      port: 5978
+      
+🧠 Step-by-Step Breakdown:
+🔷 Step 1 — Target
+spec:
+  podSelector:
+    role: db
+Applies to pods with label role=db
+🔷 Step 2 — Policy Types
+- Ingress
+- Egress      
+👉 Controls:
+Incoming ✅
+Outgoing ✅
+
+🔐 Step 3 — Ingress Rules (Incoming Traffic):
+🔹 Allowed Sources
+from:
+
+1. IP Range:
+ipBlock:
+  cidr: 172.17.0.0/16
+👉 Allow traffic from this network
+
+2. Namespace:
+namespaceSelector:
+  project: myproject
+👉 Allow pods from specific namespace
+
+3. Pods:
+podSelector:
+  role: frontend
+👉 Allow only frontend pods
+
+🔹 Ports:
+port: 6379
+👉 Only allow traffic on this port
+
+🔐 Step 4. Egress Rules (Outgoing Traffic):
+egress:
+- to:
+  - ipBlock:
+      cidr: 10.0.0.0/24
+👉 DB pod can call only this network
+
+🧠 Full Flow Visualization:
+    [Frontend Pod]
+         ↓ allowed
+    [DB Pod]  ← NetworkPolicy applied
+         ↓ allowed only to
+    [10.0.0.0/24]  
+    
+⚠️ Common Mistakes:
+❌ 1. Forgetting to enable NetworkPolicy
+Policy created but NOT enforced ❌
+
+❌ 2. Missing Egress rules
+👉 Result:    
+Pods cannot call anything ❌
+
+❌ 3. Wrong labels
+👉 Policy won’t apply
+
+“NetworkPolicy is a Kubernetes resource used to control network traffic between pods at the IP level. It defines ingress and egress rules using selectors like podSelector, namespaceSelector, and ipBlock. Once applied, it enforces a default deny model for selected pods, allowing only explicitly defined traffic.”
+
+| Concept        | Kubernetes    |
+| -------------- | ------------- |
+| Firewall       | NetworkPolicy |
+| Security Group | NetworkPolicy |
+| Zero Trust     | NetPol + mTLS |

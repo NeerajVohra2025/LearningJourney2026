@@ -1,0 +1,456 @@
+Problem Statement:
+UC: We have three applications exposed through the NodePort service
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: apple-app
+  labels:
+    app: apple
+spec:
+  containers:
+    - name: apple-app
+      image: hashicorp/http-echo
+      args:
+        - "-text=apple"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: apple-service
+spec:
+  type: NodePort
+  selector:
+    app: apple
+  ports:
+    - port: 5678 # Default port for image
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: banana-app
+  labels:
+    app: banana
+spec:
+  containers:
+    - name: banana-app
+      image: hashicorp/http-echo
+      args:
+        - "-text=banana"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: banana-service
+spec:
+  type: NodePort
+  selector:
+    app: banana
+  ports:
+    - port: 5678 # Default port for image
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-world
+  labels:
+    app: hello
+spec:
+  containers:
+  - name: hello-kubernetes
+    image: paulbouwer/hello-kubernetes:1.5
+    ports:
+    - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-service
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: hello
+---
+
+🧠 1. What is Ingress (Correct Definition)
+👉 Ingress is NOT a Load Balancer
+👉 It is a:
+    “Set of L7 routing rules”
+
+⚠️ Important
+Ingress needs:
+👉 Ingress Controller (real engine)
+Examples:
+NGINX Ingress Controller
+Cloud-native controllers (GCP, AWS ALB)
+
+
+🔷 Step 1 — You apply Ingress YAML
+kind: Ingress
+
+🔷 Step 2 — Ingress Controller watches it
+Controller (e.g., NGINX or cloud controller):
+Watches → Ingress resource
+
+
+🔷 Step 3 — Controller creates Load Balancer
+In Cloud (GCP/AWS/Azure)
+👉 Example:
+Google Cloud Platform → HTTP(S) LB
+AWS → ALB
+Azure → Application Gateway
+
+🔥 Internal Flow
+
+Ingress YAML
+     ↓
+Ingress Controller
+     ↓
+Cloud API call
+     ↓
+Creates Application Load Balancer (L7)
+     ↓
+Configures:
+   - Listeners (80/443)
+   - URL maps
+   - Backend services
+
+
+
+Note: In K8s there are two types of LB
+      TCP LB - Service (LB) # TCP LB-forward traffic based on tcp ports
+      HTTP LB -(Ingress)  # Application LB- forward traffic based on http rules
+    application gateway (azure)--application LB (AWS), http LB(GCP)---Ingress(K8s)
+
+kubectl get Ingress
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: my-ingress
+spec:
+  rules:
+   - http:
+      paths:
+        
+        - path: /
+          pathType: Prefix
+          backend:
+           service:
+             name: hello-service
+             port:
+               number: 80
+        
+        - path: /apple
+          pathType: Exact
+          backend:
+            service:
+              name: apple-service
+              port:
+                number: 5678
+                   
+        - path: /banana        
+          pathType: Prefix   # Exact
+          backend:
+            service:
+              name: banana-service
+              port:
+                number: 5678
+
+⚙️ 5. How Your Ingress Routes Traffic:
+    - path: /
+      → hello-service
+
+    - path: /apple
+      → apple-service
+
+    - path: /banana
+      → banana-service
+
+🔥 Request Flow:
+    User → LB → Ingress → Service → Pod
+    
+    Example:
+    http://LB-IP/banana
+            ↓
+    Ingress rule match
+            ↓
+    banana-service
+            ↓
+    banana pod    
+
+
+⚙️ 4. Who installs it in real environments?:
+🔷 Case 1 — Self-managed Kubernetes (kubeadm, on-prem)
+👉 You MUST install it manually
+Example:
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+👉 This installs:
+NGINX pods
+Service (LoadBalancer)
+Controller logic
+
+🔷 Case 2 — Managed Kubernetes (GKE, EKS, AKS)
+
+👉 Google Cloud Platform (GKE)
+Default Ingress Controller is already installed
+Called:
+GCE / GKE Ingress Controller
+👉 You just create:
+kind: Ingress
+👉 GCP automatically:
+Creates HTTP(S) Load Balancer
+
+👉 AWS (EKS)
+❌ Not installed by default
+You install:
+AWS Load Balancer Controller
+
+👉 Azure (AKS)
+❌ Not installed by default
+You install:
+NGINX or Application Gateway Ingress Controller
+
+
+🔥 5. What happens after installation?:
+    You install controller
+            ↓
+    Controller watches Ingress
+            ↓
+    Creates Load Balancer
+            ↓
+    Routes traffic
+
+🧠 6. Popular Ingress Controllers
+| Controller        | Use Case                      |
+| ----------------- | ----------------------------- |
+| NGINX             | Most common (general purpose) |
+| Traefik           | Lightweight, dynamic          |
+| HAProxy           | High performance              |
+| Istio Gateway     | Service mesh                  |
+| Cloud Controllers | Native cloud LB               |
+
+
+🏗️ 1. Start with Big Picture (Clean Architecture):
+    [User Request]
+          ↓
+    [Cloud Load Balancer]
+          ↓
+    [Ingress Controller]
+          ↓
+    [Ingress Rules]
+          ↓
+    [Service]
+          ↓
+    [Pods]
+
+🧠 2. Step-by-Step — Who does what?:
+🔷 Step 1 — Kubernetes provides only "Ingress" (Rules)
+Kubernetes gives you:
+Ingress = ONLY rules (no traffic handling)
+Example:
+path /apple → apple-service
+👉 But Kubernetes itself cannot route traffic
+
+🔷 Step 2 — Problem: Who will execute these rules?
+At this point:
+Ingress exists ❌
+Traffic routing engine missing ❌
+👉 So nothing works yet.
+
+🔷 Step 3 — You install Ingress Controller (MOST IMPORTANT)
+👉 This is done by:
+Platform team
+DevOps team
+Cluster admin
+What is Ingress Controller?:
+A program that:
+- Watches Ingress
+- Creates Load Balancer
+- Routes traffic
+
+Example Installation (NGINX):
+kubectl apply -f ingress-nginx.yaml
+
+After installation, Kubernetes has:
+Ingress Controller Pods ✅
+Controller Service ✅
+
+🔷 Step 4 — Controller starts watching Ingress:
+Ingress Controller → constantly monitors Ingress resources
+
+🔷 Step 5 — You create Ingress YAML:
+kind: Ingress
+👉 Example logic:
+/        → hello-service
+/apple   → apple-service
+/banana  → banana-service
+
+🔷 Step 6 — Controller reacts (AUTOMATIC)
+As soon as you apply Ingress:
+Controller detects change
+        ↓
+Processes rules
+        ↓
+Creates/updates Load Balancer
+
+🔷 Step 7 — Load Balancer gets created
+Depends on environment:
+🔹 In Google Cloud Platform (GKE)
+👉 Already installed controller:
+Ingress → GCP Controller → HTTP(S) Load Balancer
+
+🔹 In self-managed cluster
+👉 Your installed controller (NGINX):
+User → Load Balancer → Ingress Controller → Service → Pod
+
+
+🏗️ 4. Clean Architecture View:
+🔷 Layer 1 — Edge (Cloud)
+    Application Load Balancer (L7)
+    Entry point:
+    Handles:
+     HTTP/HTTPS
+     TLS termination
+
+🔷 Layer 2 — Gateway Layer
+   Ingress Controller 
+        Reads Ingress rules
+        Routes traffic
+
+🔷 Layer 3 — Routing Rules
+    Ingress Resource
+       Path-based routing 
+    
+🔷 Layer 4 — Service Layer
+   Kubernetes Services
+   
+🔷 Layer 5 — Workload Layer
+Pods (apple, banana, hello)   
+   
+Step-by-step:
+1. Request reaches Load Balancer
+2. Forwarded to Ingress Controller
+3. Controller checks rules:
+   /apple → apple-service
+4. Service forwards to Pod
+5. Pod returns response
+
+⚠️ 5. Important Clarifications:
+❌ Myth
+Ingress creates Load Balancer
+✅ Reality
+Ingress Controller creates Load Balancer
+
+❌ Myth
+Kubernetes installs Ingress Controller
+✅ Reality
+You install it (or cloud provides it)
+
+“Ingress Controller is not installed by Kubernetes itself. It must be installed by the platform team or is pre-installed in managed environments like GKE. It acts as the execution engine that watches Ingress resources and provisions the actual load balancer and routing logic.”
+
+
+🔐 6. HTTPS — What You Need:
+3 things required:
+CA Certificate
+Server Certificate (.crt)
+Private Key (.key)
+
+
+⚙️ 7. Step-by-Step: Enable HTTPS in Ingress
+🔷 Step 1 — Get Certificate
+Option A — Production:
+Let’s Encrypt
+DigiCert
+GoDaddy
+
+Option B — Self-Signed (Learning)
+openssl req -x509 -nodes -days 365 \
+  -newkey rsa:2048 \
+  -keyout user.key \
+  -out user.crt
+
+
+🔷 Step 2 — Create Kubernetes TLS Secret
+kubectl create secret tls my-tls-secret \
+  --cert=user.crt \
+  --key=user.key
+  
+🔷 Step 3 — Update Ingress YAML
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+spec:
+  tls:
+  - hosts:
+    - myapp.com
+    secretName: my-tls-secret
+
+  rules:
+  - host: myapp.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hello-service
+            port:
+              number: 80
+
+🔥 What happens internally              
+Ingress → Controller → LB
+Controller configures:
+HTTPS Listener (443)
+↓
+Attach TLS cert
+↓
+Route traffic securely
+
+
+🔐 8. TLS Flow (Packet Level Simplified):
+Client → HTTPS request
+       ↓
+Load Balancer
+       ↓ (TLS termination)
+Ingress Controller
+       ↓
+Service → Pod
+
+⚠️ 9. Important Constraints:
+ALB supports:
+Port 80 (HTTP)
+Port 443 (HTTPS)
+
+🧠 10. Common Mistakes:
+❌ 1. Thinking Ingress = LB
+👉 Wrong
+✔ Ingress = rules
+✔ Controller = actual LB creator
+
+❌ 2. Using NodePort in production
+👉 Should use:
+ClusterIP + Ingress
+
+❌ 3. Missing TLS Secret
+👉 HTTPS will fail
+
+🧠 11. End-to-End Flow (Final):
+User (Browser)
+   ↓ HTTPS
+Cloud Load Balancer (443)
+   ↓
+Ingress Controller
+   ↓
+Service (ClusterIP)
+   ↓
+Pod
+
+
+“Ingress is a Kubernetes resource that defines HTTP/HTTPS routing rules, while the actual load balancer is provisioned by an Ingress Controller. In cloud environments, the controller creates a managed L7 load balancer such as GCP HTTP(S) LB or AWS ALB. HTTPS is enabled by creating a TLS secret and referencing it in the Ingress resource, allowing the load balancer to terminate TLS and securely route traffic to backend services.”
+

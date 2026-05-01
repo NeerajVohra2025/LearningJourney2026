@@ -1,0 +1,78 @@
+Advanced Modern Python (Including Asyncio)
+OpenAI Agents SDK
+Protocols and Design Patterns (MCP and A2A)
+Containerization + FastAPI
+Kubernetes (Rancher Desktop)
+CKAD +DAPR + ArgoCD(Stipulation) 
+
+Building agent endpoints with FastAPI: Master the basics, validation, parameters, and create a chat API for your DACA agents, with future integration with Dapr Pub/Sub.
+Cloud-native setup with Kubernetes: Get hands-on with YAML, Rancher Desktop, containers, Kubernetes, and Helm to deploy your Dapr applications.
+Introduction to Dapr: Learn to configure Pub/Sub (pubsub.yaml) and state stores (statestore.yaml) using Helm for building distributed agent logic.
+Security fundamentals and advanced techniques: Establish a strong security foundation and explore advanced methods for production-grade DACA agents.
+Building DACA agents with Dapr Virtual Actors: Unlock the power of Dapr Actors to create stateful and scalable AI agents.
+Orchestrating complex AI workflows: Learn to design and implement intricate, AI-driven workflows for long-running production systems.
+
+🛠️ Tools & Technologies Covered:
+Python
+OpenAI Agents SDK
+Ranchers Desktop
+Tilt
+Helm
+Kubernetes
+#######################################################################################
+Date: 02/May 15
+Getting Started with FastAPI, UV, and Pydantic:
+     cd AgentNativeCloudDevelopment
+     python --version
+     uv --version
+     uv init hello_fastapi
+     cd hello_fastapi
+     
+uv add "fastapi[standard]"
+The fastapi[standard] install optional dependencies especially
+    fastapi: The web framework.
+    uvicorn: The ASGI server to run the app.
+    httpx: An HTTP client for testing FastAPI endpoints.     
+
+To add a development dependency, use the --dev flag 
+    uv add --dev pytest pytest-asyncio 
+
+The command fastapi dev main.py is used to run a FastAPI application in development mode. Here's a breakdown:
+
+FastAPI: A modern, high-performance Python web framework for building APIs.
+dev: A subcommand provided by FastAPI's CLI (introduced in FastAPI 0.100.0 and later) to run the application in development mode with automatic reloading.
+main.py: The Python file containing your FastAPI application code (typically where the FastAPI() instance is defined).    
+uvicorn <python_file>:obj --reload
+uvicorn main:app --reload  
+pytest  # will check all the methods start with test_
+Pydantic
+model_dump()   # method convert the pydantic data type to dictionary
+
+Wait: What is Pydantic?
+Pydantic is a data validation and settings management library that uses Python type annotations to define and validate data schemas. It’s a core dependency of FastAPI, used for request/response validation, serialization, and deserialization. Pydantic ensures type safety and provides automatic error handling, making it ideal for DACA’s agentic workflows where data integrity is critical.
+
+Key Features of Pydantic
+Type-Safe Validation: Validates data against Python type hints (e.g., str, int, List[str]).
+Automatic Conversion: Converts data to the correct type (e.g., string "123" to int 123).
+Error Handling: Raises detailed validation errors for invalid data.
+Nested Models: Supports complex, nested data structures.
+Serialization: Converts models to JSON (or other formats) for API responses.
+Default Values and Optional Fields: Simplifies schema definitions.
+Custom Validators: Allows custom validation logic.
+##################################################################################################
+Date: 03/May 22
+
+uv add "fastapi[standard]"
+uv add --dev pytest pytest-asyncio 
+uvicorn main:app --reload 
+pytest
+Pydantic # model_dump()
+
+Validation using Path/Query
+http://127.0.0.1:8000/docs
+# If we pass Pydantic Parameter --> POST request
+
+**Dependency Injection
+UC: To open an account , dependency on brach in which want to open a account. means account_open functionality depends on branch availability
+Depends class of FASTAPI
+##################################################################################################

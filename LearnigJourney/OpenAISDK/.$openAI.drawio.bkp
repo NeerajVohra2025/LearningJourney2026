@@ -1,0 +1,88 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="GenAI Multi-Agent Architecture">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- User -->
+        <mxCell id="user" value="User / Client" style="shape=ellipse;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="120" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- API Gateway -->
+        <mxCell id="api" value="API Gateway" style="shape=rectangle;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="200" y="200" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Orchestrator -->
+        <mxCell id="orchestrator" value="Orchestrator (Manager Agent)" style="shape=rectangle;fillColor=#fff2cc;" vertex="1" parent="1">
+          <mxGeometry x="380" y="180" width="200" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Specialist Agents -->
+        <mxCell id="agent1" value="Finance Agent" style="shape=rectangle;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="650" y="60" width="160" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="agent2" value="Risk Agent" style="shape=rectangle;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="650" y="160" width="160" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="agent3" value="Compliance Agent" style="shape=rectangle;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="650" y="260" width="160" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Tools Layer -->
+        <mxCell id="tools" value="Tools Layer (APIs / DB / MCP)" style="shape=rectangle;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="880" y="160" width="220" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Guardrails -->
+        <mxCell id="guardrails" value="Guardrails (Input / Output / Tool Validation)" style="shape=rectangle;fillColor=#ffe6cc;" vertex="1" parent="1">
+          <mxGeometry x="380" y="320" width="300" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Tracing -->
+        <mxCell id="tracing" value="Tracing & Observability" style="shape=rectangle;fillColor=#d0e0e3;" vertex="1" parent="1">
+          <mxGeometry x="700" y="340" width="250" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Domain Layer -->
+        <mxCell id="domain" value="Domain Layer (Business Rules)" style="shape=rectangle;fillColor=#cce5ff;" vertex="1" parent="1">
+          <mxGeometry x="200" y="340" width="160" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Connections -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="user" target="api">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="api" target="orchestrator">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="orchestrator" target="agent1"/>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="orchestrator" target="agent2"/>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="orchestrator" target="agent3"/>
+
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="agent1" target="tools"/>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="agent2" target="tools"/>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" edge="1" parent="1" source="agent3" target="tools"/>
+
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" parent="1" source="orchestrator" target="guardrails"/>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" parent="1" source="agent1" target="guardrails"/>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" parent="1" source="agent2" target="guardrails"/>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" parent="1" source="agent3" target="guardrails"/>
+
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" parent="1" source="orchestrator" target="tracing"/>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" parent="1" source="agent1" target="tracing"/>
+        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" parent="1" source="agent2" target="tracing"/>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" parent="1" source="agent3" target="tracing"/>
+
+        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" parent="1" source="orchestrator" target="domain"/>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

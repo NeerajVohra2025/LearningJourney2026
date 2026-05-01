@@ -1,0 +1,348 @@
+🚀 Kubernetes Resources:
+ Imperative Commands:
+🧑‍💻 Common kubectl Commands:
+    🔍 Cluster & Pod Information
+    kubectl get nodes
+    kubectl get pods
+    kubectl get pods -n kube-system
+    kubectl get pod <pod-name> -o yaml
+
+🚀 Create a Pod (Quick Way):
+kubectl run firstpod --image=nginx
+
+🔎 Inspect a Pod:
+kubectl describe pod firstpod
+kubectl logs firstpod
+👉 Logs show output of the application inside the container (Pod is just a wrapper over containers)
+
+🖥️ Execute Inside a Pod:
+kubectl exec -it <pod-name> -- bash
+kubectl exec -it <pod-name> -c <container-name> -- bash
+
+
+
+Kubernetes Resources:   
+commands:
+kubectl get nodes
+kubectl run firstpod --image=nginx
+
+💾 Export Pod YAML:
+kubectl get pod firstpod -o yaml > firstpod.yaml
+
+⚠️ Limitations of Imperative Commands (kubectl run):
+❌ Cannot create multi-container Pods
+❌ Cannot define storage
+❌ No version control
+❌ Not suitable for production
+
+
+📄 Declarative Approach (Recommended):
+ Define resources in YAML and apply:
+
+Step 1: Create YAML file
+🧩 Basic YAML Structure
+Every Kubernetes resource has 4 main sections:
+kind:                       # resoure type Pod,Service... string
+apiVersion:                 # group/version   string
+metadata:                   # # data about the resource you are creating e.g name, namespace, label,annotations,deletionGracePeriodSeconds...... (dictionary)can contains any data type its type object (resource properties)
+spec:                       # # specification of resource , what the resource contains e.g Pod resource contains   container, affinity,activeDeadlineSeconds (dictionary)    
+status:
+
+ 
+Step 2: Apply it
+kubectl apply -f resource.yaml
+ 
+
+In k8s each and every resource belongs to some specific group:
+---
+apiVersion: group/version
+metadata:
+  name: null
+  namespace: null
+  annotation: null
+  labels: null
+
+
+---
+spec:                   # specification of resource (what thar resource has) e.g Pod has containers
+  containers:           # may be multiple containers so its an array type collection of attribute
+    - name: null
+      image: null
+    - name: null
+      image: null
+  affinity: null
+  activeDeadlineSeconds: null
+  automountServiceToken: null  
+    
+📌 YAML Data Types:
+Key-value → name: nginx
+Dictionary → metadata: # containes any data types 
+Array/List → containers: section that containes attributes of a particular resource , can have string , dictionary, sub array
+ 
+
+🧠 Multi-Container Pods:
+👉 Used when multiple containers need to:
+Share network
+Share storage
+Work together
+
+🔧 Common Patterns:
+1. Sidecar:
+Helper container
+Example: logging agent
+2. Adapter:
+Transforms output
+Example: converts logs format
+3. Ambassador:
+Handles communication
+Example: proxy (HAProxy)
+ 
+ 
+⏳ Init Containers:
+👉 Runs before main container starts
+Use Case:
+Setup tasks
+Dependency checks
+
+🔁 Behavior:
+Runs → completes → then main container starts
+If fails → Pod won’t start    
+
+💡 Key Insight:
+Init container = like a constructor
+Main container waits until it completes
+
+⚠️ Important Rules
+❌ Two containers in same Pod cannot use same port
+✔ Containers share:
+Network
+Storage
+
+📍 Scheduling Pods to Specific Node:
+Default Behavior:
+Scheduler assigns any node
+Options:
+Use nodeSelector / affinity (via API Server)
+Use Static Pods (bypass scheduler)
+
+ 🧱 Static Pods:
+👉 Managed directly by kubelet, not API Server
+Location:  /etc/kubernetes/manifests/   # /var/lib/kubelet/config.yaml		# staticPodPath
+
+Key Points:
+kubelet checks this folder every few seconds
+Automatically creates Pods
+Cannot be scaled
+
+🔥 Example
+Control plane components:
+API Server
+Scheduler
+Controller Manager
+etcd
+👉 All run as Static Pods
+kubelet check this location after every 3 seconds, if found any config file creates a resource.
+kubectl get Pods							    // visible to api-server
+kubectl delete pod --all						//delete all pods
+kubectl sends the update to api-server after every 5 seconds
+
+
+⚠️ Logs for Failed Pods (Node-Level):
+If Pod is deleted or node is down: #(kubectl logs pod , in this case no pod available)
+# go to the worker node where pod was running
+journalctl -u kubelet     # kubelet running as a system Service
+👉 kubelet logs help debug Pod creation issues 
+
+🏷️ Namespaces:
+👉 Logical isolation in a cluster
+
+Common Commands:
+kubectl get ns
+kubectl create ns neeraj-ns
+kubectl get pods -n neeraj-ns
+
+Set Default Namespace:
+kubectl config set-context --current --namespace=neeraj-ns
+
+💡 Key Insight:
+Deleting a namespace deletes ALL resources inside it
+
+What is context:
+kubectl config get-contexts
+In which namespace 
+kubectl get pod -A   # running in all ns entire cluster
+
+🔗 Context in Kubernetes:
+👉 Defines:
+    Cluster
+    User
+    Namespace
+kubectl config get-contexts
+kubectl get pods -A
+
+
+🏷️ Labels:
+👉 Labels = key-value tags to identify resources
+
+kubectl run firstpod --image=httpd
+kubectl get pod htpd --show-labels
+#label name generated dnamically adds the run=firstpod label. key as run and value as pod name
+When you create a pod using a YAML file with kubectl apply -f, only the labels you explicitly define in the YAML are applied. If don't define show <none>
+kubectl get pod htpd --show-labels
+
+💡 Why Labels?:
+In generally create a Pod using controllers e.g Deployment (HA and FT) , Once pods are generated by controller their names are also dynamically in nature means are not fixed then how to Identify the specific Pod, and what application running inside the Pods?
+Identify Pods dynamically
+Used by controllers (Deployment, Service)
+Filter resources
+
+Using Labels:
+Labels are user defined tags created by user to Identify specific resource(pod, deployments) in k8s cluster. e.g if  you have 100 of pods in cluster (python, mysql, jenkins) but user wants to check only jenkins application.
+labels are 
+key: value (string) key and value are defined by users k8s don't have any restrictions
+ 
+kubectl get pod firstpod --show-labels # specific pod
+kubectl get pod --show-labels # All pods
+kubectl get nodes --show-labels
+
+kubectl label pod firstpod app=nginx user=neeraj
+kubectl get pods --show-labels
+kubectl get pods -l app=nginx
+
+
+⚙️ Resource Requests & Limits:
+---
+spec:
+  containers:
+    - name: null
+      image: null
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+          
+ 🧠 Meaning:
+| Type     | Purpose            |
+| -------- | ------------------ |
+| Requests | Minimum guaranteed |
+| Limits   | Maximum allowed    |
+
+🔥 Final Summary:
+    Imperative → quick but limited
+    Declarative → scalable & production-ready
+    kubelet → creates Pods
+    CRI → runs containers
+    CNI → provides networking
+    Labels → identify resources
+    Namespaces → isolate workloads
+
+🚀 One-Line Summary:
+Use YAML (declarative approach) to define Kubernetes resources, use labels for identification, namespaces for isolation, and rely on kubelet + CRI + CNI to run and manage Pods efficiently         
+
+#####################################################################################################
+🚀 Kubernetes Interview Notes (Quick Revision):
+🧠 Core Architecture:
+Control Plane → Decision making
+Worker Node → Execution
+
+Key Components:
+API Server → Entry point (all communication happens here)
+etcd → Cluster state (source of truth)
+Scheduler → Assigns Pods to nodes
+Controller Manager → Maintains desired state
+
+⚙️ Node Components:
+kubelet → Creates Pods
+Container Runtime (CRI) → Runs containers (containerd)
+kube-proxy → Networking (iptables rules)
+
+🔄 Pod Creation Flow :
+kubectl apply → API Server
+API Server → etcd (store YAML)
+Scheduler → assigns node
+kubelet → creates Pod
+CRI → runs container
+CNI → assigns IP
+
+🌐 Networking:
+CNI → Provides Pod IP
+kube-proxy → Creates iptables rules
+Service → Stable access to Pods
+Key Concept
+Pods are in private network, accessed via Service
+
+🔐 br_netfilter:
+Enables iptables on bridge network
+Required for Service communication
+
+📦 CRI vs CNI:
+| Component | Purpose            |
+| --------- | ------------------ |
+| CRI       | Run containers     |
+| CNI       | Provide networking |
+
+
+📄 YAML Basics:
+apiVersion:
+kind:
+metadata:
+spec:
+
+
+⚠️ Imperative vs Declarative:
+Imperative → kubectl run (quick, limited)
+Declarative → YAML (recommended)
+
+
+🧩 Multi-Container Pods:
+Sidecar → helper
+Adapter → transform data
+Ambassador → proxy
+
+⏳ Init Container:
+Runs before main container
+Must complete first
+
+
+🧱 Static Pods:
+Managed by kubelet
+Path: /etc/kubernetes/manifests/
+👉 Used for control plane
+
+🏷️ Labels:
+Key-value tags
+Used to identify/filter Pods
+kubectl get pods -l app=nginx
+
+📂 Namespaces:
+Logical isolation
+kubectl create ns test
+kubectl get pods -n test
+
+⚙️ Resources:
+requests → minimum
+limits → maximum
+
+⚠️ Important Scenarios:
+API Server down → no changes, running Pods unaffected
+Node down → Pods recreated
+Pod crash → auto restart
+
+🔥 Must-Know One-Liners:
+👉 API Server = brain of Kubernetes
+👉 etcd = single source of truth
+👉 kubelet = Pod creator
+👉 CRI = container runner
+👉 CNI = network provider
+👉 kube-proxy = traffic router
+
+🎯 Golden Principle:
+Desired State vs Actual State → Kubernetes continuously reconciles
+
+🚀 Interview Power Answers:
+✔ “All components communicate via API Server”
+✔ “kubelet + CRI run on nodes, everything else runs as Pods”
+✔ “CNI handles networking, kube-proxy handles routing”

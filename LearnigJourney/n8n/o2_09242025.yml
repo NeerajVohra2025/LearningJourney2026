@@ -1,0 +1,35 @@
+Whatsapp:
+ Trigger:
+    Whatspp Business Cloud
+        Trigger-> on messages
+               authentication:
+                    
+    double click on Whatsapp:
+        Credentials                 # Facebook, Whatsapp from Meta Facebook account must be available
+        meta.facebook.com login # meta for business 
+        create Business portfolio
+            business setting
+                people
+                accounts
+                    apps
+                      Add -> create new app id
+
+        Whatsapp:
+          Action:  (Access Token, Business Account Id)
+          EAAq6z769DWYBPvKFl06l786iDCGCL9Vr4z4WpD3lHUdzw7Nw4F7tihbjMb94ZAoFfek5fSfGDiLpkhKjmfIFnMZBkddlZAsLHN899rQBIdRoo5Xj7HwOEfwUHb9IfSL2ZApolwsAWHEDq4Ht2nhSQ71ebrIbTewZBNtL240sF1S9ADbcWNbqhvkSKgIqMwFfJbZAdpnYmdzA4NySv8cEFl137owk9P0r2iF8mWhZBShCwgV
+          
+          652153084632964
+            API setup
+          Trigger:
+            App setting (clientId and secret Id)
+    
+    
+    AI Agent:
+       Model
+       Memory
+       tool
+       
+    Whatspp Business Cloud:
+        Action: send message
+
+       

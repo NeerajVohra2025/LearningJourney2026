@@ -1,0 +1,122 @@
+UV:
+  An extremely fast Python package and project manager, written in Rust.
+  🚀 A single tool to replace pip, pip-tools, pipx, poetry, pyenv, twine, virtualenv, and more.
+  ⚡️ 10-100x faster than pip.
+  🗂️ Provides comprehensive project management, with a universal lockfile.
+  ❇️ Runs scripts, with support for inline dependency metadata.
+  🐍 Installs and manages Python versions.
+  🛠️ Runs and installs tools published as Python packages.
+  🔩 Includes a pip-compatible interface for a performance boost with a familiar CLI.
+  🏢 Supports Cargo-style workspaces for scalable projects.
+  💾 Disk-space efficient, with a global cache for dependency deduplication.
+  ⏬ Installable without Rust or Python via curl or pip.
+  🖥️ Supports macOS, Linux, and Windows.
+
+Unified Python:
+	File Structure Manager
+	package downloaded parallel
+	uv (integrated with old  package managers e.g. pip,conda, poetry...)
+	dependeny resolution 
+	build in virtual environment
+	reliable dependency locking and reproduciable environment
+	memory-efficient operations, especially for large projects
+    
+Installtion:
+ uv version
+ uv --help
+ Commands:
+  run      Run a command or script
+  init     Create a new project
+  add      Add dependencies to the project
+  remove   Remove dependencies from the project
+  sync     Update the project's environment
+  lock     Update the project's lockfile
+  export   Export the project's lockfile to an alternate format
+  tree     Display the project's dependency tree
+  tool     Run and install commands provided by Python packages
+  python   Manage Python versions and installations
+  pip      Manage Python packages with a pip-compatible interface
+  venv     Create a virtual environment
+  build    Build Python packages into source distributions and wheels
+  publish  Upload distributions to an index
+  cache    Manage uv's cache
+  self     Manage the uv executable
+  version  Display uv's version
+  help     Display documentation for a command 
+CLI:  
+ uv init --package <project_name>  # with src folder structure
+ uv run <key of .tomal(project.script)>     # [project.script]  key=srcfolder.subfoder:<function_name>
+ uv run kickoff 
+ uv add -r requirements.txt 
+ 
+ uv init --app <name>   # creates app
+ uv init --lib <name>   # creates library
+ uv init subproject   # from the uv created directory 
+ 
+Differenece Between uv init --package crewai_learning and uv init crewai_learning:
+ These two commands are very similar but create slightly different project layouts because of the --package flag. 
+ 
+ Command:                       uv init crewai_learning                           uv init --package crewai_learning 
+ Project type:                  Simple application / script project               Proper installable Python package (library-style)
+ Default Layout:                Flat layout (code at project root)                src/ layout (recommended for packages)
+ Directory structure created: 
+                                crewai_learning/
+                                ├── crewai_learning.py
+                                ├── pyproject.toml
+                                └── ...
+
+                                                                                    crewai_learning/
+                                                                                    ├── src/
+                                                                                    │   └── crewai_learning/
+                                                                                    │       └── init.py
+                                                                                    ├── pyproject.toml
+                                                                                    └── ...
+ 
+ Where you put your code:       Directly in root (crewai_learning.py)               Inside src/crewai_learning/
+ Recommended by Python community:  Only for tiny scripts                            Yes
+ 
+ So:
+ --package = modern, clean, future-proof
+ no --package = old-style, only for throwaway scripts
+ Use --package every time.
+ 
+ 
+#setup
+ Step 1: Prepare Your Development Environment
+  Verify prerequisites:
+    python --version  # Should be 3.10–3.13 (CrewAI optimal) Python 3.12.2
+    uv --version      # Confirm uv is installed (e.g., 0.4+) uv 0.7.8 (0ddcc1905 2025-05-23)
+  Step 2: Create and Navigate to the Parent Folder   
+    mkdir -p ~/projects/agentic_ai_2026  # Adjust path; -p avoids errors if exists
+    cd ~/projects/agentic_ai_2026
+    
+    git init
+    git add .gitignore  # Create .gitignore with Python/CrewAI defaults (e.g., exclude .venv)
+    git commit -m "Initialize agentic_ai_2026 workspace"
+    
+  Step 3: Install the CrewAI CLI Using uv  
+    uv tool install crewai
+    crewai --version  # e.g., "0.102.0" (2025 latest) crewai, version 0.121.1
+    crewai --help     # See commands like 'create', 'run'
+  Step 4: Scaffold the CrewAI Project 
+    crewai create crew crewai_learning
+    
+  Step 5: Sync Dependencies and Set Up Virtual Environment
+   cd crewai_learning
+   Sync: 
+   crewai install  # Wrapper for uv sync—creates .venv and uv.lock      # uv venv
+   
+  Step 6: Run the Built-in Sample Program
+    crewai run
+    
+.toml:
+  [project.scripts]
+  crewai-flows = "crewai_flows:main"     # package.class:method  # default class is __init__.py
+  crewai-test="crewai_flows.test:main"   # package.class:method    
+    
+    
+    
+    
+   
+  
+ 

@@ -1,0 +1,85 @@
+Low Code Agentic AI Stack:
+    UI/UX (User Interface/User Experiense) : UXPilot.ai #  save in canva
+    Frontend: Loveable.dev     # import saved canva
+    AI Agents and Workflows: n8n
+    Data and Backend: Supabase  # supabase.com also vector database Postgress
+    
+    MCP:
+     Prompt Engineering
+     Context Engineering
+     
+Nodes:
+ webhook - loveable to n8n
+ respond to webhook - n8n to loveable
+ 
+Code Expression:
+ Expressions are powerful feature implemented in all n8n nodes. They allow node parameters to be set dynamically based of data from
+    Previous node execution
+    The work flow
+    n8n environment
+n8n created and uses a templating language called Tournament and extends it with custom methods and variables and data transformation functions. These features make it easier to perform common tasks like getting data from another node or accessing workflow's meta data
+
+n8n additionally supports two libraries:
+ Luxon: for working with dates and times
+ JMESPath: for quering JSON
+
+expression:
+ {{}}
+ hard coded : {{''}} 
+ dynamic:  {{$json}}   # showed data from previous node
+ dynamic:  {{json.}}  # will show all the fields from previous node
+ example: {{$json.first_name}} {{$json.last_name}}
+ example2: 
+Simple examples:
+   static value: {{"Hello n8n"}} 
+   access input data: {{$json.name}} {{$json["name"]}}
+   simple calculation: {{5+2}}
+   string concatination: {{"Hello" $json.name}}
+   
+Multi-line expression:
+  for complex expressions, can use multiple lines
+  {{
+    userName=$json.first_name + "" +$json.last_name;
+    return userName.toUpperCase();    
+  }}
+  
+Data types and structure:
+ Understanding the n8n Data Structure:
+  n8n passes the data between nodes as an array of Objects, where each object contains
+    json: The main data object  # object {} key: value
+    binary: Binary data (files, images)
+    pairedItem: reference to source Item
+    
+  $input.all() # all input data
+  $('node_name') 
+    .all()   # all Data
+    .first() # first record
+    
+$node access data from specific node:
+  get the data from a named node:
+    {{$node["HTTP Request"].json.response}} 
+    {{$node["Set"].json.processedData}}    
+  access specific Item from node
+    {{$node["Webhook"].first().json.body}}
+
+
+$vars: Workflow variables
+ # access workflow variables
+    {{$vars.apiKey}}
+    {{$vars.environment}}
+$env: Environment variables
+ # access environment variables
+    {{$env.API_URL}}
+    {{$vars.DATABASE_PASSWORD}}
+
+$now Current time stamp:
+  # current Unix timestamp
+  {{$now}}
+  # current ISO date
+  {{new Date($now).toISODate()}}
+  
+$today Todays date:  
+  # today as ISO string
+  {{$today}}
+  # Format today as ISO string
+  {{new Date($today).toLocalDateString()}}      

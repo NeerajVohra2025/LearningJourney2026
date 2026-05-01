@@ -1,0 +1,100 @@
+External System (ServiceNow / UI / Batch / API)
+                ↓
+         Ingress Gateway
+                ↓
+     Control-Orchestrator (A2A)
+                ↓
+             Agents
+                ↓
+              Tools
+             
+Ingress does NOT:
+Contain workflow logic ❌
+Call agents directly ❌
+Know tool structure ❌
+It only forwards to orchestrator.     
+
+Ingress responsibilities:
+Authenticate
+Validate schema
+Select adapter dynamically
+Normalize payload
+Generate correlation ID
+Forward to orchestrator (A2A)
+Return mapped response
+
+
+
+ingress-gateway/
+│
+├── pyproject.toml
+├── config.toml
+├── ingress.toml
+├── Dockerfile
+│
+└── src/ingress_gateway/
+    │
+    ├── main.py
+    │
+    ├── bootstrap/
+    │   ├── lifecycle.py
+    │   └── startup.py
+    │
+    ├── configuration/
+    │   └── settings.py
+    │
+    ├── domain/
+    │   ├── external_event.py
+    │   └── normalized_event.py
+    │
+    ├── application/
+    │   └── ingress_service.py
+    │
+    ├── adapters/
+    │   ├── base_adapter.py
+    │   ├── servicenow_adapter.py
+    │   ├── generic_adapter.py
+    │   └── adapter_factory.py
+    │
+    ├── infrastructure/
+    │   ├── orchestrator_client.py
+    │   ├── security.py
+    │   ├── correlation.py
+    │   ├── idempotency_store.py
+    │   └── logging_config.py
+    │
+    ├── interface/
+    │   └── ingress_controller.py
+    │
+    └── utilities/
+        └── response_mapper.py
+
+
+🏁 FINAL RESULT:
+You now have:
+
+✔ Source-agnostic ingress
+✔ Adapter-driven normalization
+✔ A2A protocol translation
+✔ Security enforcement
+✔ Correlation propagation
+✔ Idempotency ready
+✔ Stateless design
+✔ Horizontal scaling ready
+✔ Clean architecture
+✔ Enterprise Docker compliance       
+
+
+This ingress can now be called by:
+ServiceNow
+Web application
+Another microservice
+Event processor
+Batch job
+Any external system 
+By simply specifying:
+
+{
+  "source": "servicenow",
+  "payload": { ... }
+}

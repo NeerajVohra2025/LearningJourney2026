@@ -1,0 +1,47 @@
+https://www.youtube.com/watch?v=XfZBaOgUbps
+
+Docker Model Runner:
+setting->Ai
+    Enable host-side TCP support # provides OpenAI compatiable API
+    
+https://hub.docker.com/u/ai
+
+docker model -h
+docker model pull ai/gemma3-qat:270M-F16
+docker model list
+docker model run ai/gemma3-qat:270M-F16
+
+enable TCP and configure the port via the Docker Desktop Settings
+docker desktop enable model-runner --tcp=12434
+
+curl http://localhost:12434
+curl http://localhost:12434/models
+
+
+base_url = "http://localhost:12434/engines/v1"
+base_url= "http://model-runner.docker.internal/engines/v1"
+
+from openai import OpenAI
+
+client = openai.OpenAI(
+  base_url = base_url,
+  api_key = "docker"
+)
+
+
+completion = client.chat.completions.create(
+    model="ai/llama3.2:latest", 
+    messages=[
+        {"role": "system", "content": "You are a helpful AI assistant."},
+        {"role": "user", "content": "What is the capital of the United States of America?"}
+        ],
+) 
+
+print(completion.choices[0].message.content)
+
+
+
+SDK==> provides OpenAI end point
+
+
+OpenAI endpoint

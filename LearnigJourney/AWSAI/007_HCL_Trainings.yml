@@ -1,0 +1,204 @@
+Which metric is used to evaluate how “confused” a language model is when predicting the next word?:
+    BLEU
+    ROUGE
+    Perplexity:
+    R²
+Which Responsible AI fairness metric checks equal true‑positive and false‑positive rates across groups? :
+    Demographic Parity # Equal Prediction Not Care about actual
+    Equalized Odds:
+    Robustness Score
+    Toxicity Score
+    
+What metric measures the errors in sale prediction?:    
+    BLEU
+    ROUGE
+    BERTScore  
+    Root Mean Square Error:  # Regression
+    
+Which metric Assesses the quality of generation/translation by comparing machine-generated text to a reference?:
+    BLEU Score:
+    BERT Score  # semantically aware
+    Hallucination Rate # This measures how often a model generates factually incorrect or unsupported content,
+    Error Rate
+
+Which metric is used to measure the time between input submission and output generation in AI models?:   
+    Hallucination Rate
+    Latency Score:
+    Deployment Frequency # A DevOps/MLops metric indicating how often new models or updates are deployed to production. It reflects release cadence, not response time.
+    Change Failure Rate  # DevOps metric that tracks how often deployments lead to failures (e.g., outages or bugs). It relates to reliability of updates, not inference speed.
+    
+Which metric measures the model’s resistance to adversarial attacks? :
+    F1 Score # Measures the balance between precision and recall—used for classification performance, not security or robustness.
+    Robustness Score:
+    Equalized Odds Ratio # A fairness metric ensuring similar true positive and false positive rates across groups; unrelated to adversarial robustness.
+    Scalability   # Refers to how well a system performs as workload or data size increases—a systems engineering concern, not a measure of resistance to attacks. 
+    
+Which of the following is NOT one of the four key DORA  (DevOps Research and Assessment) metrics used to measure DevOps performance?:
+    Lead Time for Changes # The time it takes for a code change to go from commit to deployment.
+    Deployment Frequency #  How often an organization successfully releases to production
+    Mean Time to Recover #  How long it takes to restore service after a production failure.
+    Ticket Productivity  :  
+    Change Failure Rate #  The percentage of deployments that result in a failure (e.g., incidents, rollbacks).
+    
+What metric measures the percentage of AI-generated outputs that contain factual inaccuracies?:
+    Latency Score #  Measures response time (time from input to output), not factual correctness.
+    Hallucination Rate:
+    ROUGE Score # Evaluates overlap of n-grams between generated and reference text—used in summarization; focuses on content coverage, not factuality.
+    Change Failure Rate   # A DevOps/DORA metric indicating how often deployments cause failures in production—unrelated to AI output quality. 
+    
+Which metric evaluates how similar two pieces of text are in meaning, not just in words?:
+    ROUGE Score # Measures n-gram recall, commonly used in summarization. Also based on surface-level overlap, not semantics.
+    BLEU Score # Measures n-gram precision—focuses on exact word/subword matches. Ignores meaning.
+    BERT Score: #BERT Score is the metric that evaluates how similar two texts are in meaning, not just in wording.
+    Latency Score  # Measures time delay in system response—completely unrelated to text similarity.  
+    
+Which metric is used to evaluate the quality of automatic text summarization and machine translation?:
+    ROUGE Score : #ROUGE Score is the metric most directly associated with evaluating automatic text summarization and is also used in machine translation
+    Latency Score
+    Hallucination Rate
+    BERT Score   #Evaluates semantic similarity 
+    
+What does the F1 Score measure in AI model evaluation, and why is it considered a harmonic mean?:
+    Average of Precision and Recall
+    Harmonic mean of Precision and Recall:
+    Ratio of True Positives to False Negatives
+    Difference between Precision and Recall    
+    
+Which metric is used to assess fairness by comparing selection rates across demographic groups? :
+    Equalized Odds Difference #Compares true positive rates (TPR) and false positive rates (FPR) across groups—requires ground truth labels. It’s stricter and more nuanced than demographic parity
+    Demographic Parity Ratio: #
+         Demographic Parity Ratio=Selection Rate(Group A)/election Rate(Group B)
+​   Hallucination Rate
+   FID - Fréchet Inception Distance  # Used in generative computer vision (e.g., GANs) to compare image quality and diversity—has nothing to do with fairness or demographic groups  
+   
+Which metric evaluates image generation quality by comparing generated images with real ones? :
+    IoU (Intersection over Union) # Used in object detection and segmentation to measure overlap between predicted and ground-truth bounding boxes or masks—not for overall image generation quality.
+    FID - Fréchet Inception Distance:
+    BLEU
+    ROUGE   
+    
+Which metric measures the percentage of developers actively using GitHub Copilot? :
+    GenAI Code Acceptance Rate # how often developers accept individual AI-generated code suggestions, not whether they use the tool overall.
+    GenAI Tool Adoption Rate # GenAI Tool Adoption Rate measures the percentage of developers who are actively using a generative AI coding tool, such as GitHub Copilot.
+    GenAI Suggestion Acceptance Rate # focuses on acceptance of specific suggestions, not user adoption
+    Developer Satisfaction Score   # Captures subjective feedback (e.g., via surveys) about usability or usefulness, but not usage prevalence.
+
+What does Accuracy measure in a classification model?:
+        Accuracy is a fundamental evaluation metric for classification models. It measures: TP+TN/Total Prediction
+    How similar two texts are in meaning # That’s measured by metrics like BERT Score, not accuracy.
+    Percentage of correct predictions:
+    Model’s resistance to attacks # Assessed via robustness or adversarial testing, not accuracy.
+    Explainability of features   #  Related to interpretability methods (e.g., SHAP, LIME), not accuracy.
+
+What does AWS Bedrock primarily provides ?:    
+    AI # "AI" is too vague—many AWS services provide AI capabilities.
+    Creating New Models #Bedrock is not designed for training foundation models from scratch (that’s more aligned with SageMaker).
+    Foundation Models:
+    All of the above
+    
+What type of AI models does AWS Bedrock facilitate?:
+    Generative # Amazon Bedrock is specifically designed to facilitate generative AI models—also known as foundation models (FMs)—that can generate new content such as:
+    Predictive # are typically custom, task-specific models trained on labeled data—commonly built and deployed using Amazon SageMaker, not Bedrock.
+    Classification # are typically custom, task-specific models trained on labeled data—commonly built and deployed using Amazon SageMaker, not Bedrock.
+    All of the above    
+    
+Which service does AWS Bedrock integrate with for input data storage?:
+    Vector DB # While vector databases (e.g., Amazon OpenSearch, Pinecone, or AWS Kendra with vector search) are often used alongside Bedrock for retrieval-augmented generation (RAG), they are not a native AWS storage service that Bedrock directly integrates with for general input data. Vector DBs are optional add-ons, not core integrations.
+    S3 : # Amazon Bedrock integrates natively with Amazon S3 (Simple Storage Service) for storing and retrieving input data, model artifacts, training data (for fine-tuning), and output results.
+    EC2 # Provides virtual servers—not a storage service. Bedrock is serverless and doesn’t require EC2 for data input.
+    EBS # Block storage attached to EC2 instances—not used directly by Bedrock, which is a managed service that doesn’t expose underlying infrastructure.
+
+What can developers use to access AWS Bedrock Services?:
+    CLI
+    Console
+    SDK
+    All of the above:   
+
+
+What is the primary benefit of using AWS Bedrock Service?:
+    Cost # Bedrock can be cost-efficient, but large-scale inference or fine-tuning can become expensive—cost is not its primary differentiator.
+    Speed #  Inference speed varies by model and isn’t Bedrock’s standout feature vs. self-hosted solutions.
+    Flexibility: # AWS Bedrock is designed to give developers flexible access to a wide range of high-performing foundation models (FMs) from leading AI companies (like Anthropic, Meta, Cohere, Mistral, and Amazon) through a single, unified API.
+    Security  # AWS provides strong security (e.g., data encryption, VPC support), but other AWS AI services also offer this—it’s table stakes, not the main benefit.
+
+AWS Bedrock is designed to simplify the deployment of what kind of applications?:
+    AI/ML:
+    Web # are application delivery platforms, not AI model deployment services
+    Mobile # are application delivery platforms, not AI model deployment services
+    All of the above
+   
+   
+Which type of AI models does AWs Bedrock Supports?:
+    Vision # some newer foundation models (e.g., Claude 3 and Llama 3.2) support multimodal inputs (including images), Bedrock’s core and historically supported use case is text. Vision capabilities are limited and model-dependent, not a primary or universal feature across Bedrock.
+    Text: # Amazon Bedrock primarily supports foundation models (FMs) for text-based generative AI tasks.
+    Recommendations # Not supported via Bedrock. Recommendation systems are typically built using Amazon Personalize or custom ML models in SageMaker, not generative foundation models.
+    All of the above   
+    
+What is the key feature of AWS Bedrock?:
+    Serverless Architecture: #  Amazon Bedrock is its serverless architecture, which allows developers to use, customize, and deploy foundation models (FMs) without managing any underlying infrastructure.
+    Real-time analytics # Not a core capability of Bedrock—it’s for generative AI inference, not analytics.
+    Managed services for ML # Too generic—many AWS services (e.g., SageMaker, Comprehend) are managed ML services. Bedrock’s distinctive trait is being serverless and model-agnostic for FMs.
+    Batch jobs for analytics   # Bedrock supports batch inference, but it’s for AI model predictions, not general-purpose analytics workloads. 
+    
+Which AWS Service can be used to monitor AWS Bedrock applications?:
+    Cloud Trail # Records API calls and audit logs (e.g., who invoked InvokeModel), useful for security and compliance, but not for performance monitoring.
+    Cloud Watch: # Amazon CloudWatch is the AWS service used to monitor, collect, and analyze metrics, logs, and events for AWS resources—including AWS Bedrock applications.
+    Cloud Monitor # Not a real AWS service—this is a distractor.
+    Bedrock Monitor   # Does not exist as a standalone AWS service. Bedrock relies on CloudWatch and CloudTrail for observability. 
+    
+    
+What is a key advantage of using GitHub Models (e.g., via the Models API) in CI/CD pipelines?:
+    They require self-hosted GPU clusters # GitHub Models are hosted by GitHub/Microsoft; no self-hosting or GPU management is needed.
+    They run pipelines faster than standard runners # They don’t speed up pipeline execution (e.g., build/test time). Their value is in task automation, not compute acceleration.
+    They enable AI-powered tasks like generating release notes or triaging issues:
+    They replace Docker entirely  # Docker is unrelated—GitHub Models complement, not replace, containerization or build tools.
+
+What is the main purpose of GitHub Copilot in DevOps workflows?:
+    To assist developers by suggesting code, scripts, and pipeline configurations using AI:
+    To replace all manual QA processes # Copilot does not perform testing or QA; it may help write test code, but QA still requires execution, review, and validation.
+    To automatically deploy applications without pipelines # Copilot does not handle deployment orchestration. Deployments still rely on pipelines (e.g., GitHub Actions, ArgoCD), which Copilot might help define—but not replace.
+    To manage Kubernetes clusters directly # Copilot can suggest Kubernetes YAML manifests, but it doesn’t interact with or manage live clusters (that’s the role of kubectl, Helm, or GitOps tools).
+
+How does the MCP server handle Kubernetes RBAC (Role-Based Access Control) permissions?:
+    It bypasses RBAC for faster operations # This would be a critical security flaw. MCP does not bypass RBAC.
+    It creates new admin users automatically # MCP does not create or manage Kubernetes users or roles.
+    It inherits and respects the user's existing RBAC permissions : 
+    It requires special MCP-specific RBAC roles   # MCP uses standard Kubernetes RBAC; no custom roles are needed. 
+    
+What critical production operation CANNOT be performed by Terraform MCP?:
+    Finding security best practices
+    Generating EKS cluster configurations
+    Searching for latest Kubernetes modules
+    Directly applying Terraform changes to production: # MCP does not have the capability—or permission—to directly apply changes to production infrastructure.
+
+In Copilot4DevOps workflows, what is the primary benefit of AI-assisted YAML generation for pipelines?:
+    It guarantees zero build failures # AI can suggest valid YAML, but logic errors, environment mismatches, or dependency issues can still cause failures. No tool can guarantee zero failures.
+    It produces fully optimized pipelines without human review # AI provides a starting point, but optimization (cost, speed, security) requires domain knowledge and human oversight.
+    It accelerates authoring by scaffolding correct syntax and common stages:
+    It replaces all manual approvals with automated ones #  Approvals are governance and security controls—AI does not bypass them. In fact, AI-generated pipelines often require extra scrutiny.
+
+What is the PRIMARY benefit of using Terraform MCP over ChatGPT for infrastructure code?:
+    It requires no internet connection to work # MCP typically requires connectivity to access the Terraform Registry, cloud APIs, or your codebase.
+    It provides real-time data from the Terraform Registry:
+    It can directly execute terraform apply commands # MCP does not execute code—it’s a read/query/generation protocol. Execution is always handled by secure pipelines or user approval.
+    It automatically fixes security vulnerabilities #  While MCP can suggest secure patterns (e.g., enable encryption), it does not auto-remediate vulnerabilities. Human review is still required.
+
+Which statement best describes using AI with Azure DevOps or GitHub Actions for PR quality?:
+    AI disables branch protection rules # AI does not disable security or workflow policies. Branch protections remain enforced by the platform.
+    AI can auto-merge PRs without checks # Auto-merge (if enabled) still requires all required checks to pass. AI cannot override pipeline or policy requirements.
+    AI removes the need for code owners # Code owners ensure domain expertise and accountability. AI may suggest reviewers, but does not replace ownership.
+    AI can help generate targeted test cases and summarize PR changes to improve reviews : 
+
+What is the primary benefit of using MCP (Model Context Protocol) for Kubernetes management?:
+    It replaces kubectl with a graphical interface #MCP doesn’t provide a GUI; it enables natural language → API interaction, often still in terminal or IDE contexts.
+    It automatically fixes all Kubernetes errors # MCP does not auto-remediate. It may suggest fixes, but execution requires human approval.
+    It reduces Kubernetes cluster costs by 50% # MCP has no direct impact on infrastructure cost. It’s a developer tool, not a resource optimizer.
+    It allows natural language interaction with Kubernetes:  
+
+How does the AI plugin in VS Code improve developer productivity in CI/CD?:
+    By auto-committing changes without review # AI plugins do not auto-commit—version control actions remain under developer control.
+    By disabling linting checks # AI doesn’t disable linting; it often helps comply with linting rules by suggesting properly formatted code.
+    By replacing all debugging tools # AI assists debugging (e.g., explaining stack traces), but doesn’t replace debuggers, logs, or observability tools.
+    By providing inline code suggestions, error explanations, and pipeline script generation:
+
+    

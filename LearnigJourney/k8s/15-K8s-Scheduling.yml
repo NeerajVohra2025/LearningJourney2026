@@ -1,0 +1,841 @@
+Kubernetes Scheduling, Node Selection, and Taints/Tolerations:
+1) What Kubernetes scheduling means:
+In Kubernetes, scheduling is the process of deciding which worker node should run a new Pod.
+Think of it like this:
+A Pod is a workload that needs a home.
+The scheduler is the decision-maker.
+The kubelet on each node is the worker that actually starts and manages the Pod.
+The API server is the central source of truth that stores the current state of the cluster.
+
+2) Who does what in the scheduling flow:
+Step 1 — kubelet sends health and status updates
+Each node runs a kubelet. The kubelet sends heartbeats to the API server so Kubernetes knows the node is alive and healthy.
+
+Step 2 — the API server holds the cluster state
+The API server stores the current node and Pod information. The scheduler reads this state from the API server.
+
+Step 3 — the scheduler looks for a place to run the Pod
+The scheduler watches for Pods that are waiting to be assigned to a node. It then chooses the best node based on:
+Filtering: remove nodes that cannot run the Pod
+Scoring / weighing: rank the remaining nodes and choose the best fit
+
+Step 4 — the scheduler binds the Pod to a node
+Once a node is selected, the scheduler assigns that Pod to that node.
+
+Step 5 — kubelet starts the Pod
+After assignment, the kubelet on that node pulls the image and runs the container.
+
+3) Clean architecture view:
+    [Pod Request]
+          ↓
+    [API Server / Cluster State]
+          ↓
+    [Kube-Scheduler]
+          ↓
+    [Chosen Node]
+          ↓
+    [Kubelet]
+          ↓
+    [Container Runtime]
+          ↓
+    [Running Pod]
+    
+This is the clean separation:
+Scheduler decides
+Kubelet executes
+API server coordinates    
+
+4) NodeSelector: the simplest way to place a Pod on a specific node
+What it does
+nodeSelector tells Kubernetes:
+“Run this Pod only on a node that has this label.”
+This is a Pod-level setting, not a container-level setting.
+
+
+How it works step by step
+Step 1 — label the node:
+You first add a label to the worker node:
+
+kubectl label nodes <node-name> gpu=true
+kubectl get nodes --show-labels
+
+Step 2 — use that label in the Pod spec:
+apiVersion: v1
+kind: Pod
+metadata:
+  name: db-pod
+spec:
+  nodeSelector:
+    gpu: "true"
+  containers:
+  - name: db
+    image: my-db-image
+
+Step 3 — scheduler matches the label:
+If a node has gpu=true, the scheduler can place the Pod there.
+
+UC What if no matching node exists?:
+The Pod stays in Pending state.
+That means:
+the Pod exists in the API server
+but no node has been chosen yet
+so the Pod has not started
+
+UC What if the node label is removed after the Pod is already running?:
+Nothing happens to the running Pod.
+Why?
+Because scheduling only matters when the Pod is being assigned. After a Pod is running, removing the label does not automatically evict it.
+
+
+5) NodeAffinity: a more flexible version of nodeSelector
+nodeSelector is simple, but it only works for exact label matching.
+NodeAffinity gives you more control.
+Why use it
+You use NodeAffinity when you want:
+multiple labels
+more expressive matching
+hard or soft scheduling preferences
+
+Two important types:
+A. Required node affinity:
+This is a hard rule.
+If the node does not match, the Pod will not be scheduled.
+
+B. Preferred node affinity:
+This is a soft rule.
+Kubernetes tries to honor it, but will still schedule the Pod elsewhere if needed.
+
+Simple mental model:
+nodeSelector = exact match, simple and strict
+nodeAffinity = advanced node placement logic
+
+
+6) PodAffinity: place Pods near other Pods
+nodeAffinity:
+This says:
+“Place my Pod on a node with these labels.”
+Example:
+schedule database Pods on GPU nodes
+schedule memory-heavy workloads on large nodes
+
+podAffinity:
+This says:
+“Place my Pod near other Pods that match certain labels.”
+Example:
+put frontend Pods close to backend Pods
+keep cache and app Pods in the same zone or node for lower latency
+
+Simple difference:
+| Concept      | What it matches | Example                 |
+| ------------ | --------------- | ----------------------- |
+| nodeAffinity | Node labels     | “Run on GPU node”       |
+| podAffinity  | Other Pods      | “Run near backend Pods” |
+
+7) Taints: keep Pods away from certain nodes
+Problem:
+You may want to stop Pods from being scheduled on a specific worker node.
+Example:
+node W2 is GPU being patched
+you do not want any Pods landing there
+
+Solution:
+Use a taint on the node.
+A taint says:
+“Do not schedule Pods here unless they explicitly tolerate this taint.”
+
+Taint structure:
+key=value:effect
+
+Common effects:
+NoSchedule:
+Hard block for new Pods
+NoExecute:
+Hard block for new Pods and evict running Pods that do not tolerate it
+PreferNoSchedule:
+Soft block; Kubernetes tries to avoid the node, but may use it if needed
+
+Example:
+kubectl taint node <node-name> app=webserver:NoSchedule
+Meaning:
+do not place new Pods on this node unless they have a matching toleration
+
+Important behavior:
+NoSchedule:
+new Pods are blocked
+already running Pods continue running
+
+NoExecute:
+new Pods are blocked
+Pods without toleration may be evicted
+
+PreferNoSchedule:
+soft preference to avoid the node
+
+8) Tolerations: allow a Pod onto a tainted node
+If a node is tainted, a Pod needs a toleration to be allowed there.
+
+Think of it like:
+taint = “keep out”
+toleration = “this Pod is allowed in”
+
+Example Pod with toleration:
+apiVersion: v1
+kind: Pod
+metadata:
+  name: db-pod
+spec:
+  tolerations:
+  - key: "app"
+    operator: "Equal"
+    value: "webserver"
+    effect: "NoSchedule"
+  containers:
+  - name: db
+    image: my-db-image
+    
+This means:
+the Pod can be scheduled onto a node tainted with app=webserver:NoSchedule    
+
+9) Why the master/control-plane node is tainted:
+By default, the control-plane node is tainted so application Pods do not run there.
+Why?
+Because the control-plane node is reserved for cluster management components, not your workloads.
+
+So by default:
+application Pods go to worker nodes
+control-plane nodes stay protected
+
+
+10) Enterprise clean architecture view:
+    [Pod Spec]
+       ↓
+    [Scheduler Rules]
+       ↓
+    [nodeSelector / nodeAffinity / tolerations]
+       ↓
+    [Chosen Worker Node]
+       ↓
+    [kubelet]
+       ↓
+    [Running Pod]
+
+Placement controls:
+nodeSelector: simple exact label match
+nodeAffinity: advanced node selection
+taints/tolerations: repel or allow Pods on nodes
+
+11) Practical summary
+Use nodeSelector when:
+you need simple label-based placement
+one label is enough
+
+Use nodeAffinity when:
+you need more control
+you need hard or soft placement preferences
+you want multiple matching conditions
+
+Use taints/tolerations when:
+you want to keep certain nodes reserved
+you want to block workloads from special nodes
+you want to allow only specific Pods onto specific nodes
+
+Kubernetes scheduling decides which node should run a Pod. The scheduler reads the cluster state from the API server, filters out unsuitable nodes, scores the remaining ones, and binds the Pod to the best match. nodeSelector and nodeAffinity help choose the right node, while taints and tolerations help keep Pods away from nodes unless they are explicitly allowed.
+
+🧠 1. First — Quick Understanding:
+| Concept          | Meaning                       |
+| ---------------- | ----------------------------- |
+| **nodeAffinity** | “Place Pod on specific Nodes” |
+| **podAffinity**  | “Place Pod near other Pods”   |
+
+
+
+🏗️ 2. Clean Architecture View:
+[Scheduler]
+     ↓
+[Placement Rules]
+     ↓
+ ┌───────────────┐
+ │ nodeAffinity  │ → Node-based decision
+ │ podAffinity   │ → Pod-based decision
+ └───────────────┘
+     ↓
+[Selected Node]
+     ↓
+[Pod Running]
+
+
+⚙️ 3. nodeAffinity Example (Node-based scheduling):
+🎯 Use Case
+👉 “Run database Pod only on GPU nodes”
+
+🔷 Step 1 — Label the Node
+kubectl label nodes node1 gpu=true
+
+🔷 Step 2 — Pod with nodeAffinity
+apiVersion: v1
+kind: Pod
+metadata:
+  name: db-pod
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: gpu
+            operator: In
+            values:
+            - "true"
+  containers:
+  - name: db
+    image: mysql
+
+🧠 Explanation
+Scheduler checks:
+    → Does node have label gpu=true?
+       YES → schedule
+       NO  → skip
+
+🔥 Key Points
+requiredDuringScheduling = hard rule
+If no matching node → Pod stays Pending
+After running → rule is ignored (no eviction)
+
+⚙️ 4. nodeAffinity (Soft Rule Example):
+🎯 Use Case
+👉 “Prefer GPU nodes but not mandatory”
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 1
+      preference:
+        matchExpressions:
+        - key: gpu
+          operator: In
+          values:
+          - "true"
+          
+🧠 Meaning
+Try GPU node first
+If not available → schedule anywhere
+
+⚙️ 5. podAffinity Example (Pod-based scheduling):
+🎯 Use Case
+👉 “Place frontend Pod near backend Pods”          
+
+🔷 Example YAML
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend-pod
+spec:
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app: backend
+        topologyKey: "kubernetes.io/hostname"
+  containers:
+  - name: frontend
+    image: nginx
+    
+🧠 Explanation
+Scheduler checks:
+    → Is there a node running pods with label app=backend?
+    YES → place frontend on SAME node
+    NO  → Pod stays Pending    
+🔥 Key Concept
+topologyKey = where to match
+| Value    | Meaning                |
+| -------- | ---------------------- |
+| hostname | Same node              |
+| zone     | Same availability zone |
+| region   | Same region            |
+
+⚙️ 6. podAffinity (Soft Rule Example)
+affinity:
+  podAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 1
+      podAffinityTerm:
+        labelSelector:
+          matchLabels:
+            app: backend
+        topologyKey: "kubernetes.io/hostname"
+        
+🧠 Meaning
+Try to place near backend
+If not possible → still schedule elsewhere        
+
+⚖️ 7. nodeAffinity vs podAffinity:
+| Feature  | nodeAffinity    | podAffinity           |
+| -------- | --------------- | --------------------- |
+| Based on | Node labels     | Pod labels            |
+| Use case | Infra placement | App co-location       |
+| Example  | GPU nodes       | Frontend near backend |
+| Scope    | Node            | Pod topology          |
+
+🧠 8. Real Enterprise Use Cases:
+🔷 nodeAffinity
+    GPU workloads
+    SSD nodes
+    High-memory nodes
+    Dedicated nodes (compliance)
+    
+🔷 podAffinity
+    Microservices (frontend ↔ backend)
+    Cache + app co-location
+    Reduce network latency    
+    
+⚠️ 9. Common Mistakes:
+❌ Missing topologyKey
+👉 Pod will not schedule correctly    
+
+❌ Using required when you need preferred
+👉 Pod stuck in Pending
+
+❌ Wrong labels
+👉 No matching → scheduling fails
+
+🧠 10. Final Mental Model:
+    nodeAffinity → "Which machine?"
+    podAffinity  → "Near which app?"
+
+🎯 Final Simple Explanation
+“nodeAffinity controls which nodes a Pod can be scheduled on based on node labels, while podAffinity controls placement based on the presence of other Pods, enabling application-aware scheduling.”
+
+🧠 1. One-Line Mental Model:
+Affinity                → "Where SHOULD this Pod go?"
+Taints/Tolerations      → "Where is this Pod ALLOWED to go?"
+TopologySpreadConstraints → "How should Pods be DISTRIBUTED?"
+
+🏗️ 2. Clean Architecture View (Level 5):
+    [Scheduler]
+         ↓
+    [Placement Decision Engine]
+         ↓
+     ┌─────────────────────────────────────┐
+     │ Affinity        → Preference / rules │
+     │ Taints          → Restrictions       │
+     │ Spread          → Distribution       │
+     └─────────────────────────────────────┘
+         ↓
+    [Selected Node]
+         ↓
+    [Pod Running]
+
+⚙️ 3. Affinity (Node + Pod Placement Logic):
+🔷 What it does
+👉 Controls where Pods should be scheduled
+
+🔷 Types
+nodeAffinity → based on node labels
+podAffinity / podAntiAffinity → based on other Pods
+
+🧠 1. One-Line Understanding:
+podAntiAffinity = “Do NOT place this Pod near certain other Pods”
+👉 It is the opposite of podAffinity
+
+🏗️ 2. Clean Architecture View:
+[Scheduler]
+     ↓
+[Pod Placement Rules]
+     ↓
+ ┌──────────────────────┐
+ │ podAffinity     → Stay together
+ │ podAntiAffinity → Stay apart
+ └──────────────────────┘
+     ↓
+[Selected Node]
+
+🎯 3. Why podAntiAffinity is needed:
+
+❌ Problem (Without Anti-Affinity)
+All Pods scheduled on SAME node
+👉 Risk:
+Node failure = all Pods down ❌
+No high availability ❌
+
+✅ Desired Behavior
+Distribute Pods across nodes
+👉 Result:
+High availability ✅
+Fault tolerance ✅
+
+⚙️ 4. Basic podAntiAffinity Example:
+🎯 Use Case
+👉 “Do NOT place 2 frontend Pods on the same node”
+
+Affinity        = Attraction ❤️
+Taints          = Repulsion 🚫
+Spread          = Balance ⚖️
+
+🧠 5. podAffinity vs podAntiAffinity:
+| Feature  | podAffinity           | podAntiAffinity             |
+| -------- | --------------------- | --------------------------- |
+| Goal     | Stay together         | Stay apart                  |
+| Use case | Reduce latency        | Increase availability       |
+| Example  | frontend near backend | replicas on different nodes |
+
+👉 YES — a Pod with toleration can run on ANY node
+    Toleration ≠ restriction
+    Toleration = permission
+
+🏗️ 2. Clean Architecture View:
+    [Scheduler]
+         ↓
+    [Check Taints]
+         ↓
+    [Check Affinity / Resources]
+         ↓
+    [Select Best Node]
+
+🧠 3. Key Concept:
+    🔷 Taint (Node side)
+        Node says: "Do NOT come here"
+    🔷 Toleration (Pod side)
+        Pod says: "I am allowed if needed"
+
+⚙️ 4. What toleration actually does:
+    👉 It does NOT force placement
+    👉 It only removes restriction   
+    
+🔥 5. Scenario-Based Explanation:
+    ✅ Case 1 — Cluster has normal + tainted nodes:
+        Node1 → normal
+        Node2 → tainted (NoSchedule)
+    Pod has toleration.
+    
+    What happens?:
+    Scheduler can choose:
+    Node1 (normal) ✅
+    Node2 (tainted) ✅
+    
+   👉 Final decision depends on:
+      resources
+      affinity
+      scoring 
+      
+    ❌ Case 2 — Pod WITHOUT toleration:
+     Node2 (tainted) ❌ not allowed
+     👉 Only Node1 is eligible
+     
+     
+⚠️ Case 3 — Only tainted nodes exist:
+    All nodes tainted    
+    Pod WITH toleration:
+        Pod runs ✅
+    Pod WITHOUT toleration:
+        Pod stays Pending ❌    
+
+
+🧠 6. Important Clarification:
+    👉 Toleration is NOT like nodeSelector        
+    | Feature      | Behavior                    |
+    | ------------ | --------------------------- |
+    | nodeSelector | Forces Pod to specific node |
+    | toleration   | Allows Pod to use node      |
+
+
+🧠 7. Final Mental Model:
+    Taint        → Block 🚫
+    Toleration   → Allow entry 🔓
+    Affinity     → Choose location 🎯
+    
+🎯 8. Final Simple Explanation:
+“A toleration does not force a Pod to run on a tainted node; it only allows the Pod to be scheduled there. The scheduler can still place the Pod on any other suitable node unless additional constraints like nodeAffinity are applied.”    
+
+🏗️ 9. Clean Architecture — Scheduler Decision Pipeline:
+    [All Nodes]
+        ↓
+    [Step 1: Taints Filter]      🚫 (hard filter)
+        ↓
+    [Step 2: Affinity Filter]   🎯 (hard/soft)
+        ↓
+    [Step 3: Scoring]
+        ↓
+    [Final Node Selected]
+    
+🔥 10. Golden Rule    :
+    Pod runs ONLY if:
+        ✔ Taints allow it
+        ✔ Affinity matches it
+
+⚙️ 11. Conflict Scenarios (Step-by-Step):
+🚫 Scenario 1 — Taint blocks, Affinity matches
+    Setup
+        Node:
+            kubectl taint node node1 env=prod:NoSchedule
+        Pod:
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: env
+                      operator: In
+                      values: ["prod"]
+              
+    🧠 What happens?:
+        Affinity → MATCH ✅ (node has env=prod)
+        Taint    → BLOCK ❌ (no toleration)
+    
+    ❌ Result
+    Pod = Pending
+    
+    🔥 Insight:
+        👉 Taint wins over affinity
+    
+🚫 Scenario 2 — Toleration exists, Affinity mismatch:
+    Setup
+    Node:    
+        kubectl taint node node1 env=prod:NoSchedule
+    Pod:
+        tolerations:
+        - key: "env"
+          operator: "Equal"
+          value: "prod"
+          effect: "NoSchedule"
+
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: env
+                  operator: In
+                  values: ["dev"]
+
+    🧠 What happens?:
+        Taint → allowed ✅
+        Affinity → mismatch ❌
+        
+    ❌ Result
+        Pod = Pending    
+    🔥 Insight
+        👉 Affinity can also block scheduling    
+
+⚙️ Scenario 3 — Both match (Happy Path):
+    ✅ Result
+        Taint → allowed ✅
+        Affinity → match ✅
+        → Pod scheduled 🎯
+
+🧠 5. Decision Matrix:
+    | Condition            | Result         |
+    | -------------------- | -------------- |
+    | Taint ❌ + Affinity ✅ | ❌ Blocked      |
+    | Taint ✅ + Affinity ❌ | ❌ Blocked      |
+    | Taint ✅ + Affinity ✅ | ✅ Scheduled    |
+    | Soft rules only      | ⚠️ Best effort |
+
+🧠 8. Final Mental Model:
+    Taints        = Gate 🚪
+    Toleration    = Access card 🔑
+    Affinity      = Preference 🎯
+    ALL must align → Pod runs
+
+
+
+
+Upgrade the k8s Cluster:
+🧠 1. Problem Context — Why do we need Cordon / Drain?:
+    👉 In real enterprise clusters, you often need to:
+        Upgrade nodes (OS / Kubernetes version)
+        Apply patches
+        Replace faulty node
+    ❌ Problem
+        If node is upgraded directly → running Pods may crash ❌
+    ✅ Solution
+        👉 Safely remove a node from scheduling using:    
+            Cordon → Drain → Upgrade → Uncordon
+        
+🏗️ 2. Clean Architecture View:        
+        [Cluster]
+           ↓
+        [Node Lifecycle Control]
+           ↓
+         ┌───────────────┐
+         │ Cordon        │ → Stop new Pods
+         │ Drain         │ → Evict existing Pods
+         │ Uncordon      │ → Resume scheduling
+         └───────────────┘
+    
+⚙️ 3. Step-by-Step Lifecycle (Enterprise Flow):
+    🔷 Step 1 — Cordon (Mark node as unschedulable):
+    Command:
+        kubectl cordon <node-name>
+    🧠 What it does:
+        ✔ Stops NEW Pods from being scheduled
+        ✔ Existing Pods continue running    
+    🔥 Equivalent Concept:
+        Similar to: NoSchedule behavior
+        👉 But important:
+            Cordon is a command
+            NoSchedule is a taint effect
+
+    🔷 Step 2 — Drain (Safely evict Pods):
+        Command:
+            kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
+        🧠 What it does:
+            ✔ Evicts existing Pods
+            ✔ Reschedules them to other nodes
+            ✔ Makes node ready for maintenance
+            
+        🔥 Behavior Mapping:
+            Similar to: NoExecute   
+            👉 But again:
+                Drain = operational command
+                NoExecute = taint effect   
+
+    🔷 Step 3 — Perform Upgrade / Maintenance:
+        Node is now empty → safe to upgrade
+        
+    🔷 Step 4 — Uncordon (Bring node back):
+        Command:
+            kubectl uncordon <node-name>    
+    🧠 What it does
+        ✔ Node becomes schedulable again
+        ✔ New Pods can be placed            
+    
+🔥 4. End-to-End Flow:
+    Step 1: Cordon   → Stop new Pods
+    Step 2: Drain    → Remove existing Pods
+    Step 3: Upgrade  → Safe maintenance
+    Step 4: Uncordon → Resume scheduling    
+    
+🧠 5. Difference: Commands vs Taints
+    🔷 Commands (Operational)    
+        | Command  | Purpose                 |
+        | -------- | ----------------------- |
+        | cordon   | Mark node unschedulable |
+        | drain    | Evict Pods              |
+        | uncordon | Enable scheduling       |
+        
+    🔷 Taints (Declarative)    
+        | Effect           | Behavior            |
+        | ---------------- | ------------------- |
+        | NoSchedule       | Block new Pods      |
+        | NoExecute        | Evict existing Pods |
+        | PreferNoSchedule | Soft block          |
+    
+    
+    🔥 Key Insight:
+        Cordon/Drain = Admin actions (manual/operational)
+        Taints       = Policy-based control (declarative)    
+
+⚖️ 6. Mapping (Very Important):
+    | Concept  | Equivalent         |
+    | -------- | ------------------ |
+    | cordon   | NoSchedule         |
+    | drain    | NoExecute          |
+    | uncordon | remove restriction |
+    
+    
+⚠️ 7. Important Nuances (Enterprise Level):
+    ❗ 1. Drain respects PodDisruptionBudget (PDB)
+        Pods may NOT be evicted if it violates PDB
+    
+    
+    ❗ 2. DaemonSets are NOT drained by default
+    👉 Need:
+        --ignore-daemonsets
+        
+    ❗ 3. Static Pods are not evicted
+        👉 Managed by kubelet  
+
+    ❗ 4. EmptyDir data may be lost       
+    👉 Use:
+        --delete-emptydir-data    
+        
+🧠 8. Real Enterprise Scenario:
+    🔥 Rolling Node Upgrade
+        For each node:
+          cordon
+          drain
+          upgrade node
+          uncordon        
+          
+    Result:
+        ✔ Zero downtime
+        ✔ Controlled rollout
+        ✔ Safe upgrades      
+        
+🧠 9. Common Mistakes:
+    ❌ Skipping drain
+        Pods killed abruptly ❌
+    ❌ Forgetting uncordon
+        Node stays unused ❌
+    ❌ Ignoring PDB
+        Drain fails ❌    
+    
+🧠 10. Final Mental Model :
+    Cordon   → “Stop entry” 🚫
+    Drain    → “Empty the room” 🧹
+    Uncordon → “Open again” 🔓   
+        
+        
+PodDisruptionBudget (PDB):
+🧠 1. One-Line Understanding:
+    PDB = “Minimum number of Pods that must stay running during disruptions”  
+    👉 It protects your application from too many Pods going down at once    
+    
+🎯 2. Why PDB is Needed (Problem):
+    3 replicas of app
+    kubectl drain node
+        → all 3 pods get evicted ❌
+        → application DOWN ❌    
+        
+    ✅ With PDB:
+        3 replicas
+    PDB = minAvailable: 2
+    Drain happens →
+        ✔ Only 1 pod evicted
+        ✔ 2 pods still running
+        ✔ app stays UP ✅    
+
+🏗️ 3. Clean Architecture View:
+    [User Request]
+          ↓
+    [Pods (Replicas)]
+          ↓
+    [PDB Protection Layer]
+          ↓
+    [Disruption Event]
+      (Drain / Upgrade / Autoscaling)  
+
+⚙️ 4. What is “Disruption”?:
+    👉 PDB applies only to voluntary disruptions      
+    🔷 Examples of voluntary disruptions:
+        kubectl drain
+        Cluster upgrade
+        Node maintenance
+        Cluster autoscaler scale-down    
+        
+    ❌ NOT covered:
+        Node crash
+        Pod crash
+        OOM kill        
+        
+🧠 5. How PDB Works Internally:
+Step 1 — You define PDB:
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: my-app-pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: my-app
+      
+Step 2 — Kubernetes tracks Pods:
+    Total Pods = 3
+    Running Pods = 3
+    Required = 2
+    
+Step 3 — Disruption happens (drain):
+    Evict 1 pod → OK ✅ (still 2 running)
+    Evict 2nd pod → BLOCK ❌ (violates PDB)    
+      

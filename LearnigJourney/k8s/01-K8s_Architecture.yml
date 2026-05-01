@@ -1,0 +1,142 @@
+Kubernetes-> K8s-> Container Orchestrator:
+
+
+Kubernetes Architecture Overview:
+Kubernetes follows a client-server architecture composed of two primary types of nodes:
+
+Control Plane (Master) Node: Hosts the core control components that manage the cluster state and orchestration logic.
+Worker (formerly "Minion" or "Slave") Node: Runs application workloads inside Pods, which encapsulate one or more containers.
+
+🔧 Kubernetes Architecture: Key Components & Responsibilities
+Kubernetes is a powerful container orchestration platform composed of modular components that work together to automate deployment, scaling, and management of containerized applications. These components are grouped into two main categories: the Control Plane and the Worker Nodes, supported by CLI tools and networking interfaces.
+
+🧠 Control Plane:
+The control plane governs the cluster, making global decisions and maintaining the desired state.
+- API Server:
+Serves as the front door to the Kubernetes control plane. It validates and processes RESTful API requests, exposing the Kubernetes API to internal and external clients.
+- etcd:
+A highly available, distributed key-value store that persistently stores all cluster data, including configuration manifests, state information, and metadata. It acts as the single source of truth for the cluster.
+- Scheduler:
+Assigns newly created Pods to suitable worker nodes based on resource availability, affinity rules, and scheduling constraints.
+- Controller Manager:
+Continuously monitors the cluster state and reconciles it with the desired state. It handles node failures, replication, rolling updates, and auto-scaling.
+
+⚙️ Worker Node:
+Worker nodes run the actual application workloads in Pods and host the components responsible for container execution and networking.
+- Kubelet:
+A node-level agent that ensures containers are running as specified by the control plane. It communicates with the API Server and delegates container operations to the Container Runtime Interface (CRI).
+- Container Runtime (CRI):
+Software such as containerd or CRI-O that pulls container images and manages the lifecycle of containers within Pods. It executes containers based on instructions from the Kubelet.
+- kube-proxy:
+Maintains network rules on each node to enable communication between services and Pods. It supports service abstraction through cluster IP routing and load balancing, and runs on all nodes (including schedulable control plane nodes).
+
+🖥️ CLI Tools:
+Command-line utilities used to interact with and manage the Kubernetes cluster.
+- kubectl: Primary CLI tool for managing Kubernetes resources.
+- kubeconfig: Configuration file that defines cluster access credentials and context.
+- API Server Port: Network port used to communicate with the API Server.
+- Connectivity: Ensures secure and authenticated access to the cluster.
+
+🌐 CNI (Container Network Interface):
+CNI plugins manage networking between Pods across nodes.
+- Overlay Network
+Enables seamless Pod-to-Pod communication across nodes using virtual networking layers, abstracting the underlying physical network.
+
+    
+    
+🚀 Kubernetes Pod Lifecycle: Master vs. Worker Node Responsibilities
+This guide walks through how a Pod is created, scheduled, and managed in Kubernetes — from the initial request to container execution — with clear separation between control plane (master node) and worker node responsibilities.
+
+🧠 Master Node (Control Plane):
+The control plane orchestrates the cluster and maintains its desired state.
+1. API Server:
+- Acts as the central gateway for all RESTful requests.
+- Stores incoming requests (e.g., Pod creation) in its internal cache as YAML manifests.
+- Continuously watched by other control plane components.
+2. Scheduler:
+- Detects new Pod definitions with no assigned worker node.
+- Evaluates available worker nodes based on resource availability and health.
+- Assigns the Pod to a suitable node (e.g., W2) by updating the YAML manifest.
+3. Controller Manager:
+- Monitors cluster state and ensures desired configurations are maintained.
+- Handles rolling updates, scaling, fault tolerance, and high availability (HA).
+- Recreates Pods on healthy nodes if a worker node fails.
+- Updates the YAML manifest accordingly.
+4. etcd:
+- A distributed key-value store that persistently stores cluster metadata.
+- Receives updates from the API Server (not the Kubelet).
+- Ensures cluster state is recoverable after master node reboot.
+
+⚙️ Worker Node:
+Worker nodes host and run the actual application workloads.
+5. Kubelet:
+- A node-level agent that continuously polls the API Server.
+- Detects Pod assignments for its node (e.g., W2).
+- Pulls the request and creates the Pod locally.
+- Communicates with the Container Runtime Interface (CRI) to launch containers.
+- Updates Pod status and IP back to the API Server (not etcd).
+6. Container Runtime Interface (CRI):
+- Executes container creation inside the Pod.
+- Pulls container images and manages container lifecycle.
+- Examples: containerd, CRI-O.
+7. Pod Networking:
+- The Pod receives an IP address from the private subnet of its host node (e.g., W2).
+- The Pod runs independently on the worker node.
+8. kube-proxy:
+- Manages network rules and service abstraction.
+- Enables external access to applications running inside Pods.
+- Handles I/O operations from the outside world (e.g., www.example.com).
+
+🔄 Fault Tolerance & Recovery:
+- If the master node reboots, the API Server reloads state from etcd. Running Pods remain unaffected.
+- If the master node is down, no new operations can be performed, but existing Pods continue running.
+- If a worker node (e.g., W2) goes offline, the Controller Manager detects the failure and recreates the Pod on another healthy node.
+
+
+📌 Summary of Responsibilities:
+
+Control Plane (Master Node)
+---------------------------
+API Server:
+- Entry point for RESTful API requests
+- Stores YAML manifests in cache
+- Updates metadata to etcd
+
+Scheduler:
+- Detects unassigned Pods
+- Selects suitable worker node based on resource availability
+- Updates Pod assignment in manifest
+
+Controller Manager:
+- Monitors cluster state
+- Handles rolling updates, scaling, HA, and fault recovery
+- Recreates Pods on healthy nodes if failures occur
+
+etcd:
+- Distributed key-value store
+- Persists cluster metadata and state
+- Ensures recovery after master node reboot
+
+Worker Node
+-----------
+Kubelet:
+- Continuously polls API Server
+- Detects assigned Pod requests
+- Creates Pods and updates status/IP back to API Server
+
+Container Runtime Interface (CRI):
+- Pulls container images
+- Launches and manages container lifecycle inside Pods
+
+Pod Networking:
+- Assigns IP from node’s private subnet
+- Runs application workload
+
+kube-proxy:
+- Manages network rules and service abstraction
+- Enables external access to Pods
+- Handles I/O operations from outside world
+
+
+
+

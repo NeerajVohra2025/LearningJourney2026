@@ -1,0 +1,46 @@
+Prompt Engineering:
+ Context: Back Ground or Domain
+ Role: Based On Role We are giving the specific name
+ Constraints: Word limit or Data output format or tone
+ Instructions: Rules
+ Examples: Few shots
+ Chain of Thoughts: Thinking steps
+ 
+ 
+ 
+
+
+
+Groq key: https://console.groq.com/keys
+GROQ_API_KEY=os.getEnv("Groq key")
+
+Langchain:
+ Access the LLM Models
+ Chatbot
+ RAG 
+
+A well-crafted prompt should have the following features:
+
+1. **Specificity**: Clearly define what you want to know or achieve.
+2. **Clarity**: Avoid ambiguity and ensure the prompt is easy to understand.
+3. **Context**: Provide relevant background information or context to help the respondent understand the user's needs.
+4. **Scope**: Define the level of detail or scope of the information required.
+5. **Relevance**: Ensure the prompt is relevant to the topic or domain.
+6. **Unambiguous language**: Use simple, concise language to avoid confusion. 
+
+
+template="""
+You are a helpful writing expert.
+summarize the following text in 3 bulet points:
+{text}
+
+audiance is a group of kids. 
+also add emojis   
+"""
+
+PromptTemplate:
+    prompt=PromptTemplate(
+        input_variables=['question'],
+        template=template
+    )
+# create a professional Streamlit UI for the RAG agent script

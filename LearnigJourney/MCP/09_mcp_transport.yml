@@ -1,0 +1,158 @@
+ #----------------------------------------------------------------------------------------
+StreamableHttp Transport: 
+ The Streamable HTTP transport enables MCP clients to connect to remotely hosted servers over HTTP connections. Unlike the standard I/O transport that requires both client and serve on the same machine, this transport opens up posibilities for public MCP servers that anyone can access 
+ 
+ Configuration Setting:
+  Two key settings control how the streamable HTTP transport behaves
+    stateless_http: controls connection state management
+    json_response: controls response format handline
+  By default both settings are false, but certain deployment scenerios may force you to set them true. When enabled, these settings can break core functionality like progress notifications, logging and server-initiated requests
+
+Initially Setup:     
+  The process starts like any MCP connection
+    Clent sends a Initialize request to the server
+    Server responds with an Initial Result that includes a special mcp-session-id
+    Client sends an Initial notification with the session Id
+  This mcp-session-id is crucial - it uniquely Identifies the client and must be included in all future requests   
+  
+ ##################################
+ Day8: statefull MCP server client communication
+ step0: create a MCP server
+ step1: client initiate the Request http://localhost:8000/mcp/   # initialize method is hidden method
+         {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {
+                    "roots": {
+                        "listChanged": true
+                    },
+                    "sampling": {},
+                    "elicitation": {}
+                },
+                "clientInfo": {
+                    "name": "postman-test-client",
+                    "title": "Postman Test Client",
+                    "version": "1.0.0"
+                }
+            }
+        }
+        #server Url
+        #sends payload in POST
+        #method="initialize"  # session Id registration
+        #client capabilities
+        #    protocolVersion     # MCP streamableHttp
+        #clientInfo    
+ step2: server sends Initalization Response (Including server's capabilities)
+
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                    "protocolVersion": "2025-06-18",
+                    "capabilities": {
+                        "experimental": {},
+                        "prompts": {
+                            "listChanged": false
+                        },
+                        "resources": {
+                            "subscribe": false,
+                            "listChanged": false
+                        },
+                        "tools": {
+                            "listChanged": false
+                        }
+                    },
+                    "serverInfo": {
+                        "name": "weather",
+                        "version": "1.12.0"
+                    }
+                }
+            } 
+        # session Id in header and server's capabilities
+ step3: Client notify to server
+         {
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized"
+        }
+        When client communicate with server ,
+        sends mcp-session-Id,MCP-Protocol-version (Header)
+#########################################################################################################
+Category    Capability    Description
+Client      roots         Ability to provide filesystem roots
+Client      sampling      Support for LLM sampling requests
+Client      elicitation   Support for server elicitation requests
+Client      experimental  Describes support for non-standard experimental features
+Server      prompts       Offers prompt templates
+Server      resources     Provides readable resources
+Server      tools         Exposes callable tools
+Server      logging       Emits structured log messages
+Server      completions   Supports argument autocompletion
+Server      experimental  Describes support for non-standard experimental features      
+#########################################################################################################
+Sampling: tools need to call LLM , tools is running in public MCP server, client can't share its own key to MCP server
+  LLM call by client, not by MCP server
+  How Sampling Works:
+     The flow is straight forward
+     Server Completes its work (like fetching WikiPedia articles)
+     Server create a prompt asking for text generation
+     Server sends a sampling request to the client
+     Client calls the Claude with the provided prompt
+     Client returns the generated text to the server
+     Server uses the generated text in its response
+     
+  The Power of Delegation:
+    Sampling represents a fundamental shift in tool design:
+        Traditional Tools: Server contains all the logic and intelligence
+        Sampling-Enabled Tools: Server defines the process, client provides the intelligence
+        Result: Tools that can adapt, reason, and produce sophisticated outputs   
+        
+    Key MCP Concepts Illustrated:
+        sampling/create (Request): Server-to-client request for LLM inference
+        Agentic Tools: Tools that use AI reasoning as part of their workflow
+        Stateful Connections: Required for server-to-client communication
+        Capability Negotiation: Client declares sampling support during initialization      
+        
+  Sampling is most valuable when building publicly accessible MCP servers. You don't want random users generating unlimited text at your expense. By using sampling, each client pays for their own AI usage while still benefiting from your server's functionality.
+
+  The technique essentially moves the AI integration complexity from your server to the client, which often already has the necessary connections and credentials in place.      
+  
+  Capability Declaration:
+    # Client declares sampling support
+        capabilities = ClientCapabilities(
+            sampling=SamplingCapability(
+                models=["openai/gpt-4o-mini"]  # Supported models
+            )
+        )
+        
+  Message Structure:
+        # Server sampling request
+        result = await ctx.session.create_message(
+            messages=[
+                SamplingMessage(
+                    role="user",
+                    content=TextContent(
+                        type="text", 
+                        text="Write a story about..."
+                    )
+                )
+            ],
+            max_tokens=100
+        )  
+        
+Architecture Deep Dive:
+    Traditional HTTP (Stateless): 
+        Client → Tool Request → Server
+        Client ← Tool Response ← Server    
+    Sampling HTTP (Stateful):
+        Client → Tool Request → Server
+        Client ← Sampling Request ← Server  (Server asks client to think)
+        Client → Sampling Response → Server
+        Client ← Tool Response ← Server
+    Key Point: Sampling requires bidirectional communication. The server must be able to send requests back to the client, which requires maintaining connection state.    
+    
+#########################################################################################################
+OpenAI Agent SDK + MCP : Agent act as a client  # stdio / StreamableHttp Transport (stateful/stateless)
+    

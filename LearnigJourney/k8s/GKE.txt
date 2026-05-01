@@ -1,0 +1,59 @@
+Kubernetes cluster on google cloud using GKE (google kubernetes engine)
+
+Set the region and zone, and enbale the container api and container registry api
+
+gcloud projects list
+gcloud config set project <project_id_obtained from above command>
+
+gcloud services enable compute.googleapis.com
+gcloud services enable container.googleapis.com
+
+gcloud config set compute/region us-central1
+gcloud config set compute/zone us-central1-a
+
+=========================================================================================================
+Create the cluster --> 
+gcloud container clusters create hello-cluster --num-nodes=2
+gcloud container clusters get-credentials hello-cluster
+=========================================================================================================
+Delete the cluster --> 
+gcloud container clusters delete hello-cluster
+=========================================================================================================
+Kubectl commands -->
+
+kubectl version
+Client Version: version.Info{Major:"1", Minor:"19", GitVersion:"v1.19.4", GitCommit:"d360454c9bcd1634cf4cc52d1867af5491dc9c5f", GitTreeState:"clean", BuildDate:"2020-11-11T13:17:17Z", GoVersion:"go1.15.2", Compiler:"gc", Platform:"linux/amd64"}
+Server Version: version.Info{Major:"1", Minor:"16+", GitVersion:"v1.16.15-gke.4300", GitCommit:"7ed5ddc0e67cb68296994f0b754cec45450d6a64", GitTreeState:"clean", BuildDate:"2020-10-28T09:23:22Z", GoVersion:"go1.13.15b4", Compiler:"gc", Platform:"linux/amd64"}
+
+kubectl version --short
+Client Version: v1.19.4
+Server Version: v1.16.15-gke.4300
+
+kubectl get nodes
+NAME                                           STATUS   ROLES    AGE   VERSION
+gke-hello-cluster-default-pool-f2ab891b-gjx1   Ready    <none>   83s   v1.16.15-gke.4300
+gke-hello-cluster-default-pool-f2ab891b-hp77   Ready    <none>   81s   v1.16.15-gke.4300
+
+kubectl get namespaces
+NAME              STATUS   AGE
+default           Active   2m4s
+kube-node-lease   Active   2m6s
+kube-public       Active   2m6s
+kube-system       Active   2m6s
+
+
+kubectl run nginx-test --image=nginx
+pod/nginx-test created
+
+kubectl get pods
+NAME         READY   STATUS    RESTARTS   AGE
+nginx-test   1/1     Running   0          43s
+
+kubectl exec -it nginx-test bash
+kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
+root@nginx-test:/#
+
+control+d to come out of pod or type exit and hit enter
+
+kubectl delete pod  nginx-test
+pod "nginx-test" deleted

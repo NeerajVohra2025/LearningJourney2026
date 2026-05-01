@@ -1,0 +1,966 @@
+🚀 Deployment of a Kubernetes Cluster:
+    Kubernetes clusters can be deployed in two primary ways:
+    - Managed Service – provided by cloud vendors.
+    - Self‑Managed – set up and maintained entirely by the user.
+
+Self-Managed Kubernetes:
+ Organizations manage the complete Kubernetes stack.
+    Key Benefits:
+    Full infrastructure control
+    Custom configurations
+    Suitable for on-premise or regulated environments   
+
+Core Components:
+| Layer         | Component          | Responsibility                 |
+| ------------- | ------------------ | ------------------------------ |
+| Control Plane | Managed by GCP     | API Server, Scheduler, etcd    |
+| Worker Nodes  | Compute Engine VMs | Run workloads                  |
+| Networking    | VPC                | Cluster communication          |
+| IAM           | GCP IAM            | Authentication & Authorization |
+
+
+🛠️ Step-by-Step: Create GKE Cluster:
+    Step 1: Select Project
+    gcloud projects list
+    gcloud config set project <PROJECT_ID>
+    
+    Step 2: Enable Required Services # Kubernetese Engine (First Enable), and Compute Engine (Enable)
+    gcloud services enable compute.googleapis.com
+    gcloud services enable container.googleapis.com
+    
+    Step 3: Set Region & Zone
+    gcloud config set compute/region us-central1
+    gcloud config set compute/zone us-central1-a
+
+    Step 4: Create Cluster
+    gcloud container clusters create hello-cluster --num-nodes=2 # both are worker nodes , then where is master?
+    Optional (Better Configuration):
+    gcloud container clusters create hello-cluster \
+      --num-nodes=2 \
+      --machine-type=e2-highcpu-8
+      
+     ✅ Verify Cluster
+     kubectl get nodes
+    kubectl get pods -A
+
+    🔗 Connect to Cluster:
+      gcloud container clusters get-credentials hello-cluster
+      🔍 What this does:
+        - Fetches the cluster’s authentication credentials and configuration.
+        - Updates your local kubeconfig file with the cluster context.
+        - Allows you to use kubectl commands directly against the cluster.
+     # Connect to the cluster
+        gcloud container clusters get-credentials hello-cluster
+        # Verify connection
+        kubectl get nodes
+        kubectl get pods --all-namespaces   
+
+🏗️ Understanding GKE Architecture (Very Important):      
+In GKE:
+Master Node = ❌ Not visible / Not accessible
+Worker Nodes = ✅ Visible in your project
+👉 Cloud provider manages the master internally. 
+ 
+
+❓ Where is the Master Node?:
+✔ It exists
+✔ But you cannot access it
+✔ It is managed by Google
+
+
+🔐 How Do We Communicate with Cluster?:
+Even if master is not accessible, communication is simple.
+✅ Rule:
+👉 User always communicates with API Server
+
+📌 Key Points:
+kubectl → talks to API Server
+API Server → talks to cluster
+You never talk to master directly
+
+🌐 API Server Access
+Cloud provider exposes:
+Master Endpoint (IP/DNS)
+Port: 6443
+Security:
+Only port 6443 is open
+All other ports are blocked
+
+
+💻 From Where Can You Run kubectl?
+👉 Anywhere!
+Your laptop
+Cloud Shell
+CI/CD pipeline
+VM / Server
+❗ Important:
+Cloud Shell is not master, just a client.
+
+
+✅ Preconditions to Run kubectl
+ 1) Install kubectl:
+    which kubectl
+    # or
+    whereis kubectl
+2) kubeconfig File (Most Important):
+    $HOME/.kube/config
+    📌 kubeconfig Contains:
+    API Server address
+    Credentials (token/certificate)
+    Cluster details
+    
+3) connectivity to api-server from wher running the kubectl command
+    ping <Master IP>    
+    
+End-to-End Flow Diagram (Logical):
+User (kubectl command)
+        ↓
+Reads kubeconfig (~/.kube/config)
+        ↓
+Connects to API Server (Master Endpoint:6443)
+        ↓
+API Server validates request
+        ↓
+Scheduler / Controller Manager
+        ↓
+Worker Nodes (Execution)    
+    
+    
+Key Takeaways:
+✔ Master node is not directly accessible
+✔ API Server is the single entry point
+✔ kubectl can run from any environment
+✔ kubeconfig is mandatory for authentication & connectivity
+✔ Communication is secure and controlled via port 6443    
+ 
+
+Enterprise Insight:
+ In enterprise environments:
+ kubeconfig is often:
+ Managed securely (Vault, Secret Manager)
+ Not shared directly with users
+ Access is controlled via:
+ IAM + RBAC
+ Private cluster endpoints
+ Bastion hosts / VPN
+
+
+🏢 Enterprise Best Practices:
+🔐 Security
+Use RBAC
+Use IAM
+Restrict API access
+
+📈 Scalability
+Enable autoscaling
+Use node pools
+
+📊 Monitoring
+Cloud Monitoring
+Prometheus + Grafana
+
+❌ Delete the Cluster:
+gcloud container clusters delete hello-cluster
+
+
+===========================================================================================================================
+Self Managed:
+       End-to-End setup by Self
+      
+Kubernetes Cluster Setup Guide - Ubuntu 20.04 (v1.31)
+=====================================================
+
+Prerequisites:
+- Master: Minimum 2 CPU, 2 GB RAM, 20 GB disk
+- Worker: Minimum 1 CPU, 1 GB RAM, 20 GB disk  
+- Ubuntu 20.04 operating system
+- AWS Security Groups configured (see troubleshooting section)
+
+Execution Order:
+- Steps 1-6: Execute on BOTH master and worker nodes
+- Steps 7-9: Execute on MASTER node only
+- Step 10: Execute on WORKER node only
+- Step 11: Execute on MASTER node only
+- Step 12: Testing (on master)
+
+
+🚀 Kubernetes Cluster Setup:
+
+🧱 Step 1: Create Virtual Machines
+    Create 2 Virtual Machines:
+    Control Plane (Master Node)
+    Worker Node
+    Minimum Requirements:
+    CPU: 2 cores
+    RAM: 2 GB (Recommended: 4 GB)
+    👉 In your case:
+    ✔ 2 CPU
+    ✔ 4 GB RAM (Good for learning & stability)
+
+🌐 Step 2: Configure Networking (Very Important)
+    Kubernetes requires proper network packet forwarding for Pod communication.
+    Enable Required Kernel Module:
+    sudo modprobe br_netfilter
+    Enable IP Tables Bridging:
+    cat << EOF | sudo tee /etc/sysctl.d/k8s.conf
+    net.bridge.bridge-nf-call-iptables = 1
+    net.ipv4.ip_forward = 1
+    EOF
+    👉 This ensures:
+    Containers can communicate across nodes
+    Overlay networking (CNI) works correctly
+
+📦 Step 3: Install Container Runtime (CRI)
+    Kubernetes does NOT run containers directly.
+    It uses a Container Runtime Interface (CRI).
+    Recommended Runtime:
+    containerd (lightweight and widely used)
+    👉 Responsibility:
+    Pull container images
+    Run containers inside Pods
+
+⚙️ Step 4: Install Kubernetes Components
+    Install the following on both Master & Worker nodes:
+    kubelet → Runs Pods on the node
+    kubectl → CLI to interact with cluster
+    kubeadm → Tool to bootstrap the cluster
+    👉 Think:
+    kubeadm = Setup tool # just like gcloud init cluster
+    kubectl = User interface
+    kubelet = Node executor
+
+🧠 Step 5: Initialize Control Plane (Master Node)
+    kubeadm init
+    👉 This will:
+    Start API Server
+    Setup etcd database
+    Initialize Scheduler & Controller Manager
+    Generate join command for worker nodes
+
+🔗 Step 6: Join Worker Node to Cluster
+    Run the generated command on Worker Node:
+    kubeadm join <master-ip> --token <token> ...
+    👉 This connects the worker node to the cluster.
+
+
+🌉 Step 7: Deploy Pod Network (CNI)
+    Kubernetes needs a network plugin (CNI) to assign IPs to Pods.
+    Examples:
+    Flannel
+    Calico
+    Weave
+    👉 Responsibility:
+    Assign IP address to each Pod
+    Enable Pod-to-Pod communication across nodes
+
+
+🧠 Key Understanding (Very Important):
+    Without CNI → Pods will NOT get IPs ❌
+    Without CRI → Containers cannot run ❌
+    Without kubelet → Node cannot execute Pods ❌
+
+🔄 Final Flow Summary
+    Create VMs
+    Configure networking
+    Install container runtime
+    Install Kubernetes tools
+    Initialize Master
+    Join Worker
+    Install CNI
+👉 Now your cluster is ready to:
+    Deploy applications
+    Scale Pods
+    Perform rolling updates
+
+===================================================================================================
+
+1. Network Prerequisites
+
+# Load br_netfilter module
+sudo modprobe br_netfilter
+lsmod | grep br_netfilter  # listout the kernel modules (lsmod)
+
+#####################################################################################################
+🌐 Kubernetes Networking Flow:
+🧩 Step 1: Pods Run Inside a Private Network
+    When a Pod is created:
+    It gets an IP from the bridge network (CNI network)
+    This network is:
+    Private
+    Only accessible inside the cluster
+    👉 Example:
+    Pod IP = 10.244.1.5
+    ❌ You CANNOT access this IP from outside
+    ✔ Only internal communication works
+
+⚠️ Step 2: Problem Statement:
+    “If Pods are private… how do users access applications?”
+    👉 This is where Service + kube-proxy + iptables come into play
+
+🔐 Step 3: Linux Restriction (Important)
+    By default:
+    ❌ Linux does NOT allow iptables rules on bridge network traffic
+    👉 That means:
+    No routing rules
+    No Service functionality
+
+🔧 Step 4: Enable br_netfilter (Critical Step):
+    We enable:
+    sudo modprobe br_netfilter
+    And:
+    net.bridge.bridge-nf-call-iptables = 1
+    net.ipv4.ip_forward = 1
+    💡 What This Fixes
+    ✔ Now iptables can:
+    See Pod network traffic
+    Apply rules on it
+    👉 Without this → Kubernetes networking breaks ❌
+
+
+⚙️ Step 5: kube-proxy Comes into Action
+    kube-proxy runs on every node and:
+    Watches API Server for Services
+    Creates iptables rules
+
+
+🧠 Step 6: What is a Service?
+    👉 A Service is:
+    A stable entry point
+    For accessing Pods
+    Example:
+    Service IP = 10.96.0.10
+    👉 Instead of calling Pod directly:
+    Client → Service → Pod
+    
+    
+🔁 Step 7: kube-proxy Creates Mapping (iptables Rules)
+    Now kube-proxy creates rules like:  
+    Service IP → Pod IP
+    👉 Example mapping:
+    10.96.0.10  →  10.244.1.5
+    ✔ This mapping is done using iptable
+
+
+🌍 Step 8: Access from Outside the Cluster
+    Now the main question:
+    “How does external traffic reach Pod?”
+
+    Flow:
+    User hits:
+        http://NodeIP:NodePort
+    kube-proxy checks iptables rules:
+    iptables redirects:
+        NodeIP → Service → Pod IP
+    Request reaches:
+       Pod (inside private network)
+  
+🔗 Step 9: Full End-to-End Flow
+    🧠 Complete Flow in One Line  
+        External User → Node IP → kube-proxy (iptables) → Service → Pod (private IP)
+
+⚠️ Step 10: What Happens If br_netfilter is NOT Enabled?
+    ❌ kube-proxy cannot create working rules
+    ❌ Service cannot route traffic
+    ❌ Pods become unreachable
+    👉 Entire networking breaks
+
+🧠 Final Simple Mental Model
+    Think like this:
+    Pods → Live in private room (bridge network)
+    br_netfilter → Opens door for iptables
+    kube-proxy → Creates routing rules
+    iptables → Actually forwards traffic
+    Service → Entry point
+
+🔥 One-Line Summary (Interview Ready)
+br_netfilter enables iptables on bridge network → kube-proxy creates iptables rules → Services map traffic → Pods become accessible internally and externally
+
+🧩 Step 1: Who Creates iptables?
+    👉 iptables is NOT created by Kubernetes
+    It is a Linux kernel feature
+    Available by default in the OS
+    Think:
+    iptables = Pre-built “rule tables” inside Linux
+
+📦 Step 2: What Exactly Exists in Linux?
+    Linux already has built-in tables like:
+    | Table    | Purpose                                          |
+    | -------- | ------------------------------------------------ |
+    | `filter` | Allow / block traffic                            |
+    | `nat`    | Network Address Translation (used by Kubernetes) |
+    | `mangle` | Packet modification                              |
+    👉 These tables already exist BEFORE Kubernetes starts
+
+⚙️ Step 3: Who Adds Rules into These Tables?
+    👉 kube-proxy
+    When you create a Service:
+    kube-proxy:
+    Talks to API Server
+    Understands Service + Pod mapping
+    Inserts rules into iptables
+    Example (Conceptual):
+    Service IP → Pod IP
+    kube-proxy converts this into:
+    iptables rule inside NAT table
+
+
+📍 Step 4: Where Are These Rules Stored?
+    👉 Inside Linux kernel memory
+    NOT:
+    Not in etcd
+    Not in API Server
+    Not in kube-proxy
+    ✔ Stored in:
+    Kernel networking stack (iptables tables)
+    
+🔐 Step 5: Role of br_netfilter
+    Now important part 👇
+    👉 Pods use bridge network (virtual network)
+    By default:
+    ❌ iptables does NOT see bridge traffic
+    br_netfilter Fixes This
+    When you enable:
+    modprobe br_netfilter
+    👉 It allows:
+    ✔ iptables rules to apply on:
+    Pod-to-Pod traffic
+    Bridge network packets
+
+🔄 Step 6: Full Flow (Crystal Clear)
+    Linux:
+    Already has iptables tables
+    You enable:
+    br_netfilter → allows bridge traffic control
+    kube-proxy:
+    Watches Services
+    Adds rules into iptables
+    Linux kernel:
+    Executes those rules
+    Routes traffic
+#################################################################################################
+🌐 Kubernetes + CNI + CRI:
+🧩 Step 1: Installing Kubernetes (What Actually Gets Installed)
+    When you install Kubernetes packages:
+    dpkg -l | grep -i kube
+    You typically get:
+    kubelet → Runs Pods
+    kubectl → CLI
+    kubeadm → Cluster setup tool
+
+⚠️ Important Clarification
+❌ CNI is NOT automatically installed fully
+✔ Only CNI framework (support) is present
+
+👉 You STILL need to install a network plugin like:
+    Flannel
+    Calico
+    Cilium
+
+🔌 Step 2: What is CNI?
+👉 CNI (Container Network Interface) is a standard interface
+Think of it like:
+🔌 “A plug point where different networking solutions can connect”
+
+💡 Key Idea:
+    Kubernetes does NOT implement networking directly
+    It delegates networking to CNI plugins
+
+🌉 Step 3: Installing a Network Plugin (Flannel / Calico)
+When you deploy something like Flannel:
+👉 It acts as the real network provider
+
+Flow:
+You install Flannel
+Flannel registers itself as a CNI plugin
+Now Kubernetes can use it
+
+⚙️ Step 4: Who Talks to CNI?:
+👉 kubelet is the main component
+NOT kubectl ❌
+
+Correct Flow:
+You run:
+kubectl apply -f pod.yaml
+API Server stores request
+Scheduler assigns node
+kubelet (on that node):
+Calls CNI plugin
+
+🔄 Step 5: How Pod Gets IP
+Step-by-step:
+kubelet asks:
+    “Create network for this Pod”
+    CNI plugin (Flannel/Calico):
+    Allocates IP
+    Sets up network namespace
+    Connects Pod to bridge
+    Pod gets IP like:
+    10.244.x.x
+    
+🧠 Key Correction (Important)
+    ❌ kubectl does NOT interact with CNI
+    ✔ kubelet interacts with CNI    
+
+
+⚙️ Step 6: CRI (Container Runtime Interface)
+👉 CRI is another interface (like CNI)
+It connects:
+kubelet → container runtime
+
+
+📦 Step 7: Container Runtime (containerd vs Docker)
+✔ containerd
+Has built-in CRI support
+Works directly with kubelet
+
+
+❌ Docker (Old Model)
+Docker itself is NOT CRI-compatible
+Required:
+dockershim (removed in newer K8s)
+👉 That’s why:
+Docker is no longer preferred in Kubernetes
+
+
+Think Kubernetes like this:
+| Layer      | Responsibility      |
+| ---------- | ------------------- |
+| kubectl    | Send request        |
+| API Server | Store desired state |
+| Scheduler  | Decide node         |
+| kubelet    | Execute             |
+| CRI        | Run container       |
+| CNI        | Provide networking  |
+
+🔥 One-Line Architect Summary:
+kubelet uses CRI to run containers and CNI to configure networking, while CNI plugins like Flannel or Calico actually assign IPs and enable Pod communication
+
+🧩 Step 1: What Comes with Kubernetes Installation?
+    When you install:
+    kubeadm, kubelet, kubectl
+    👉 Kubernetes provides:
+    A CNI framework (interface support)
+    A directory like:
+    /etc/cni/net.d/
+    💡 What This Means
+    👉 Kubernetes is saying:
+    “I support CNI… but I don’t provide actual networking”
+
+⚠️ Step 2: What is Missing After Install?
+    After cluster setup:
+    ❌ Pods will NOT get IP
+    ❌ Pods will stay in:
+    Pending / ContainerCreating
+     👉 Because:
+        No network plugin is installed yet
+    
+    
+🔌Step 3: When Do CNI Plugins Come?
+    👉 CNI plugins come ONLY when you install a network solution
+    Examples:
+    Flannel
+    Calico
+    Cilium    
+
+⚙️ Step 4: What Happens When You Install Flannel (Example)?
+    When you apply:
+    kubectl apply -f flannel.yaml
+    👉 It does:
+    Installs Flannel pods
+    Drops CNI config into:
+    /etc/cni/net.d/
+    Installs binaries into:
+    /opt/cni/bin/
+
+🔄 Step 5: Now CNI Becomes Active
+    After this:
+    👉 kubelet can now:
+    Call CNI plugin
+    Assign IP to Pods
+    Setup networking
+
+🧠 Key Understanding
+| Component                   | Who Provides It   |
+| --------------------------- | ----------------- |
+| CNI Interface               | Kubernetes        |
+| CNI Plugin (Flannel/Calico) | You install       |
+| Pod Networking              | Handled by plugin |
+
+🔥 Simple Analogy:
+Think like this:
+Kubernetes = 🔌 “Power socket”
+CNI plugin = 🔋 “Actual device (fan, AC)”
+👉 Socket alone does nothing
+👉 Device makes it useful
+
+✔ kubelet and container runtime run as system services (on the OS)
+✔ Most Kubernetes components run as Pods (inside the cluster)
+❗ But there are a few important exceptions
+
+🔍 Step-by-Step Explanation:
+🧩 1. Components Running as Services (on Node OS):
+    These run directly on the machine (systemd services):
+    ✔ Always:
+    kubelet
+    Container Runtime (containerd / CRI-O)
+    👉 These are critical because:
+    kubelet manages Pods
+    runtime runs containers
+
+⚠️ 2. What About Control Plane Components?:
+    This is where confusion happens 👇
+    ✔ In kubeadm-based clusters (most common)
+    Control plane components run as Static Pods:
+    API Server
+    Scheduler
+    Controller Manager
+    etcd
+    👉 They are:
+    Defined as YAML files in:
+    /etc/kubernetes/manifests/
+    Automatically started by kubelet:
+    💡 Important Insight
+        Even control plane components are actually Pods managed by kubelet
+    
+⚙️ 3. What Runs as Pods (Normal Cluster Workloads):
+    These run as regular Pods:
+    CoreDNS
+    kube-proxy
+    CNI plugins (Flannel / Calico)
+    Your applications    
+    | Component            | Runs As    |
+    | -------------------- | ---------- |
+    | kubelet              | OS Service |
+    | container runtime    | OS Service |
+    | API Server           | Static Pod |
+    | Scheduler            | Static Pod |
+    | Controller Manager   | Static Pod |
+    | etcd                 | Static Pod |
+    | kube-proxy           | Pod        |
+    | CoreDNS              | Pod        |
+    | CNI (Flannel/Calico) | Pod        |
+
+🔄 Mental Model
+    👉 Think like this:
+    OS Layer (Services)
+    kubelet
+    container runtime
+    Kubernetes Layer (Pods)
+    Everything else
+⚠️ Small Correction to Your Statement
+
+Your statement:
+“only kubelet and container runtime run as a service, all others run as pod”
+👉 ✔ Almost correct
+👉 ❗ Better version:
+kubelet and container runtime run as OS services, while most other Kubernetes components—including control plane components—run as Pods (often as static Pods managed by kubelet)
+
+
+🧩 Step 1: Who Actually Creates Pods?
+    In Kubernetes:
+    ❌ API Server does NOT create Pods
+    ❌ Scheduler does NOT create Pods
+    👉 ✔ kubelet creates Pods
+
+⚙️ Step 2: Who Runs Containers Inside Pods?
+    👉 ✔ Container Runtime (containerd / CRI-O)
+    kubelet → asks runtime
+    runtime → creates containers
+
+🧠 Step 3: Now Think About Master Node
+    You said:
+    “Control plane components run as Pods”
+    ✔ Correct
+    Examples:
+    API Server
+    Scheduler
+    Controller Manager
+    etcd
+
+❓ Step 4: Important Question
+    👉 If these are Pods…
+    Who will create them?
+
+    ✔ Answer:
+    👉 kubelet on the master node
+
+🔄 Step 5: How It Actually Works:
+    kubeadm creates YAML files:
+    /etc/kubernetes/manifests/
+    kubelet on master node:
+    Watches this folder
+    Detects Pod definitions
+    kubelet:
+    Calls container runtime
+    Container runtime:
+    Creates containers
+    👉 Now control plane Pods are running
+    
+
+🔑 Step 6: Why kubelet MUST Run on Master
+    Because:
+    Without kubelet → no Pods can run
+    So:
+    No API Server
+    No Scheduler
+    No Controller Manager
+    👉 Entire cluster DEAD ❌    
+
+🔑 Step 7: Why Container Runtime (CRI) MUST Be There
+    Because:
+    kubelet does NOT run containers itself
+    It delegates to:
+    👉 container runtime (containerd)
+
+🧠 Final Mental Model
+Think like this:
+kubelet = “Pod Manager”
+container runtime = “Container Executor”
+
+🏗️ Master Node Reality:
+| Component                | Role                       |
+| ------------------------ | -------------------------- |
+| kubelet                  | Creates control plane Pods |
+| container runtime        | Runs containers            |
+| control plane components | Run INSIDE Pods            |
+
+
+⚠️ Common Misconception:
+    “Master node only manages, does not run workload”
+    ❌ Not fully true
+    👉 It also:
+    Runs control plane Pods
+    Needs kubelet + runtime to do that
+
+🔥 One-Line Architect Answer:
+kubelet and container runtime must run on the master node because control plane components are deployed as static Pods, and kubelet is responsible for creating those Pods while the runtime executes their containers
+
+
+#################################################################################################
+
+
+
+# Configure sysctl settings
+cat << EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+
+# Apply sysctl settings
+sudo sysctl --system
+
+2. Install Containerd (Modern Method - No Deprecated apt-key)
+
+# Install prerequisites
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
+
+# Add Docker's GPG key (modern method)
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+# Add Docker repository
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install containerd
+sudo apt-get update
+sudo apt-get install -y containerd.io
+
+# Configure containerd with systemd cgroup driver
+sudo containerd config default | sudo tee /etc/containerd/config.toml
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+
+# Start and enable containerd
+sudo systemctl restart containerd
+sudo systemctl enable containerd
+sudo systemctl status containerd
+
+3. Add Kubernetes GPG Key (v1.31)
+
+sudo mkdir -p /etc/apt/keyrings/
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+4. Add Kubernetes Repository (v1.31)
+
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+5. Update Package Repository
+
+sudo apt-get update
+
+6. Install Kubernetes Packages
+
+sudo apt-get install -y kubelet kubeadm kubectl
+
+# Hold packages to prevent accidental upgrades
+sudo apt-mark hold kubelet kubeadm kubectl
+
+# Verify installation
+dpkg -l | grep -i kube     #CNI
+
+===================================================================================================
+MASTER NODE ONLY - Steps 7-9
+===================================================================================================
+
+7. Initialize Kubernetes Master
+
+# Initialize cluster with pod network CIDR
+sudo kubeadm init --pod-network-cidr=10.244.0.0/16
+
+# MANDATORY: Configure kubectl for regular user
+#whoami
+#pwd
+#id
+#ls -al
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# Verify cluster initialization
+kubectl get nodes
+kubectl cluster-info
+
+# Save join command for worker nodes
+kubeadm token create --print-join-command
+
+8. Configure AWS Security Groups (CRITICAL FOR AWS)
+
+Before proceeding, ensure these inbound rules are added to MASTER node's Security Group:
+- Port 6443 (TCP) - Source: 0.0.0.0/0 (API Server)
+- Ports 2379-2380 (TCP) - Source: 0.0.0.0/0 (etcd)
+- Ports 10250-10252 (TCP) - Source: 0.0.0.0/0 (kubelet, kube-scheduler, kube-controller)
+- Port 30000-32767 (TCP) - Source: 0.0.0.0/0 (NodePort services)
+
+Test connectivity from worker node:
+telnet <master-ip> 6443
+# Should connect successfully before proceeding to worker join
+
+9. Deploy Pod Network (CRITICAL - BEFORE WORKER JOIN)
+dpkg -l | grep -i kube  # cri are part of container run time,cni pluging
+ip a
+
+IMPORTANT: Install CNI plugin BEFORE joining worker nodes!
+
+Choose ONE of the following:
+
+Option A - Flannel (Recommended for beginners):
+kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+
+
+Option B - Calico (Advanced):
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.1/manifests/tigera-operator.yaml
+
+curl
+https://raw.githubusercontent.com/projectcalico/calico/v3.28.1/manifests/custom-resources.yaml -O
+kubectl create -f custom-resources.yaml
+
+
+# Wait for CNI pods to be ready (CRITICAL)
+kubectl get pods -n kube-system
+kubectl get nodes
+
+# Master should show "Ready" status before proceeding
+
+===================================================================================================
+WORKER NODE ONLY - Step 10
+===================================================================================================
+
+10. Join Worker Node to Cluster
+
+# STEP 1: Test connectivity to master
+telnet <master-ip> 6443
+# Must connect successfully before proceeding
+
+# STEP 2: Join the cluster (use output from step 7)
+sudo kubeadm join <master-ip>:6443 --token <actual-token> --discovery-token-ca-cert-hash sha256:<actual-hash>
+
+# Expected output:
+# [preflight] Running pre-flight checks
+# [preflight] Reading configuration from the cluster...
+# [kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+# [kubelet-start] Starting the kubelet
+# This node has joined the cluster
+
+===================================================================================================
+MASTER NODE - Verification
+===================================================================================================
+
+11. Verify Cluster Status
+
+# Check all nodes are Ready
+kubectl get nodes
+# Expected: Both master and worker showing "Ready" status
+
+# Check all system pods are running
+kubectl get pods -n kube-system
+# Expected: All pods showing "Running" status
+
+# Check cluster info
+kubectl cluster-info
+
+12. Test Cluster Operations
+
+# Create test pod
+kubectl run firstpod --image=nginx
+
+
+# Only components running as a service in node use server IP
+systemctl status kubelet
+systemctl status containerd
+# Other components running as a Pod is kube-system namespace use server IP
+kubectl get pod -n kube-system
+kubectl describe po kube-apiserver -n kube-system
+
+# Why kube-proxy in master node?
+#     - kube-proxy : interaction with pod
+#     - master : kubectl<>api-server, kubelet<->api-server
+#     - worker: user<-> application (running inside the pod)
+#     - all application pods get IP address from flannel network
+
+# Expose pod as NodePort service
+kubectl expose pod firstpod --type=NodePort --port 80 --name firstsvc
+
+# Get service details
+kubectl get svc
+
+# Test pod connectivity
+kubectl get pods -o wide
+
+# Access the service (use any node IP + NodePort)
+curl <node-ip>:<nodeport>
+
+===================================================================================================
+TROUBLESHOOTING SECTION
+===================================================================================================
+
+Common Issues and Solutions:
+
+1. kubeadm join hangs at "Running pre-flight checks"
+   Solution: Fix AWS Security Groups (add inbound rules listed in step 8)
+
+2. Nodes show "NotReady" status
+   Solution: Ensure CNI plugin is installed (step 9)
+
+3. Permission denied errors
+   Solution: Use 'sudo' for system commands and 'sudo tee' for file redirections
+
+4. Token expired
+   Solution: Generate new token on master: kubeadm token create --print-join-command
+
+5. CNI pods not starting
+   Solution: Check containerd is running: sudo systemctl status containerd
+
+===================================================================================================
+FINAL VERIFICATION CHECKLIST
+===================================================================================================
+
+✓ Both nodes show "Ready" status
+✓ All system pods in kube-system namespace are "Running"  
+✓ Test pod can be created and accessed
+✓ kubectl commands work from master node
+✓ Worker node successfully joined cluster
+
+Your Kubernetes cluster is ready for use!
+#################################################################################################
+        

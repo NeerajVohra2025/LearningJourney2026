@@ -1,0 +1,125 @@
+🏛 AGENT LAYER ROLE IN ARCHITECTURE:
+In Level-5 architecture:
+Agent is NOT:
+A tool ❌
+A simple API wrapper ❌
+Hardcoded integration ❌
+
+Agent IS:
+A domain intelligence unit
+Orchestrates tool usage
+Makes decisions
+Discovers tools dynamically
+Communicates via A2A only
+
+Self-registers
+🔷 WHAT agent-incident WILL DO
+
+Flow:
+Receives A2A request from orchestrator
+Discover tool via registry
+
+Calls:
+tool-servicenow
+tool-llm (optional)
+Aggregates result
+Returns structured A2A response
+
+🔷 WHAT agent-incident WILL DO:
+Flow:
+Receives A2A request from orchestrator
+Discover tool via registry
+Calls:
+tool-servicenow
+tool-llm (optional)
+Aggregates result
+Returns structured A2A response
+
+
+fastapi
+uvicorn
+pydantic
+httpx
+tomli
+-e ../platform-protocol
+
+
+agent-incident/
+│
+├── pyproject.toml
+├── config.toml
+├── agent.toml
+├── Dockerfile
+│
+└── src/
+    └── agent_incident/
+        │
+        ├── main.py
+        │
+        ├── bootstrap/
+        │   └── registration.py
+        │
+        ├── configuration/
+        │   └── settings.py
+        │
+        ├── domain/
+        │   ├── agent_request.py
+        │   ├── agent_response.py
+        │   └── agent_interface.py
+        │
+        ├── application/
+        │   └── incident_service.py
+        │
+        ├── infrastructure/
+        │   ├── registry_client.py
+        │   └── tool_client.py
+        │
+        └── interface/
+            └── a2a_controller.py
+            
+            
+🔷 STEP 13 — End-to-End Test Flow:
+Start registry
+Start tool-servicenow
+Start agent-incident
+
+Send A2A message to agent:
+POST
+http://localhost:9000/a2a      
+
+{
+  "correlation_id": "123",
+  "source": "orchestrator",
+  "target": "agent-incident",
+  "message_type": "REQUEST",
+  "capability": "incident.process",
+  "payload": {
+    "incident_id": "INC0010001"
+  }
+}
+
+
+🏆 Enterprise Characteristics Achieved:
+
+✔ Self-registering agent
+✔ Registry-driven discovery
+✔ Dynamic tool invocation
+✔ A2A compliant
+✔ No hardcoded endpoints
+✔ Clean architecture
+✔ Independently deployable
+✔ Scalable
+✔ Replaceable tools    
+
+
+| Component       | Status  |
+| --------------- | ------- |
+| Shared Kernel   | ✅       |
+| Protocol        | ✅       |
+| Registry        | ✅       |
+| Tool-LLM        | ✅       |
+| Tool-ServiceNow | ✅       |
+| Tool-Anaplan    | ✅       |
+| Agent-Incident  | ✅       |
+| Orchestrator    | 🔜 Next |
+| Ingress         | Pending |

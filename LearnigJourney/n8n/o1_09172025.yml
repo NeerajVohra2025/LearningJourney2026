@@ -1,0 +1,40 @@
+AI Workflow Automation:
+    AI Models
+    Low Code Platform
+    
+Left Bar:    
+    Admin Panel:
+        Dashboard | Manage | Help Centre |  Sign out
+        Click on open Instance directly
+    Templates:
+    Variables:
+    Insights:
+    Help:
+      Documentation
+      Course
+      Whats New
+      About n8n
+#-------------------------------
+Upper Bar:
+    Personal    Workflow    Tag     Inactive/active  Share Saved History  ... 
+    Editor Execution  Evaluation
+#-------------------------------
+Right Bar:
+   Trigger: Is a step that starts the workflow
+   Sticky
+   Focus Panel
+   Ask Assistant 
+   
+#-------------------------------
+Down Bar:
+  log
+
+  
+  
+sheets New
+    sheet.new  
+    Document/Sheet With In Document/Sheet
+
+gmail:
+  send message      
+    

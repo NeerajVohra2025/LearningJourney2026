@@ -1,0 +1,13 @@
+RAG with Pinecone:
+  Trigger Node
+  Switch 
+   case:  AI Agent
+            LLM  Memory  Tools
+            
+            
+   Trigger Node:
+    Execute_Sub_workflow # executed by another workflow
+    
+    Tool- call n8n workflow tool
+    HttpRequest
+  

@@ -1,0 +1,53 @@
+🏛 Enterprise Standard Architecture (Independently Deployable):
+We will NOT keep everything inside one package.
+| Concern           | Where             |
+| ----------------- | ----------------- |
+| Metadata Source   | agent.toml        |
+| Schema Validation | AgentCard model   |
+| Discovery         | platform-registry |
+| Messaging         | platform-protocol |
+| Domain            | shared-kernel     |
+| LLM               | tool-llm          |
+| Tools             | platform-tools    |
+| Workflow          | orchestrator      |
+🔥 Final Answer to Your Question
+
+We use BOTH: agentcard.py and agent.toml
+.toml → configuration source
+agent_card.py → validated schema contract
+
+Removing agent_card.py would downgrade architecture maturity.
+Keeping it ensures:
+Type safety
+Validation
+API enforcement
+Contract governance
+Enterprise compliance
+
+Follow Level-5 Enterprise Clean Architecture:
+
+
+
+
+
+anaplan-platform/
+│
+├── platform-shared-kernel/    ✅ (done)
+├── platform-protocol/         ✅ (done)
+├── platform-registry/         ✅ (done)
+│
+├── platform-tools/            ⏳ next
+├── agent-incident/            ⏳ later
+├── agent-rca/                 ⏳ later
+├── agent-anaplan/             ⏳ later
+├── control-orchestrator/      ⏳ later
+├── ingress-gateway/           ⏳ last
+│
+└── docker-compose.yml
+
+
+Assume a role of senior principle GenAI architect review the platform-registry package Follow Level 5 Enterprise Clean Architecture 
+
+Assume a role of senior principle GenAI architect review the platform-registry package Follow Level 5 Enterprise Clean Architecture 
+
+as senior principle GenAI architect  follow Level 5 Enterprise Clean Architecture 

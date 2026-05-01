@@ -1,0 +1,56 @@
+Assume the role of a Senior Principal GenAI Architect strictly follow Hexagonal Enterprise Clean Architecture   having built multiple enterprise-grade, production-ready AI agent systems. your are langgraph specialist
+1)review the langgraph-agent-workflow-maestro\agent-workflow-maestro package as a role of a Senior Principal GenAI Architect follow Hexagonal Enterprise Clean Architecture 
+2) review the /docs remove duplicate and merge to single one if can also add numbering in sequence 
+3)remove duplicate, unused code follow Hexagonal Enterprise Clean Architecture 
+Assume the role of a Senior Principal GenAI Architect strictly following Hexagonal Enterprise Clean Architecture   having built multiple enterprise-grade, production-ready AI agent systems. your are langgraph specialist
+
+
+2) add missing packages in requirements.txt
+3) as of know keep token value hard coded will update later
+2) test step by step one by one each of the postman endpoints 
+
+
+
+
+################################################################################################
+Assume the role of a Senior Principal GenAI Architect strictly follow Hexagonal Enterprise Clean Architecture  having built multiple enterprise-grade, production-ready AI agent systems. your are openai agent sdk specialist
+
+
+
+Assume the role of a Senior Principal GenAI Architect strictly following Hexagonal Enterprise Clean Architecture   having built multiple enterprise-grade, production-ready AI agent systems. openai agent sdk specialist
+    
+1) review the openai-agent-loginsight-advisor\agent-loginsight-advisor it follow Hexagonal Enterprise Clean Architecture 
+2) review the /docs remove duplicate and merge to single one if can also add numbering in sequence 
+2)remove duplicate, unused code follow Hexagonal Enterprise Clean Architecture 
+3)review /docs can merge or delete some documents keet only required documents follow Hexagonal Enterprise Clean Architecture 
+4) test each end point of the postman collection and also create the document with test steps and result follow Hexagonal Enterprise Clean Architecture 
+
+
+##################################
+Assume the role of a Senior Principal GenAI Architect strictly following Hexagonal Enterprise Clean Architecture   having built multiple enterprise-grade, production-ready AI agent systems. your are openai agent sdk specialist
+2) review the openai-agent-forensicops-advisor\agent-forensicops-advisor it follow Hexagonal Enterprise Clean Architecture 
+1) Implement and document follow Hexagonal Enterprise Clean Architecture  in sequence
+    dynamic-prompt-configuration
+    guardrail-system-guide
+    security-hardening-guide
+    responsible-ai-guide
+    observability-system-guide
+    docker-deployment-guide
+    postman-testing-results
+
+3) review the /docs remove duplicate and merge to single one if can also add numbering in sequence 
+4)remove duplicate, unused code follow Hexagonal Enterprise Clean Architecture 
+3)review /docs can merge or delete some documents keet only required documents follow Hexagonal Enterprise Clean Architecture 
+5) test each end point of the postman collection and also create the document with test steps and result follow Hexagonal Enterprise Clean Architecture 
+Assume the role of a Senior Principal GenAI Architect strictly following Hexagonal Enterprise Clean Architecture   having built multiple enterprise-grade, production-ready AI agent systems. openai agent sdk specialist
+
+
+
+1) Implement and document follow Hexagonal Enterprise Clean Architecture  in sequence
+    dynamic-prompt-configuration
+    guardrail-system-guide
+    security-hardening-guide
+    responsible-ai-guide
+    observability-system-guide
+    docker-deployment-guide
+    postman-testing-results

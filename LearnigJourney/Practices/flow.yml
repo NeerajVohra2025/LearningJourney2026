@@ -1,0 +1,847 @@
+FLOW:
+ServiceNow Incident Created
+        ↓
+Secure API Endpoint (FastAPI + Auth + Validation)
+        ↓
+Executor Layer (System Boundary + Circuit Breaker)
+        ↓
+LangGraph Orchestrator Agent
+        ↓
+A2A Multi-Agent Processing
+        ├── Alert Normalization Agent
+        ├── Error Classification Agent
+        ├── CMDB Impact Analysis Agent
+        ├── Log Correlation Agent
+        └── RCA Generation Agent
+        ↓
+RCA Aggregated & Confidence Scored
+        ↓
+ServiceNow Update Agent
+        ↓
+ServiceNow Incident Updated (Work Notes + Assignment + RCA)
+
+
+
+
+🏗 ARCHITECTURE DIAGRAM:
+
+┌──────────────────────────┐
+│      ServiceNow          │
+│   (Incident Created)     │
+└─────────────┬────────────┘
+              │ Webhook
+              ▼
+┌──────────────────────────┐
+│ Secure API Layer         │
+│ FastAPI + Auth + Logs    │
+└─────────────┬────────────┘
+              ▼
+┌──────────────────────────┐
+│ Executor Layer           │
+│ Circuit Breaker          │
+│ Retry / Governance       │
+└─────────────┬────────────┘
+              ▼
+┌──────────────────────────┐
+│ LangGraph Orchestrator  │
+│ Deterministic Workflow  │
+└─────────────┬────────────┘
+              ▼
+┌─────────────────────────────────────┐
+│ Multi-Agent A2A Layer              │
+│ Alert → Error → CMDB → Logs → RCA  │
+└─────────────┬──────────────────────┘
+              ▼
+┌──────────────────────────┐
+│ ServiceNow Update Agent  │
+└─────────────┬────────────┘
+              ▼
+┌──────────────────────────┐
+│ Incident Updated         │
+└──────────────────────────┘
+
+
+
+
+
+1️) ServiceNow Incident Created:
+🔹 STEP 1 — ServiceNow Incident Created:
+What happens?
+Monitoring tool creates incident.
+ServiceNow Business Rule triggers webhook.
+Payload is sent to AI system.
+
+Why this design?:
+We ensure:
+Only monitoring-generated incidents are processed.
+Manual tickets are excluded.
+Governance is maintained.
+This is the starting event.
+
+Trigger mechanism:
+Business Rule / Flow Designer
+Condition-based (e.g., Assignment Group = Anaplan Support)
+Only monitoring-generated incidents
+Payload sent to AI system via secure webhook.
+
+
+🔹 STEP 2 — Secure API Endpoint:
+What happens?
+
+ServiceNow sends:
+POST /v1/incident
+
+The API layer:
+Validates payload (Pydantic)
+Authenticates caller (OAuth2 / mTLS)
+Generates correlation ID
+Logs request
+Passes request to Executor
+Why this layer exists?
+This is the system boundary.
+It ensures:
+Security
+Auditability
+Standard request validation
+No business logic leakage
+Think of it as:
+“Front security gate of the AI system”
+
+
+
+
+🔹 STEP 3 — Executor Layer:
+What happens?
+The Executor:
+Receives validated payload
+Applies Circuit Breaker
+Applies retry policy
+Calls Orchestrator Agent
+Handles failure gracefully
+Why this layer exists?
+Executor is the control plane.
+It ensures:
+System stability
+Protection against cascading failures
+Isolation of orchestration logic
+It does NOT perform business logic.
+It simply:
+“Safely invokes orchestration”
+
+
+🔹 STEP 4 — LangGraph Orchestrator Agent:
+This is the brain of the system.
+What happens?
+The Orchestrator:
+Maintains shared state
+Controls deterministic execution
+Calls agents in sequence
+Aggregates responses
+Handles conditional branching
+
+LangGraph provides:
+State tracking
+Replay capability
+Deterministic workflow
+Observability
+
+Why use LangGraph?
+Because enterprise systems require:
+Traceable execution
+Deterministic workflow
+Structured state management
+Clear flow control
+
+
+🔹 STEP 5 — A2A Multi-Agent Processing:
+Now the Orchestrator begins calling agents.
+All agents communicate using:
+A2ARequest
+A2AResponse
+This ensures:
+Standard communication
+Loose coupling
+Replaceable agents
+Distributed readiness
+
+
+🔸 5.1 Alert Normalization Agent:
+What it does:
+Extracts source
+Extracts error message
+Normalizes structure
+
+Why?
+Incoming payloads differ by tool.
+We normalize first.
+
+🔸 5.2 Error Classification Agent:
+What it does:
+Identifies error type
+Assigns severity
+Tags category
+Example:
+Timeout → Integration Failure → High Severity
+
+
+
+🔸 5.3 CMDB Impact Analysis Agent
+What it does:
+Queries ServiceNow CMDB
+Identifies CI
+Maps to Business Service
+Determines criticality
+
+Why?
+Because incident impact is not just technical — it affects business services.
+
+
+🔸 5.4 Log Correlation Agent
+What it does:
+Checks logs (Cloud / APM)
+Detects error spikes
+Detects recent deployment
+Finds related incidents
+This prevents blind RCA generation.
+
+
+🔸 5.5 RCA Generation Agent (LLM):
+This is the only AI-heavy step.
+It:
+Aggregates prior outputs
+Generates structured RCA
+Provides recommendation
+Calculates confidence
+Example output:
+Root Cause:
+Database timeout due to connection pool exhaustion.
+Impact:
+Financial Planning Integration Service.
+Recommendation:
+Increase connection pool limit and restart middleware.
+Confidence:
+0.89
+
+🔹 STEP 6 — RCA Aggregation & Confidence Scoring:
+The Orchestrator:
+Aggregates agent outputs
+Computes risk score
+Determines escalation path
+Finalizes structured output
+If confidence < threshold:
+Route to human review
+If criticality high:
+Escalate automatically
+ Output example:
+    {
+      "root_cause": "...",
+      "impacted_service": "...",
+      "recommendation": "...",
+      "confidence_score": 0.87
+    }
+
+
+🔹 STEP 7 — ServiceNow Update:
+The system now:
+Updates work notes
+Adds RCA
+Updates priority if needed
+Reassigns group if needed
+
+This ensures:
+Closed-loop automation
+Incident is now enriched with AI insights.
+   
+
+🔹 STEP 8 — Audit & Observability
+System logs:
+Correlation ID
+Agent execution times
+LLM cost
+Errors
+Retry events
+
+Integrated with:
+OpenTelemetry
+LangSmith
+Cloud Logging
+
+This ensures:
+Governance
+Debugging capability
+Compliance readiness
+
+
+🏗 COMPLETE CONTROL CHAIN:
+
+
+ServiceNow
+   ↓
+Secure API (Auth + Validation)
+   ↓
+Executor (Circuit Breaker + Control)
+   ↓
+LangGraph Orchestrator
+   ↓
+A2A Agents
+   ↓
+RCA Generated
+   ↓
+ServiceNow Updated
+   ↓
+Audit Logs Stored
+
+
+✅ STEP 1 — Create Enterprise Project
+
+uv init --package mattel
+cd mattel
+
+
+👉 This creates a clean Python package named mattel.
+
+
+✅ STEP 2 — Install Required Dependencies
+uv add fastapi uvicorn langgraph langchain openai pydantic python-dotenv requests
+
+
+Explanation:
+
+| Library   | Purpose                   |
+| --------- | ------------------------- |
+| fastapi   | API layer                 |
+| uvicorn   | Server                    |
+| langgraph | Multi-agent orchestration |
+| langchain | LLM wrapper               |
+| openai    | Model provider            |
+| pydantic  | Data validation           |
+| requests  | ServiceNow API calls      |
+
+✅ STEP 3 — Create Enterprise Folder Structure
+
+Inside src/mattel, create:
+
+🏗 FOLDER STRUCTURE:
+
+src/mattel/
+│
+├── main.py
+├── app_factory.py
+│
+├── core/
+│   ├── state.py
+│   ├── circuit_breaker.py
+│   └── a2a_protocol.py
+│
+├── api/
+│   └── routes.py
+│
+├── executor/
+│   └── executor.py
+│
+├── orchestration/
+│   └── orchestration_agent.py
+│
+├── agents/
+│   ├── base_agent.py
+│   ├── alert_agent.py
+│   ├── error_agent.py
+│   └── rca_agent.py
+│
+├── services/
+│   └── llm_client.py
+│
+└── graph/
+    └── graph_builder.py
+	
+Why this structure?
+
+✔ Clear separation
+✔ Easy testing
+✔ Scalable
+✔ Enterprise maintainable
+
+🔹 1️⃣ main.py:
+
+app = create_app()
+
+🎯 Purpose: Application Entry Point
+What it does:
+Starts FastAPI application.
+This is the file uvicorn runs.
+Why it exists:
+Enterprise applications must have a single clear entry point.
+Think of it as:
+“Main door of the application”
+
+Purpose:
+Application entrypoint.
+Why:
+Single startup file required for containerized deployments.
+
+
+
+
+🔹 2️⃣ app_factory.py:
+🎯 Purpose: Application Configuration Layer
+def create_app():
+    app = FastAPI(...)
+    app.include_router(router)
+What it does:
+Creates FastAPI instance
+Registers API routes
+Configures metadata
+Why it exists:
+Separation of concerns.
+If tomorrow:
+You add middleware
+Add logging
+Add monitoring
+Add CORS
+Add versioning
+You update this file — not main.py.
+Enterprise principle:
+Configuration must be isolated from execution.
+
+
+Creates FastAPI instance.
+Why:
+Keeps configuration separate from runtime.
+Allows:
+Middleware injection
+Monitoring integration
+Versioning
+
+
+
+
+
+
+🔹 3️⃣ core/state.py:
+🎯 Purpose: Shared State Model (For Orchestration)
+class IncidentState(TypedDict):
+What it does:
+Defines the shared state structure for agents.
+Why it matters:
+In enterprise orchestration:
+Every agent must operate on shared, structured state.
+Enables deterministic workflows.
+Enables replay and audit.
+Think of it as:
+“Shared memory of the system”
+
+Defines shared state model (future LangGraph extension).
+Why:
+Prepares system for deterministic state orchestration.
+
+
+
+🔹 4️⃣ core/circuit_breaker.py:
+🎯 Purpose: System Protection Layer
+What it does:
+Prevents repeated failures from crashing system.
+If:
+LLM fails 3 times
+CMDB fails repeatedly
+Circuit opens and stops further calls temporarily.
+Why enterprise needs this:
+Without it:
+Cascading failures
+System overload
+LLM cost spikes
+This ensures:
+✔ Stability
+✔ Protection
+✔ Resilience
+
+Think of it as:
+“Electrical fuse of your AI system”
+
+Protects system from repeated failures.
+Why:
+Production systems must not collapse under dependency failure.
+
+
+
+
+
+
+🔹 5️⃣ core/a2a_protocol.py:
+🎯 Purpose: Standard Agent-to-Agent Communication
+A2ARequest
+A2AResponse
+
+What it does:
+Standardizes communication between agents.
+Every agent:
+Receives A2ARequest
+Returns A2AResponse
+Why enterprise needs this:
+
+✔ Loose coupling
+✔ Replaceable agents
+✔ Easy tracing
+✔ Standard contract
+✔ Distributed-ready
+
+Without A2A:
+Agents would directly depend on each other (tight coupling).
+
+Think of it as:
+“Common language spoken by all agents”
+
+
+Why:
+Enterprise standard communication contract.
+Prevents:
+Tight coupling
+Direct object passing
+Chaos between agents
+
+
+
+
+
+🔹 6️⃣ api/routes.py:
+🎯 Purpose: API Layer
+@router.post("/incident")
+
+What it does:
+Exposes endpoint /v1/incident
+
+Calls Executor
+Returns response
+Why it exists:
+This is the external boundary.
+
+Responsibilities:
+✔ Input validation
+✔ Route definition
+✔ No business logic
+Enterprise principle:
+API layer must not contain business logic.
+
+Defines HTTP endpoint.
+Why:
+External boundary only.
+No business logic allowed.
+
+
+
+
+
+
+🔹 7️⃣ executor/executor.py:
+🎯 Purpose: Control Plane Layer
+class Executor:
+What it does:
+Receives validated payload
+Applies Circuit Breaker
+Calls Orchestrator
+Handles execution control
+Why it exists:
+Executor ensures:
+✔ Safe execution
+✔ Failure handling
+✔ Retry control
+✔ No direct agent exposure
+
+It separates:
+System control
+Business orchestration
+Think of it as:
+“Operations control room”
+
+
+Applies:
+Circuit breaker
+Execution control
+Calls Orchestrator
+Why:
+Separates orchestration from safety control.
+
+
+
+
+
+🔹 8️⃣ orchestration/orchestration_agent.py:
+🎯 Purpose: Brain of the System
+class OrchestrationAgent:
+What it does:
+Coordinates agents
+Controls call sequence
+Aggregates results
+Maintains orchestration logic
+Important:
+Agents do NOT call each other.
+Only Orchestrator calls agents.
+
+Why enterprise needs this:
+
+✔ Clear control flow
+✔ Deterministic execution
+✔ Easy debugging
+✔ Single coordination brain
+
+Think of it as:
+
+“Project manager of all agents”
+
+Central brain.
+Responsibilities:
+Controls flow
+Coordinates agents
+Aggregates outputs
+Maintains execution order
+
+Enterprise rule:
+Only one orchestrator controls execution.
+
+
+
+
+
+🔹 9️⃣ agents/base_agent.py:
+🎯 Purpose: Standard Agent Interface
+class BaseAgent:
+What it does:
+Defines required handle() method.
+Why it exists:
+All agents must follow same interface.
+
+Enterprise benefit:
+✔ Consistency
+✔ Polymorphism
+✔ Easy extension
+✔ Enforced structure
+
+Defines standard interface.
+All agents must implement:
+async def handle(request)
+Ensures consistency.
+
+
+
+
+🔹 🔟 agents/alert_agent.py:
+🎯 Purpose: Normalize Alert
+What it does:
+Extracts source
+Extracts message
+Standardizes payload
+Why needed:
+Incoming payloads vary by system.
+This agent ensures:
+Clean structured input for next agents.
+
+Normalizes raw alert.
+Prepares structured input.
+
+
+
+
+
+
+🔹 1️⃣1️⃣ agents/error_agent.py:
+
+🎯 Purpose: Classify Error
+What it does:
+Detects error type
+Assigns severity
+Why needed:
+Structured classification helps:
+
+✔ Impact analysis
+✔ Escalation
+✔ Priority assignment
+
+Classifies error type.
+Provides severity.
+
+📄 agents/cmdb_agent.py:
+Queries CMDB.
+Identifies:
+CI
+Business Service
+Criticality
+Makes system business-aware.
+
+
+📄 agents/log_agent.py:
+Analyzes logs.
+Detects:
+Error spikes
+Deployment issues
+Related incidents
+Improves RCA confidence.
+
+
+
+
+
+
+🔹 1️⃣2️⃣ agents/rca_agent.py:
+🎯 Purpose: Generate Root Cause (LLM)
+What it does:
+Uses LLM
+Generates structured RCA
+Returns recommendation
+Why isolated?
+LLM is:
+Expensive
+External dependency
+Risk factor
+Must be isolated in its own agent.
+
+LLM-based reasoning.
+Receives:
+Alert
+Error
+CMDB
+Logs
+
+Generates:
+Root cause
+Recommendation
+Confidence
+
+
+📄 agents/snow_update_agent.py:
+Updates ServiceNow.
+Keeps external integration isolated.
+
+
+
+
+
+
+🔹 1️⃣3️⃣ services/llm_client.py:
+🎯 Purpose: External LLM Wrapper
+What it does:
+
+Encapsulates OpenAI/Azure LLM call.
+
+Why needed:
+✔ Replace model easily
+✔ Mock for testing
+✔ Control prompt centrally
+✔ Add logging later
+
+Enterprise rule:
+Never call external systems directly inside business logic.
+
+Encapsulates LLM.
+Prevents direct LLM usage in agents.
+
+Allows:
+Model swap
+Cost control
+Logging
+
+
+
+📄 services/cmdb_client.py:
+Encapsulates CMDB API.
+
+
+📄 services/log_client.py:
+Encapsulates log analysis system.
+
+
+
+📄 services/servicenow_client.py:
+Encapsulates ServiceNow REST calls.
+
+
+
+🔹 1️⃣4️⃣ graph/graph_builder.py:
+🎯 Purpose: Future Deterministic Workflow
+Currently placeholder.
+In advanced version:
+LangGraph state orchestration goes here.
+Enables conditional routing.
+Enables parallel execution.
+Enterprise principle:
+Prepare for scalability.
+
+Reserved for deterministic LangGraph extension.
+Allows:
+Conditional routing
+Parallel execution
+Human-in-loop
+Replay
+
+
+🏗 COMPLETE SYSTEM RESPONSIBILITY LAYERING
+
+| Layer         | Responsibility                |
+| ------------- | ----------------------------- |
+| main.py       | App entry                     |
+| app_factory   | App configuration             |
+| api           | HTTP exposure                 |
+| executor      | Execution control             |
+| orchestration | Agent coordination            |
+| agents        | Business logic                |
+| services      | External system calls         |
+| core          | Shared contracts & protection |
+| graph         | Deterministic workflow engine |
+
+
+🔹 CMDB Agent:
+Identifies:
+CI name
+Business service
+Criticality
+Why?
+To understand business impact.
+
+🔹 Log Agent:
+Analyzes:
+Error spikes
+Deployment events
+Related incidents
+Why?
+To strengthen RCA confidence.
+
+🔹 RCA Agent Now Receives More Context:
+Instead of just:
+alert + error
+
+Now it receives:
+alert + error + cmdb + logs
+
+This makes RCA:
+✔ More accurate
+✔ Business-aware
+✔ Risk-aware
+✔ Enterprise-ready
+
+🧠 WHAT HAPPENS NOW:
+
+🔹 Step 1 — Orchestrator finishes RCA generation:
+RCA Agent returns structured result.
+
+🔹 Step 2 — Orchestrator builds A2ARequest:
+Standard message:
+sender = Orchestrator
+receiver = ServiceNowUpdateAgent
+action = update_incident
+
+🔹 Step 3 — Update Agent calls ServiceNowClient:
+Client performs secure PATCH call.
+
+
+🔹 Step 4 — Work Notes Updated:
+Incident now contains:
+AI RCA
+Confidence Score
+Structured reasoning
+Closed-loop automation complete.
+
+✅ STEP 14 — Run Application
+uv run uvicorn mattel.main:app --reload
+http://localhost:8000/docs
+
+
+
+https://chatgpt.com/share/69933a2c-2b38-8007-a5af-74dee880be59

@@ -1,0 +1,105 @@
+Data Science/ML: 
+    is modern astrology , In astrology predict the future but without any evidence.
+    DS/ML predict the future with solid evidence using mathematics algorithims called ML algorithims
+    analysis the past data patterns using math algorithim.
+   # Generally people will not convinced with statements, convinced with numbers
+ 
+ ML Types:
+   Supervised Learning:
+   Unsupervised Learning:
+   ReInforcement:
+
+Supervised Learning: We have input as well as output data.
+    Regression:
+           output is number
+           Linear Regression:
+           Lasso Regression:
+           Ridge Regression:
+    Classification:
+           output is Classification (Yes/No)
+            Logistic Regression:
+            Decision Trees:
+            Navy Bayes:
+            Support vector machine:
+            K-nearest Neighbours:
+            
+1) Is input and out put both available- Yes
+2) If that output is categorical? Classification Model
+3) If that output is numerical - Regression Model
+
+
+Unsupervised Learning: We don't have output data`
+    Segment or group the customers based on spending score
+    K-Means:
+    K-Medoids:
+    Hierarical Cluster:
+    Density Based Cluster:
+        
+Reinforcement Learning: In the context of AI, is type of dynamic programming that trains algorithim using a system of rewards and punishment. A reinforcement learing algorithim, or agent learns by interacting with its environment.
+
+###
+you created a model
+y=x^2
+
+1) Developed a Model in Python Running in your local machine
+        1) How Client Use your Model in production
+        2) Client Saying I am generating new data how your Model response?
+        3) How track Model Performance?
+
+MLOps:
+  After Model Development ask some quesions from yourself
+    1) How handover the developed model to client , how to deploy our model to production enevironment?
+    2) How can we train our model on fresh data in future on production level?
+    3) How can we monitor or track our model performance?
+    4) How can we maintain the end to end flow from data ingestion to predictions
+ Only Solution of above quesions is MLOps.
+ 
+ ######################################################
+Roles of People in the world of AI:
+There are 3 important roles People having in AI field
+
+Data Engineer:
+Responsible for the infrastructure that ensures data is stored and available for data scientists.
+They build the systems that ingest raw data from various sources and store it in a centralized data lake. Data engineers often also build other data warehouses that derive data from the data lake but transform it so that it is more useful for the end user; for example, image data might be resized and reformatted so that data scientists can focus on data analysis rather than data manipulation.
+
+Data Scientist:
+Generally, they are deployed first to analyze existing data and to find patterns that could be used to solve underlying business problems.
+
+ML Engineer:
+They take those concepts and build them into a production-scale system. As the title implies, ML engineers understand the theoretical side of machine learning but are more involved with paradigms found in engineering such as continuous integration (CI) and continuous delivery (CD). They tackle automating and scaling model training, testing models before deployment and deploying and monitoring models in production.
+
+step1: ingest the data ====Data Engineer
+step2: Develop ML model====Data Scientiest
+step3: Make use of ML Models in production environment ===MLE MLOps
+  
+ ######################################################
+step1:  ML Development
+    Data Ingestion==>Data Preparation===>EDA===>Model Development===> Model Evaluation
+    .py ====>config file (just like pipeline)
+    Why:
+     Every month will get a new data, continuous train the model on new data (continuous training)-automated pipeline
+     
+Important steps needs to consider in MLOps after Model Development
+        Model Registry:
+        Model Deployment:
+        Moder Tracking:
+        Model Versioning:
+        Model Inference:
+        
+Required Packages:
+    Numpy: Numerical Python ===mathematics
+    Pandas: Data Frames, Data analysis
+    sklearn: Machine Learning algorithims
+    MLFlow: Mlflow MLOPs platform
+    
+step1: First divide data into two parts, train_data and test_data
+step2: we divide train_data into X_train and Y_train
+step3: we divide test_data into X_test and Y_test
+step4: model development happens on train_data
+step5: model prediction happens on x_test data , this will give y_prediction
+step6: compare the y_predictions with y_test    
+
+split_train_test==sklearn package
+divide the data into 70:30 ratio 
+divide train and test data randomly, else get bias
+

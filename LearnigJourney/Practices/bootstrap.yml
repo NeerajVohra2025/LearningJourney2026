@@ -1,0 +1,6 @@
+bootstrap/
+│
+├── startup.py        # Initialization logic
+├── register.py       # Self registration to registry
+├── heartbeat.py      # Optional TTL heartbeat
+└── lifecycle.py      # FastAPI lifespan wiring

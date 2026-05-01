@@ -1,0 +1,33 @@
+Nano Banana:
+ Text<-> Text
+ Text<->Diffusion
+ Text<->Video
+ 
+MOE:
+ Mixture of experts
+
+Fundametal Prompt Technique:
+    Zero Shot Prompt:
+    One Shot Prompt:
+    Few Shot Prompt: 
+    System Prompting:
+        Set overall context and behavior Guidelines
+    Role Prompting:
+    Contextual Prompting:
+    
+Advance Prompting Strategies:
+   Chain Of thoughts prompting
+Self consistency:
+Step back prompting:
+
+ReAct: reasoning + Acting  # Iteration Loop ReAct Loop (Thoughts + Actions + Observation)
+     Combini reasoning with tool use and actions
+
+Tree Of Thought (TOT):
+
+     
+     
+     
+
+     
+ 

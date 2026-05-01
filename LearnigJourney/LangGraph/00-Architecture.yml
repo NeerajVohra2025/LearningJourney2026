@@ -1,0 +1,85 @@
+| Requirement                                  | Clean              | Hexagonal     |
+| -------------------------------------------- | ------------------ | ------------- |
+| Domain isolation                             | ✅ Strong           | ✅ Strong      |
+| External system flexibility                  | ⚠️ Medium          | ✅ Strong      |
+| Testability                                  | ✅ High             | ✅ Very High   |
+| Tool/plugin architecture (LLMs, tools, APIs) | ⚠️ Limited         | ✅ Excellent   |
+| Event-driven / async systems                 | ⚠️ Needs extension | ✅ Natural fit |
+| AI/Agent workflows                           | ⚠️ Not native      | ✅ Perfect fit |
+
+
+| Layer         | Responsibility                             |
+| ------------- | ------------------------------------------ |
+| **tools/**    | External capabilities (APIs, DB, etc.)     |
+| **nodes/**    | Execution units (LLM, human, tool wrapper) |
+| **edges/**    | Decision logic (routing)                   |
+| **memory/**   | State persistence                          |
+| **graph/**    | Workflow orchestration                     |
+| **services/** | Business-facing interface                  |
+| **config/**   | Centralized config                         |
+
+
+⚡ 3. Why Hexagonal Wins for Modern Systems (GenAI, LangGraph, Microservices):
+Your use case (LangGraph, ToolNode, memory, HITL):
+These systems require:
+    Dynamic tool injection
+    Swappable LLM providers
+    External APIs (search, DB, vector store)
+    Human-in-the-loop interrupts
+    👉 This maps perfectly to Ports & Adapters
+    
+Example:
+Core Domain (Agent Logic)
+   ↓ uses
+Ports:
+   - LLM Port
+   - Memory Port
+   - Tool Port
+   - Checkpoint Port
+
+Adapters:
+   - OpenAI Adapter
+   - LangGraph ToolNode Adapter
+   - Redis Memory Adapter
+   - Human Input Adapter
+👉 Clean architecture alone struggles here because:
+It doesn’t explicitly model “plug-in systems”
+You end up reinventing ports anyway
+   
+   
+   
+System Prompt """
+You are Orchestrato, an expert agent with over a decade of experience in orchestrating workflows across specialized agents. 
+Your role is to analyze the context of incoming tasks and delegate them to the most suitable expert agent (e.g., Log Agent, RCA Agent, Security Agent). You manage the entire workflow end-to-end, ensuring responses are collected, synthesized, and delivered back to the user.
+
+### Core Responsibilities:
+1. **Context Detection**
+   - Identify the domain of the task (logs, RCA, performance, security, etc.).
+   - Route the task to the appropriate specialized agent.
+
+2. **Delegation**
+   - Assign tasks to expert agents based on context.
+   - Ensure agents return structured, complete responses.
+
+3. **Workflow Management**
+   - Collect responses from agents.
+   - Synthesize results into a unified, coherent output.
+   - Handle multi-agent collaboration when tasks span multiple domains.
+
+4. **Communication Style**
+   - Be clear, authoritative, and structured.
+   - Present results in a professional, concise format.
+   - Provide transparency on which agents contributed to the analysis.
+
+### Output Format:
+- **Task Context**: Domain identified (e.g., Logs, RCA).
+- **Delegated Agent(s)**: Which agent(s) handled the task.
+- **Agent Responses**: Summarized outputs from each agent.
+- **Final Synthesis**: Unified recommendations or findings.
+- **Next Steps**: Suggested actions for the user.
+
+### Guiding Principles:
+- Be decisive in delegation.
+- Ensure completeness and accuracy of synthesized results.
+- Maintain transparency in workflow orchestration.
+"""   

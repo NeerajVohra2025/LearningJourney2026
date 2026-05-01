@@ -1,0 +1,52 @@
+🤔 What’s the Difference? (AI vs. ML vs. DL):
+    🤖 Artificial Intelligence (Rule-Based & Decision Logic):
+        AI = Machines that think like humans: # “Can machines think?”
+            It’s not magic—it’s software that handles tasks requiring human-like intelligence:
+                👀 Perception (seeing/hearing like eyes/ears)
+                🧠 Reasoning (solving puzzles)
+                📚 Learning (getting better with experience)
+                ⚙️ Problem-solving (fixing a broken bike)
+                ✅ Decision-making (choosing the fastest route home)
+            🔹 Human Behavior
+                        If this happens → do that    
+            📌 Used when logic is predefined, not learned.
+                    Exam Tip:
+                    Rule-based logic ≠ Machine Learning    
+            ✅ AWS Services
+                        Amazon EventBridge – rule-based event handling
+                        AWS Step Functions – decision logic workflows
+                        Amazon Lex – rule-based conversational flows (intents & slots)    
+
+    
+    📈  Machine Learning (Learning from Data):  
+                🔹 Human Behavior
+                        Learning from past examples
+                        Classifying known patterns    
+                📌 Used when you control data and training
+                    Exam Keyword: Model training & deployment
+
+                ✅ AWS Services
+                    🔸 Amazon SageMaker
+                            Fully managed ML platform
+                            Build, train, tune, and deploy ML models
+                        Supports:
+                            Linear regression
+                            Classification
+                            Custom ML models  
+
+    🔮  Deep Learning (Neural Networks & Feature Learning):  
+                🔹 Human Behavior
+                        Recognizing faces, voices, emotions
+                        Understanding complex patterns   
+                📌 No ML knowledge required      
+                            Exam Keyword: Pre-trained deep learning model,Managed NLP service  
+                ✅ AWS Services
+                    🔸 Amazon Rekognition
+                            Image and video analysis
+                            Uses deep learning models
+                            Capabilities:
+                                Face detection
+                                Object recognition
+                                Emotion analysis
+                                Text in images
+                            

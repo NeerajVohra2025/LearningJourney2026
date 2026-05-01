@@ -1,0 +1,101 @@
+Developer (VS Code)
+      │
+      ▼
+GitLab Repository
+      │
+      ▼
+GitLab CI Pipeline
+      │
+      ├── Lint
+      ├── Test
+      ├── Security Scan
+      │
+      ▼
+Docker Build
+      │
+      ▼
+Google Artifact Registry
+      │
+      ▼
+Helm Deployment
+      │
+      ▼
+GKE Cluster
+      │
+      ▼
+Running Python Service
+
+Create the Python Package:
+uv init --package sample-deployment
+cd sample-deployment
+Folder Structure:
+sample-deployment
+│
+├── src
+│   └── sample_deployment
+│       ├── __init__.py
+│       ├── main.py
+│       ├── router.py
+│       └── service.py
+│
+├── tests
+│   └── test_health.py
+│
+├── helm
+│   └── sample-service
+│
+├── Dockerfile
+├── pyproject.toml
+├── .gitlab-ci.yml
+└── README.md
+
+src/sample_deployment/main.py
+from fastapi import FastAPI
+
+app = FastAPI(title="Sample Deployment Service")
+
+@app.get("/")
+def root():
+    return {"message": "Sample service running on GKE"}
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
+    
+    
+docker build -t sample-service .
+docker run -p 8080:8080 sample-service 
+
+helm/sample-service
+│
+├── Chart.yaml
+├── values.yaml
+└── templates
+     ├── deployment.yaml
+     └── service.yaml
+     
+values.yaml:
+image:
+  repository: asia-south1-docker.pkg.dev/project/sample-repo/sample-service
+  tag: latest
+
+replicaCount: 2
+
+deployment.yaml :
+Important container section.
+containers:
+  - name: sample-service
+    image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+    ports:
+      - containerPort: 8080    
+      
+.gitlab-ci.yml:
+stages:
+  - lint
+  - test
+  - build
+  - push
+  - deploy      
+  
+CI pipeline responsibilities:
+  

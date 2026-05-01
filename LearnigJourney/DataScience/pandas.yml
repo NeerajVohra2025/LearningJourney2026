@@ -1,0 +1,15 @@
+EDA: 
+ Exploratory Data analysis
+    Pandas: Pandas is a package mainly dataframe operations
+    Numpy:  Numerical Python
+    Matplotlib: plotting
+    Seaborn: plotting
+Machine Learning:
+    We need to understand how Pandas works
+
+step1: import all the packages
+import numpy as np  # Math Operations
+import pandas as pd  # Dataframe operations 
+import matplotlib.pyplot as plt # plotting
+import Seaborn as sns # plotting
+    

@@ -1,0 +1,38 @@
+1)  Data Load:
+2)  Data Chunking:
+        We are dividing data into small small parts
+        Why?:
+        Window Context
+3)  ALL LLM models can developed by Maths algorithim:
+        Base Paper: Google
+        Name:            Attention All you need! # !wget https://arxiv.org/pdf/1706.03762
+                         Architecture : Transformers # !mv 1706.03762 attention_is_all_you_need.pdf  
+    We need to convert sentences into embedddings (text to numbers)
+        Embeddings: vector with numbers store the information
+
+4) Now user will ask the quesions===English====Embeddings
+5) Suppose one paragraph has 5 sentences 
+        v1,v2,v3,v4,v5
+    quesion vector qv
+        cosine(qv,v1)  ,cosine(qv,v2), cosine(qv,v3)    cosine(qv,v4) cosine(qv,v5) 
+    Here we extracting
+        
+MultiModal RAG:        
+    Not only text
+    Images
+    audio
+    video
+    
+####
+Langchain: Frameowrk
+Langchain Community: connect with external source
+pillow : load the image and display image
+pymupdf : loading pdf files
+python-dotenv
+langchain-cohere
+
+
+import fitz # PyMuPDF
+from PIL import Image
+from langchain_cohere import ChatCohere, CohereEmbeddings
+    

@@ -1,0 +1,1089 @@
+
+
+
+
+OAuth2
+
+JWT (JSON Web Token)
+
+API Gateway
+
+Zuul / Spring Cloud Gateway
+
+Responsibilities
+
+Authorization
+
+Rate limiting
+
+Caching
+
+Routing
+
+Monitoring
+
+
+Swagger (OpenAPI):
+
+Swagger allows you to describe the structure of your APIs so that machines and humans can read them
+
+The specification can be used for:
+
+Documentation
+
+Testing
+
+Client generation
+
+Swagger answers:
+
+What operations your API supports
+
+What are the input parameters
+
+What is the return type / response structure
+
+Security:
+API Security Components
+
+Firewall / IPS (Intrusion Prevention System)
+
+WAF (Web Application Firewall):
+
+Authentication & Authorization
+
+OAuth
+
+Basic Auth
+
+Bearer Token
+
+API Key
+
+SAML
+
+Data Encryption
+
+Data at Rest
+
+Encryption (example: credit card details in DB)
+
+Data in Transit
+
+HTTPS / TLS / SSL
+
+Network Security
+
+VPC
+
+Private Subnet
+
+OAuth2 (Open Authorization)
+
+Authorization framework that enables secure access to resources
+
+Allows applications to access resources on behalf of a user
+
+Commonly used for machine-to-machine and user-based authorization
+
+JWT (JSON Web Token):
+
+Consists of:
+
+Header
+
+Payload
+
+Signature
+
+API Gateway validates JWT
+
+Used for stateless authentication
+
+OAuth2 Players
+
+Resource Owner
+
+User or application that owns the data
+
+Client Application
+
+Third-party application requesting access
+
+Authorization Server
+
+Issues access tokens (OAuth server)
+
+Resource Server
+
+Hosts protected resources (API server)
+
+OAuth2 – Authorization Code Flow (Human Flow)
+Pre-requisite
+
+User and client must be registered with OAuth server
+
+Steps
+
+User clicks Login with Google / Facebook
+
+User is redirected to OAuth provider login page
+
+User enters credentials
+
+OAuth server validates credentials
+
+OAuth server returns Authorization Code to client
+
+Client sends Authorization Code + Client ID + Client Secret to OAuth server
+
+OAuth server returns:
+
+Access Token (short-lived)
+
+Refresh Token (long-lived)
+
+Client sends access token to Resource Server
+
+Resource Server validates token
+
+Resource Server returns requested resource
+
+OAuth2 – Client Credentials Flow (Machine-to-Machine)
+Steps
+
+Client sends request to OAuth server with:
+
+Client ID
+
+Client Secret
+
+OAuth server validates client credentials
+
+OAuth server issues Access Token
+
+Client sends access token to Resource Server
+
+Resource Server validates token and returns data
+
+
+OAuth2 – Client Credentials Flow (Machine-to-Machine)
+
+Payment service is a secured resource server
+
+Order service wants to access payment service
+
+Order service sends token request to OAuth server with parameters:
+
+Client ID
+
+Client Secret
+
+Grant Type = Client Credentials
+
+OAuth server validates request and returns:
+
+Access Token
+
+Refresh Token
+
+Order service sends API request with access token to payment service
+
+Design Patterns (Microservices)
+Event Sourcing
+
+Concept of auditing / tracking history
+
+Records all events of a particular service (e.g., financial transactions, fraud tracking)
+
+Instead of storing current state, store events
+
+Reading data requires replaying events
+
+Disadvantage:
+
+Adding tables
+
+Reading large event logs
+
+Complexity increases
+
+CQRS (Command Query Responsibility Segregation)
+
+Separate write and read models
+
+Write side → handles commands (create/update)
+
+Read side → materialized views (optimized for reporting)
+
+Improves performance and scalability
+
+Strangler Pattern (Legacy → Microservices)
+
+Incremental migration strategy
+
+Gradually replace monolith functionality
+
+Uses:
+
+API Gateway
+
+Spring Cloud Gateway
+
+Avoids Big Bang migration
+
+Front Controller
+
+Implemented using:
+
+API Gateway
+
+Spring Cloud Gateway
+
+Database per Service
+
+Each microservice owns its own database
+
+Avoids tight coupling
+
+Shared Database (Anti-Pattern)
+
+Multiple services using same DB
+
+Leads to tight coupling
+
+Not recommended
+
+Distributed Tracing
+
+Sleuth
+
+Zipkin
+
+Service Mesh / AWS X-Ray
+
+Client-Side Load Balancer
+
+Spring Cloud LoadBalancer
+
+Circuit Breaker
+
+Improves resilience
+
+Prevents cascading failures
+
+Service Registry & Discovery
+
+Netflix Eureka
+
+SAGA Pattern
+Choreography
+
+Event-driven communication
+
+Each service performs a local transaction
+
+If a transaction fails:
+
+Service emits a compensating event
+
+No central controller
+
+Good for loosely coupled systems
+
+Orchestration
+
+Uses a Saga Orchestrator
+
+Central component controls transaction flow
+
+Calls services sequentially
+
+If any service fails:
+
+Orchestrator triggers rollback of previous services
+
+Uses command-driven communication
+
+Caching Strategy
+Read-Through Cache
+
+Service checks cache first
+
+If data not present:
+
+Reads from DB
+
+Stores result in cache
+
+Improves read performance
+
+Write-Through Cache
+
+Writes go to:
+
+Cache
+
+Database
+
+Ensures data consistency
+
+Messaging
+One-to-One (Point-to-Point)
+
+Example:
+
+ActiveMQ
+
+Queue-based messaging
+
+One-to-Many (Publish-Subscribe)
+
+Example:
+
+Kafka
+
+ZooKeeper (older versions)
+
+Topic-based messaging
+
+Kafka (Pull-Based)
+Key Components
+
+Broker
+
+Kafka cluster consists of multiple brokers
+
+Each broker has an ID
+
+Producer
+
+Publishes messages to topic
+
+Consumer
+
+Pulls messages from topic
+
+Topic
+
+Logical stream of messages
+
+Partition
+
+Enables parallelism and scalability
+
+
+Kafka Components
+Broker
+
+A Kafka cluster is composed of multiple brokers
+
+Each broker is identified by a unique ID
+
+Brokers store data and serve client requests
+
+Brokers handle:
+
+Receiving messages from producers
+
+Serving messages to consumers
+
+Topic
+
+A Topic is a logical stream of messages
+
+Messages are written to and read from topics
+
+Topics are:
+
+Named
+
+Append-only logs
+
+Example:
+
+A traffic system publishing vehicle position updates → Topic = traffic-events
+
+Partition
+
+Topics are split into multiple partitions
+
+Each partition:
+
+Is an ordered, immutable sequence of messages
+
+Can live on a different broker
+
+Enables:
+
+Parallelism
+
+Scalability
+
+High throughput
+
+Messages in a partition are identified by an offset
+
+Why Partitioning?
+
+Improves:
+
+Throughput
+
+Parallel processing
+
+Fault tolerance
+
+Enables Kafka to handle large volumes of data
+
+Workload is distributed across brokers
+
+Replication
+
+Kafka keeps multiple copies of partitions across brokers
+
+These copies are called replicas
+
+One replica is the leader
+
+Others are followers
+
+If leader fails:
+
+A follower becomes the new leader
+
+Ensures high availability
+
+Record
+
+A Kafka record consists of:
+
+Key
+
+Value
+
+Timestamp
+
+Headers (optional)
+
+Stored in partitions
+
+Used by consumers to make decisions based on metadata
+
+Producer
+
+Client application that publishes (writes) events to Kafka topics
+
+Sends messages to the leader partition
+
+Responsible for:
+
+Choosing topic
+
+Choosing partition (optional)
+
+Producer Acknowledgements (acks)
+
+acks = 0
+
+Producer does not wait for acknowledgement
+
+Fastest, possible data loss
+
+acks = 1
+
+Leader acknowledges write
+
+No data loss if leader survives
+
+acks = all
+
+All replicas acknowledge
+
+Strongest durability, slowest
+
+Leader & Follower
+
+Each partition has:
+
+One leader
+
+Multiple followers
+
+Producers and consumers interact only with the leader
+
+Followers replicate data from the leader
+
+Consumer
+
+Client application that reads (pulls) messages from Kafka
+
+Uses polling mechanism
+
+Tracks read position using offsets
+
+Consumer Group
+
+Consumers belong to a consumer group
+
+Rules:
+
+One partition → consumed by only one consumer in a group
+
+Multiple consumers → partitions are divided among them
+
+Enables:
+
+Horizontal scalability
+
+Load balancing
+
+Example
+
+Topic with 4 partitions
+
+Consumer Group with 2 consumers:
+
+Consumer 1 → partitions 0,1
+
+Consumer 2 → partitions 2,3
+
+If consumers > partitions:
+
+Some consumers remain idle
+
+Kafka Processing Model
+
+Pull-based system
+
+Consumers control:
+
+Read speed
+
+Offset management
+
+Enables:
+
+Backpressure handling
+
+Reliable message processing
+
+How Database Performs Data Synchronization Between Different Nodes?
+Leader–Follower Model
+
+Leader Node:
+
+Handles writes
+
+Follower Nodes:
+
+Handle reads
+
+CDC (Change Data Capture) Flow
+
+Application writes data → Leader node
+
+Leader node writes changes to DB Logs (short TTL)
+
+CDC component reads logs from DB logs
+
+CDC converts changes into Change Stream Events
+
+Events are published to message broker
+
+Other services consume events and update their data
+
+Testing in Microservices
+Unit Testing
+
+Test individual microservice units
+
+Mostly written in service layer
+
+Does not test integration with DB or other services
+
+Focus: business functionality
+
+Integration Testing
+
+Focus on integration boundaries
+
+Tests interaction points:
+
+Database
+
+Other microservices
+
+Uses:
+
+Mock services
+
+Test containers
+
+Contract Testing
+
+Extension of integration testing
+
+Used when multiple consumers depend on a service
+
+Validates request–response contract
+
+Example:
+
+Orders service ↔ Payments service
+
+Ensures changes do not break consumers
+
+Component Testing
+
+Tests a whole component
+
+Includes:
+
+API
+
+Service
+
+Database
+
+Example:
+
+Testing complete Order service functionality
+
+Black Box Testing
+
+Test third-party services
+
+Source code is not visible
+
+Testing Tools
+
+JUnit – Unit testing
+
+Mockito – Mocking
+
+WireMock – API mocking
+
+TestContainers – Containerized integration testing
+
+Jacoco – Code coverage
+
+SonarQube / SonarLint
+
+Code smell
+
+Coverage
+
+Security issues
+
+Mutation Testing
+
+Tests test-case quality
+
+Chaos Engineering
+
+Chaos Monkey
+
+Gorilla
+
+Failure testing
+
+Troubleshooting Production Issues
+Step-by-Step Approach
+
+Create incident ticket
+
+Impact
+
+Priority
+
+Severity
+
+Identify failing application / service
+
+Check if service is reachable
+
+If behind Load Balancer:
+
+Collect logs from all instances
+
+Analyze logs to find exception stack trace
+
+Reproduce issue in lower environment
+
+Find root cause
+
+Fix issue locally
+
+Deploy fix to lower environments
+
+Take approvals
+
+Deploy to production
+
+Perform post-incident RCA
+
+Implement preventive actions
+
+Troubleshooting Production Performance Issues (Web / AppDynamics)
+Checklist
+
+Check recent deployments
+
+Check JVM memory (heap / GC)
+
+Check CPU utilization
+
+Check thread count
+
+Check network latency
+
+Identify deadlocks or memory leaks
+
+Identify slow APIs
+
+Measure API latency
+
+Analyze logs to identify bottlenecks
+
+If DB related:
+
+Check slow queries
+
+Review execution plan
+
+Add indexes / optimize queries
+
+Key Monitoring Tools
+
+AppDynamics
+
+CloudWatch
+
+Grafana
+
+Prometheus
+
+ELK Stack
+
+Testing Tools
+
+Fortify
+
+Security vulnerability scanning in your code
+
+Black Duck
+
+Security vulnerability detection in third-party libraries (not your code)
+
+IDE Plugins – Code Coverage
+
+JaCoCo
+
+SonarLint
+
+Mutation Testing
+
+Tests the quality of test cases
+
+SonarQube
+
+Line coverage
+
+Conditional coverage
+
+Code smells
+
+Mutation test results
+
+Security issues
+
+Chaos Engineering
+
+Resiliency testing
+
+Tools:
+
+Netflix Chaos Monkey
+
+Chaos Gorilla
+
+Used to test system behavior during failures
+
+Troubleshooting Production Issues
+Step-by-Step Approach
+
+Create an incident ticket
+
+Capture impact, priority, and severity
+
+Identify the affected application/service
+
+Verify if the application is reachable
+
+If application is behind a Load Balancer:
+
+Collect logs from all instances
+
+Analyze logs to identify exceptions / stack traces
+
+Reproduce the issue in lower environment
+
+Identify the root cause (RCA)
+
+Fix the issue in local environment
+
+Promote fix to higher environments
+
+Obtain required approvals
+
+Deploy fix to production
+
+Perform RCA documentation
+
+Add preventive actions
+
+Troubleshooting Production Performance Issues
+
+(Web Applications – AppDynamics)
+
+Performance Checklist
+
+Check recent deployments
+
+Verify JVM instances are up and running
+
+Check network latency
+
+Check database latency
+
+Monitor CPU and memory utilization
+
+Identify deadlocks or memory leaks (JConsole / other tools)
+
+Identify which API or functionality is slow
+
+Measure latency from browser dev tools
+
+Analyze application logs to identify slow code paths
+
+If SQL-related:
+
+Use EXPLAIN PLAN
+
+Optimize queries
+
+Add indexes if required
+
+If application logic issue:
+
+Refactor code
+
+Optimize algorithm
+
+Troubleshooting Framework (Mindset)
+
+Know the Basics
+
+Ask Questions
+
+Visualize the Flow
+
+Break the Problem
+
+Google Knows Everything
+
+Service Mesh & Communication
+
+Helm
+
+Package manager for Kubernetes
+
+Istio
+
+Service-to-service communication
+
+Traffic management
+
+Security
+
+Observability
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################
+Maven
+Build Lifecycle
+
+There are three built-in Maven lifecycles:
+
+Clean
+
+Cleans the project
+
+Removes previously generated files (e.g., target/ folder)
+
+Default
+
+Handles the complete build and deployment process
+
+Site
+
+Generates project documentation
+
+Creates project reports and site pages
+
+Phases of Default Lifecycle
+
+validate
+
+compile
+
+test
+
+package
+
+verify
+
+install
+
+deploy
+
+#############
+################################
+
+Jenkins
+Code Build Process (using Maven)
+
+mvn compile
+
+Converts high-level language code into bytecode / machine-level instructions
+
+mvn code review
+
+Static code analysis (PMD, Checkstyle)
+
+mvn test
+
+Unit testing
+
+Individual testing
+
+mvn code coverage
+
+Measures test coverage (LOC)
+
+Tool: JaCoCo
+
+mvn package
+
+Converts source code into installable artifact (JAR/WAR)
+
+Jenkins Pipeline
+
+A pipeline is a sequence of build steps
+
+Executes the code build process in sequential order
+
+Jenkins Plugins
+
+Plugins extend Jenkins functionality
+
+Manage plugins from:
+
+Manage Jenkins → Manage Plugins
+
+Third-Party Server Integration
+
+SonarQube
+
+Code quality
+
+Static analysis
+
+Code coverage
+
+Jenkins Administration
+
+Manage Jenkins
+
+Configure System
+
+Master–Agent setup
+
+Security configuration
+Jenkins Pipeline
+
+A pipeline defines the steps of the code build process
+
+Steps are executed in sequential order
+
+Jenkins Plugins
+
+Plugins extend Jenkins functionality
+
+Manage plugins from:
+Manage Jenkins → Manage Plugins
+
+Third-Party Server Integration
+
+SonarQube
+
+Static code analysis
+
+Code quality
+
+Code coverage
+
+Jenkins Configuration & Administration
+Jenkins Management
+
+Manage Jenkins → Configure Systems
+
+Master–Agent Architecture
+
+Master:
+
+Orchestrates jobs
+
+Agent:
+
+Executes jobs
+
+Jenkins Security
+
+Configure:
+
+Global security
+
+Authentication & authorization
+
+Random / role-based access
+
+Node Management
+
+Manage Jenkins → System Configuration → Manage Nodes and Clouds
+
+            

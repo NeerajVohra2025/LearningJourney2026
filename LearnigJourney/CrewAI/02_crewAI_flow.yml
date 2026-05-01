@@ -1,0 +1,223 @@
+crewai workflow developed in python , on top of UV framework and lite llm,chroma db , can create multiple crews are execute independently and can interacts.
+
+Create a crew:
+ crewai create flow <name>
+ 
+Add aditional crews usng the CLI: 
+  crewai flow add-crew knowledge_crew
+
+Decorators:
+ @start
+ @listen
+ @route 
+ 
+Config:
+ config/agents.yaml
+ config/tasks.yaml
+
+CLI:
+ crewai flow kickoff
+ crewai flow plot 
+ 
+ 
+What You Get with crewai create flow:
+Feature:                                        crewai create crew:                  crewai create flow (NEW)
+Folder structure:                               Basic                                "Advanced (flows/, memory/, tools/, api/)"
+Process type:                                   Sequential by default:               Hierarchical + manager agent by default
+Memory:                                         Basic                                Full memory system (vector DB + entity memory)
+Tools:                                          Manual setup                         "Pre-configured search, scrape, file tools"
+Manager agent:                                  You add manually                     "Auto-created ""Project Manager"" agent"
+Visual flow diagram:                            No                                   Yes → flow_diagram.png generated automatically
+API endpoint ready:                             No                                   Yes → FastAPI wrapper included
+Knowledge base:                                 Empty folder                         Pre-filled with example knowledge files
+Tests + CI ready:                               Basic                                Full pytest + GitHub Actions template
+
+crewai create flow recipe_flow
+output structure: recipe_flow/
+    ├── flows/                    ← All your flows live here
+    │   └── recipe_generation.yaml
+    ├── memory/                   ← Vector store + long-term memory
+    ├── tools/                    ← Pre-built + custom tools
+    ├── knowledge/                ← PDFs, CSVs, docs your agents can read
+    ├── api/                      ← FastAPI server ready to deploy
+    ├── src/
+    │   └── recipe_flow/
+    │       ├── manager.py        ← Auto-generated Project Manager
+    │       ├── crew.py           ← Hierarchical crew
+    │       └── main.py
+    ├── flow_diagram.png          ← Visual map of your agents!
+    ├── pyproject.toml
+    └── .env.example
+
+cd recipe_flow
+crewai install #uv venv  Wait a few seconds—it creates a hidden .venv folder for everything to run smoothly.
+crewai run --verbose 2  # See memory/knowledge in logs
+
+Step-by-Step Instructions: How to Use crewai create flow in CrewAI
+ Step 1: Open Your Terminal and Navigate to a Good Spot
+ cd ~/Desktop/agentic_ai_2026  # Or wherever you want the new project
+ Step 2: Run the Create Command
+ crewai create flow <receipe_flow>
+ Step 3: Move Into Your New Project Folder
+ cd receipe_flow
+ Step 4: Install Dependencies (Get the Tools Ready)
+ crewai install  # Wait a few seconds—it creates a hidden .venv folder for everything to run smoothly.
+ Step 5: Add Your API Keys (Unlock the AI Power)
+ edit in .env 
+ 
+Step-by-Step Flow of crewai run:
+ Step 1: You press Enter → CrewAI wakes up 
+ You type crewai run and press Enter.
+ CrewAI says: “Okay, let’s start!”
+ 
+ Step 2: Loads the project blueprint
+ Looks at pyproject.toml (the file at the root).
+ Reads: “This project uses CrewAI, needs OpenAI, etc.”
+ Checks everything is installed (if not, it quickly fixes it with uv).
+ Time: 1 second.
+ 
+ Step 3: Loads your secret keys
+ Opens the .env file.
+ Finds your OpenAI key (example: OPENAI_API_KEY=sk-…).
+ Says: “Got it! I can now talk to the smart AI brain.”
+ Also looks for search keys if you have tools.
+ Time: less than 1 second.
+ 
+ Step 4: Finds the starting door
+ Goes into src/recipe_flow/ folder.
+ Opens main.py (this is the “start button” file).
+ Reads the code inside and finds the line that says “kickoff()”.
+ Says: “I know where to begin!”
+ 
+ Step 5: Loads your team and jobs
+ Opens the crews/ folder (or flow code).
+ Reads the YAML files (like a shopping list of agents and tasks).
+ Creates real AI workers in memory, for example:
+ “Recipe Researcher” (role, goal, tools)
+ “Recipe Writer”
+ Reads the tasks: “First research, then write, then make shopping list.”
+ Connects everything together.
+ 
+ Step 6: Starts the AI brains
+ Uses your OpenAI key from Step 3.
+ Connects to GPT-4 (or whichever model you chose).
+ Says: “I’m ready to think and search!”
+ 
+ Step 7: Runs the flow — the real action! (You see this on screen)
+ First agent starts
+    Researcher thinks: “I need healthy chicken recipes.”
+    Uses search tool (if you have a key) or thinks with AI.
+    Finishes and says: “Here are 3 ideas!”
+ Passes the result to the next agent (automatic!)
+    Writer receives the 3 ideas.
+    Thinks: “I’ll pick the best and write steps.”
+    Creates a full recipe in nice format.  
+ Next agent gets the recipe
+   Shopping List Maker reads the recipe.
+   Makes a neat grocery list.
+
+Super-Concise Flow of crewai run: (What happens when you press Enter)
+  You type → crewai run
+  Reads pyproject.toml (project settings)
+  Loads .env (your API keys)
+  Opens main.py (finds the start button)
+  Loads agents & tasks from crews/ or flow code
+  Connects to OpenAI/Grok (using your key)
+  Starts the flow → agents think & act one by one (you see live logs)
+  Passes results between agents automatically
+  Prints the Final Result
+  Done! (usually in 20–60 seconds)
+  
+  
+[project.scripts]:
+  kickoff = "recipe_flow.main:kickoff"     # Runs your flow's start function
+  run_crew = "recipe_flow.main:kickoff"    # Same as above (alias for crews/flows)
+  plot = "recipe_flow.main:plot"           # Generates a visual diagram of your flow  
+  
+  kickoff and run_crew: Both point to the same kickoff() function—starts the AI agents/tasks.
+  plot: Points to plot()—draws a pretty picture of your workflow (agents, tasks, connections).
+  
+  CrewAI tie-in: For flows/crews, kickoff() executes the agent loop (think → act → observe). plot() uses libraries like Graphviz to map it visually—great for debugging or sharing.
+  
+  Running the Default (kickoff or run_crew): 
+  Why use it? Starts your AI flow (e.g., generates a recipe).
+  How to call it:
+  In your project folder: cd recipe_flow
+  Run: kickoff or run_crew (or crewai run if using the wrapper).
+  
+  How to Call plot Instead of kickoff :
+  Why use plot? Instead of running the AI (which takes time and costs tokens), it creates a diagram showing your flow's structure—like a flowchart of "Research → Write → List." Perfect for planning or docs!
+  Prerequisites: Ensure Graphviz is installed (CrewAI auto-adds it via pyproject.toml, but if not: uv add graphviz pydot then crewai install).
+  Step-by-step to call it:
+  cd recipe_flow
+  crewai install
+  Run the plot command:
+  plot
+  Options (add flags for fun):
+    plot --format png (saves as image).
+    plot --output my_flow.png (custom filename).
+    plot --show (opens the diagram in your browser).
+    
+    
+Commands:
+  uv pip install -e .  # uv sync --editable   
+  What happens?
+    uv reads pyproject.toml for dependencies and project metadata.
+    Installs everything in a virtual env (.venv) with an editable link to your local code.
+    Faster than pip due to Rust optimization (~2-5 seconds).
+  Now you can:
+  Edit any file in src/your_project/
+  Instantly import and use it in Python
+  Run kickoff, plot, or crewai run — everything sees your latest code 
+  kickoff          # runs your flow
+  plot             # draws the diagram
+  crewai run       # also works
+  
+  
+  
+  
+Add aditional crews usng the CLI: 
+  crewai flow add-crew knowledge_crew
+
+Integrate the New Crew into Your Main Flow:
+ Why? Now link knowledge_crew to your existing recipe_flow (e.g., call it from main.py).
+ Do this:
+ Open src/recipe_flow/main.py: code src/recipe_flow/main.py.
+ 
+ Add import and call (example snippet): 
+ Step 1: Import the KnowledgeCrew
+ Why? Bring in the new crew so your flow can use it.  
+
+ Step 2: Update the State Model (PoemState)
+ Why? Add a field to hold knowledge results, so it can pass between steps.
+ Change: Modify the PoemState class 
+ 
+ Step 3: Add a New Method for Knowledge Retrieval
+ Why? Insert a step after sentence count generation to call knowledge_crew for inspiration.
+ Change: Add this method in the PoemFlow class (after generate_sentence_count)
+ 
+ Step 4: Update the Poem Generation Method
+ Why? Pass the new knowledge to PoemCrew as input, so the poem uses it.
+ Change: Modify generate_poem (update the @listen and inputs):
+ 
+ Step 5: Test and Run
+ crewai install 
+ 
+ Tool assigned to Agent:
+     knowledge_retriever:
+      role: "Recipe Knowledge Expert"
+      goal: "Find accurate, up-to-date recipe facts, ingredients, and nutrition info"
+      backstory: "You are a world-class culinary researcher with access to real-time web data."
+      tools:
+         - SerperDevTool  # Updated from search_tool to serper_dev_search
+      verbose: true
+      allow_delegation: false
+
+    # That’s it!
+    # You do not need to write any Python code for the tool — CrewAI automatically:
+
+    # Reads SERPER_API_KEY from .env
+    # Creates the SerperDevTool() instance
+    # Gives it to your agent
+    
+Move-Item -Path c:\agentic_ai_2026\recipe_flow -Destination c:\agentic_ai_2026\crewai_projects\    

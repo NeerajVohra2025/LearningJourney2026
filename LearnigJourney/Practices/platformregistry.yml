@@ -1,0 +1,133 @@
+Why:
+fastapi → HTTP interface
+uvicorn → ASGI runtime
+pydantic → schema validation
+tomli → load .toml
+uv add fastapi uvicorn pydantic python-dotenv
+
+
+platform-registry designed as a Senior Principal GenAI Architect would implement it, following Level-5 Enterprise Clean Architecture.:
+
+The registry will support ALL runtime services:
+Agents
+Tools
+LLM services
+Orchestrators
+Ingress / Webhooks
+
+It includes:
+Clean Architecture layers
+Feature flags
+Security (optional)
+Guardrails (optional)
+Dynamic logging
+Configurable memory storage
+Future Redis/Postgres support
+Professional comments so team members understand the design
+            
+            
+            
+🏆 RESULT
+
+You now have:
+Enterprise Clean Architecture
+Control Plane Registry
+Capability-based discovery
+Schema validation
+Dockerized service
+Postman tested
+Config externalized
+Replaceable storage  
+
+🔶 PHASE ORDER (ENTERPRISE CORRECT):
+Phase 1 — Shared Kernel:
+Contracts for state
+
+Phase 2 — Protocol:
+A2A envelope
+
+Phase 3 — Registry:
+Control plane discovery
+
+Phase 4 — Tools:
+LLM, ServiceNow, Anaplan
+(Because agents depend on them)
+
+Phase 5 — Agents:
+Self-register
+Expose /a2a
+
+Phase 6 — Orchestrator:
+Uses:
+Registry
+Protocol
+Agents
+
+Phase 7 — Ingress:
+Calls Orchestrator only 
+
+
+Assume a role of senior principle GenAI architect review the platform-registry package Follow Level 5 Enterprise Clean Architecture re-write step by step 1) It is capable of storing Agent Info AgentCard, LLM Info , Orchestrator Info , Ingress Info , tool info based on the some flag its not specific only for agent may add field service-type id etc as per  Level 5 Enterprise standards also add some security , gaurdrals configurable features also also add professional comments so that team member also able to understand also add flow end to finish  you have to rewrite the end-to-end code from start to finish using uv init --package platform-registry without more changes in exsisting package """platform-registry/
+
+platform-registry/
+│
+├── pyproject.toml
+├── config.toml
+├── Dockerfile
+│
+└── src/platform_registry/
+    │
+    ├── main.py   # ASGI entrypoint
+    │
+    ├── configuration/
+    │   └── settings.py
+    │
+    ├── interface/   # Inbound adapters (HTTP)
+    │   └── registry_controller.py
+    │
+    ├── application/
+    │   └── registry_service.py
+    │
+    ├── domain/
+    │   ├── service_card.py
+    │   └── service_store.py
+    │
+    └── infrastructure/
+        ├── logging_config.py
+        ├── security.py
+        └── guardrails.py            
+
+
+| Layer          | Responsibility         |
+| -------------- | ---------------------- |
+| Interface      | HTTP APIs              |
+| Application    | Use-case coordination  |
+| Domain         | Business models        |
+| Infrastructure | Cross-cutting concerns |
+| Configuration  | Environment management |
+            
+            
+            
+# Run specific script from pyproject.toml
+uv run platform-registry
+
+# Run with custom host/port
+uv run run --host 0.0.0.0 --port 8500
+
+# Run with reload for development
+uv run run --reload    
+
+
+# 1. Build production image
+docker build -t platform-registry:latest .
+ 
+# 2. Run with production settings
+docker run -d \
+  --name registry-prod \
+  -p 8500:8500 \
+  --restart unless-stopped \
+  platform-registry:latest
+ 
+# 3. Scale with docker-compose (if available)
+docker-compose up -d
+         

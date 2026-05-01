@@ -1,0 +1,124 @@
+    🧠  AUTHENTICATION BEFORE ACCESS (CRITICAL):
+            Discovery ≠ permission.:
+                🔐 LEVEL 1 (Simple, but realistic):
+                        API Key per team
+                                Each agent requires:
+                                    Authorization: Bearer TEAM_TOKEN
+
+
+                    STEP 7.1 — Protect Agent Endpoint:
+                                Before any agent executes a request, it must check:
+                                        “Is the caller allowed to call me?:
+                                    This is service-to-service authentication, not user login. 
+                                    Example in LangGraph:
+                                            📄 langgraph_agent/src/langgraph_agent/server.py:
+                                                    from fastapi import Header, HTTPException
+                                                    @app.post("/a2a")
+                                                    def handle(msg: A2AMessage, authorization: str = Header(...)):
+                                                        if authorization != "Bearer planning-token":
+                                                            raise HTTPException(status_code=403, detail="Forbidden")
+                                        🔐 Add a shared service token (simple enterprise baseline):
+                                                📄 langgraph_agent/.env:
+                                                        SERVICE_TOKEN=planning-team-token
+                                        
+                                        
+                                                📄 Update server.py:
+                                                        📄 langgraph_agent/src/langchain_agent/server.py:
+                                                
+                                                        from fastapi import FastAPI, Header, HTTPException
+                                                        from langgraph_agent.executor import AgentExecutor
+                                                        from shared.a2a_message import A2AMessage
+                                                        import os
+                                                        from dotenv import load_dotenv
+
+                                                        load_dotenv()
+
+                                                        app = FastAPI()
+                                                        executor = AgentExecutor()
+
+                                                        EXPECTED_TOKEN = f"Bearer {os.getenv('SERVICE_TOKEN')}"
+
+                                                        @app.post("/a2a")
+                                                        def handle(
+                                                            msg: A2AMessage,
+                                                            authorization: str = Header(...)
+                                                        ):
+                                                            # 🔐 AUTH CHECK (STEP 7.1)
+                                                            if authorization != EXPECTED_TOKEN:
+                                                                raise HTTPException(status_code=403, detail="Forbidden")
+
+                                                            plan = executor.run(msg.payload["task"])
+                                                            return {
+                                                                "payload": {"plan": plan}
+                                                            }
+                                                                                                                
+                                    ✅ What this achieves
+                                            LangGraph agent refuses unauthenticated calls
+                                            Only callers with the correct token succeed
+                                            This is exactly how internal microservices work
+                                        Repeat this same pattern in:
+                                            crewai_agent/server.py
+                                            openai_agent/server.py
+                                            (Each service gets its own token)
+                                    
+                    
+                    STEP 7.2 — Supervisor Sends Token: 
+                                📄 supervisor_agent/src/supervisor_agent/executor.py:
+                                            import os
+                                            import requests
+                                            from dotenv import load_dotenv
+
+                                            load_dotenv()
+
+                                            class AgentExecutor:
+
+                                                def run(self, task: str) -> str:
+
+                                                    # 1️) Call LangGraph with AUTH
+                                                    plan = requests.post(
+                                                        "http://localhost:8001/a2a",
+                                                        headers={
+                                                            "Authorization": f"Bearer {os.getenv('LANGGRAPH_TOKEN')}"
+                                                        },
+                                                        json={
+                                                            "payload": {"task": task}
+                                                        }
+                                                    ).json()["payload"]["plan"]
+
+                                                    # 2️) Call CrewAI with AUTH
+                                                    result = requests.post(
+                                                        "http://localhost:8002/a2a",
+                                                        headers={
+                                                            "Authorization": f"Bearer {os.getenv('CREWAI_TOKEN')}"
+                                                        },
+                                                        json={
+                                                            "payload": {"plan": plan}
+                                                        }
+                                                    ).json()["payload"]["result"]
+
+                                                    # 3️) Call OpenAI with AUTH
+                                                    final = requests.post(
+                                                        "http://localhost:8003/a2a",
+                                                        headers={
+                                                            "Authorization": f"Bearer {os.getenv('OPENAI_TOKEN')}"
+                                                        },
+                                                        json={
+                                                            "payload": {"result": result}
+                                                        }
+                                                    ).json()["payload"]["final_answer"]
+
+                                                    return final
+                                
+                                🔑 Supervisor .env
+                                        📄 supervisor_agent/.env:
+                                                LANGGRAPH_TOKEN=planning-team-token
+                                                CREWAI_TOKEN=execution-team-token
+                                                OPENAI_TOKEN=reasoning-team-token
+                                                        
+                                                        
+                    ✅ What this achieves
+                            Supervisor authenticates before every call
+                            Tokens are config-driven
+                            No hardcoding
+                            Tokens can be rotated
+                            This is enterprise-grade service auth (Level 1).   

@@ -1,0 +1,719 @@
+A data scientist wants to fine-tune a foundation model (FM) on Amazon Bedrock to improve the model's performance in a specific industry domain. Which statements accurately describe fine-tuning on Amazon Bedrock? (Select TWO.):  
+   Fine-tuning requires labeled data. Continued pre-training requires unlabeled data.
+   
+   You can fine-tune a model with a relatively small dataset compared to the original pre-training dataset. Therefore, fine-tuning is an effective approach to model customization.
+ 
+   Persistence of training data in a vector is not required for fine-tuning.
+  
+   Model customization is not supported by all FMs on Amazon Bedrock.
+   When you fine-tune an existing FM, you create a custom model.
+  
+  
+  ✅ Final Answer
+    When you fine-tune an existing FM, you create a custom model.
+    You can fine-tune a model with a relatively small dataset compared to the original pre-training dataset. Therefore, fine-tuning is an effective approach to model customization.  
+
+
+An AI practitioner is creating a forecasting model to predict stock prices. The data sources being analyzed contain missing values and statistical outliers. The AI practitioner wants to clean and transform the data without writing custom code. Which AWS service or feature will meet these requirements?:   
+   
+   AWS Glue jobs require you to write custom code in PySpark or Scala to transform data. You can use AWS Glue jobs for extract, transform, and load (ETL) tasks. However, this solution would require you to develop custom transformation logic for currency conversion.
+   
+   SageMaker Data Wrangler provides multiple built-in data transformations. Therefore, this solution meets the requirement to transform the data without writing custom code. SageMaker Data Wrangler has a no-code interface that you can use for data transformation tasks.
+   
+   Athena is an interactive query service that you can use to analyze data in Amazon S3 by using standard SQL. Athena does not provide built-in transformations for data transformation tasks. With Athena, you would need to write custom SQL queries to transform the data.
+   
+   
+   You can use SageMaker Feature Store to store, update, retrieve, and share ML features. SageMaker Feature Store does not provide built-in transformations for data transformation tasks.
+   
+   ✅ SageMaker Data Wrangler provides multiple built-in data transformations. Therefore, this solution meets the requirement to transform the data without writing custom code. SageMaker Data Wrangler has a no-code interface that you can use for data transformation tasks.
+   
+A company wants to deploy an ML model that will provide near real-time inference for high-definition images. The images can take up to 3 minutes to process. Which model inference type will meet these requirements?:   
+    Real-time inference is suitable for applications that have synchronous, low-latency request processing requirements. Real-time inference supports a maximum processing time of 60 seconds. In this scenario, the image processing time can take up to 3 minutes, and the requests should be queued if necessary. Real-time inference does not meet the processing time requirements.
+    
+    Serverless inference is suitable for applications that have intermittent traffic and low-latency request processing requirements. AWS manages all the underlying infrastructure of the endpoint. Serverless inference can support a maximum processing time of 60 seconds. In this scenario, the processing time can take up to 3 minutes, and the requests are being queued. Therefore, you cannot use serverless inference.
+   
+    Asynchronous inference is suitable for near real-time inference of up to 1 GB of data. Asynchronous inference supports a maximum processing time of up to 1 hour. Asynchronous inference can queue requests to your inferencing endpoint when the traffic is high and scale down when there are no requests to process. Therefore, asynchronous inference meets the requirements.
+
+    You can use batch transform for use cases with large datasets (gigabytes in size) that can take up to days to process. Batch transform is suitable for jobs where you do not need a persistent inferencing endpoint and you do not need to process data immediately. The scenario requires near real-time inferencing and can only accept a processing delay of a few minutes. Therefore, you cannot use batch transform for this scenario.
+    
+    ✅ Asynchronous inference
+	
+A company has an ML model that was trained with custom libraries dependencies. The model performs well on training data. However, the model does not perform as well when the model is tested on new datasets.What should the company do to improve the model's performance on the new datasets?:
+
+    In the scenario, the model performs well on training data but performs poorly on new datasets. Therefore, the scenario describes an overfitting issue. Training with smaller datasets is not a recommended approach to improve model performance on new datasets. A solution that uses less data could increase bias and reduce the model's ability to generalize.
+    
+    You can establish reliable packaging patterns for software libraries to improve consistency and reproducibility in ML workflows. However, this solution does not address the model's performance issues on new datasets. The requirement is to improve the model's generalization ability. Therefore, the solution should analyze and adjust the model's bias and variance. Packaging patterns alone will not solve the performance discrepancy between training and new datasets.
+	
+	
+    Automating model training by using MLOps and CI/CD practices can improve consistency and efficiency in the ML pipeline. However, this solution does not address the model's poor performance on new datasets. The requirement is to improve the model's ability to generalize to unseen data. Automation is valuable. However, automation does not replace the need for a thorough analysis of the model's bias and variance to identify and correct performance issues.
+	
+	
+    Performing a bias and variance tradeoff analysis is the most suitable solution to improve the model's performance on new datasets. The scenario indicates that the model performs well on training data but poorly on new datasets. Therefore, the scenario describes an overfitting issue. By conducting a bias and variance tradeoff analysis, you can identify whether the model is underfitting (high bias) or overfitting (high variance). Then, you can make the necessary adjustments to improve the model's generalization ability. This solution addresses the core issue of a performance discrepancy between training and new data.
+
+    ✅ Perform a bias and variance tradeoff analysis to diagnose and address overfitting.
+
+A travel company uses Amazon Bedrock to produce images of people snow skiing for an upcoming marketing campaign. The model is generating images of people water skiing in addition to snow skiing. The company does not want the water skiing images.How can the company prevent the unwanted images from being generated with the LEAST operational effort?:	
+    You would use a mask prompt to cover an object in an image. For example, a mask prompt can cover water in an image. However, this solution does not prevent the unwanted images from being generated.
+
+    SageMaker AI is an ML service that you can use to build, train, and deploy ML models. You can use SageMaker AI to create a model to generate images. This solution requires additional operational effort to set up the SageMaker AI environment, collect and prepare a dataset, and train the model.
+
+    You can use a negative prompt to instruct a model on certain concepts, images, or words that you do not want to be generated in the output. You can use a negative prompt of water skiing to instruct the model not to generate water skiing images.
+
+
+    You can use Amazon Bedrock agents to build autonomous agents in an application. Agents orchestrate interactions between users, the foundation model (FM), software applications, or data sources. Amazon Bedrock agents cannot prevent unwanted images from being generated.
+    ✅ You can use a negative prompt
+
+
+An ML specialist incorporated a large language model (LLM) in a proof of concept. The ML specialist wants to reduce the response randomness of the model. Which change in inference parameter can reduce random responses?:	
+    Temperature is a parameter that you can use to increase or decrease randomness in responses. To reduce the temperature can reduce randomness in responses.
+
+    Top P is a parameter that you can use to increase or decrease the diversity of responses. To increase Top P increases response randomness.
+
+    Top K is a parameter that you can use to select the number of candidates with the highest probabilities. Top K does not reduce randomness in responses.
+
+     Max_length is a parameter that specifies the maximum number of characters in a response. To reduce the max_length parameter to a lower value will limit the length of responses. However, this solution does not reduce response randomness.
+    ✅ Lower the temperature inference parameter
+
+
+
+A company wants to use Amazon Bedrock to build a generative AI application for product advertising. The company wants to customize a foundation model (FM) by using unlabeled data to make the model more specialized.Which model customization technique will meet these requirements?:	 
+     Fine-tuning is a technique that uses labeled datasets to adapt model parameters for specific tasks. Fine-tuning can customize a model. However, fine-tuning requires annotated data with additional context.
+     
+     
+     RAG is a process that enhances large language model (LLM) outputs by referencing external knowledge bases. RAG can improve model performance. However, RAG does not customize an FM by using unlabeled data. RAG can augment model responses during inference. However, RAG does not modify the underlying model.
+     
+     Continued pre-training is designed to further train an FM by using unlabeled data. You can use continued pre-training to make the model more specialized to your specific domain or use case. An example of a use case is product advertising.
+	 
+    ✅ Continued pre-training of the foundation model using unlabeled domain-specific data
+
+A company wants to use large language models (LLMs) to produce code from natural language code comments.Which LLM feature will meet these requirements?:	
+
+    Text summarization is an LLM feature that generates concise summaries of input text. Text summarization focuses on extracting key points by capturing the most critical information and condensing long pieces of text from an existing corpus. Text summarization does not produce code from natural language code comments.
+	 
+     Text generation is an LLM feature that can produce code from natural language code comments. A model can use this capability to translate natural language instructions into machine code. Text generation can interpret the intent expressed in code comments. Then, text generation can output corresponding functional code.
+     
+     Text embeddings are meaningful vector representations of unstructured text. You can use text embeddings to capture semantic information and relationships in text. You cannot use text embeddings to produce code from natural language code comments.
+     
+     Text classification is an LLM feature that categorizes input text into predefined classes or categories. Text classification is useful for tasks such as sentiment analysis or topic categorization. Text classification does not generate code or translate between natural language and programming languages.
+     
+     ✅ Code generation from natural language (text-to-code)
+	 
+Which part of a prompt needs the user to provide information to set up the situation for the model?:	
+
+    An output indicator specifies the expected format or type of the model's response, such as "Human:" or "Assistant:". An output indicator does not provide situational information to set up the situation for the model.
+	 
+     The input is the specific question or task given to the model to respond to. The input does not provide the background information or situational context to frame the model's understanding.
+     
+     Instructions provide guidance to the model on how to formulate its response. An example of instruction is "Explain your reasoning." Instructions do not provide the background information or situational context to set up the scenario for the model.
+     
+     The context is the part of a prompt that provides external information or background to set up the situation for the model. Context provides the model with the necessary background information to understand and respond appropriately to the input. An example of context is "The following is a customer email that was received last week." This contextual information helps frame the model's understanding of the scenario.
+     
+     ✅ Context
+	 
+A company has audio files that need to be converted into text. Which AWS service will meet this requirement?	:
+
+     Amazon Polly is a service that can convert text to speech or audio. Amazon Polly does not convert speech or audio to text.
+     Amazon Lex is a service for natural language understanding and automatic speech recognition. You cannot use Amazon Lex to convert speech or audio to text.
+     Amazon Transcribe is a speech recognition service that converts speech or audio to text. Amazon Transcribe meets the requirements to convert audio files to text.
+     Amazon Comprehend is a service that you can use to identify key phrases, language, and sentiments within a document. You cannot use Amazon Comprehend to convert speech or audio to text
+     
+     ✅ Amazon Transcribe 
+	 
+A company wants to add conversational capabilities to its customer service system. The company needs flexible conversations that can connect to the company's existing systems. Which AI technology will meet these requirements? :
+    
+    A recommendation engine is an AI technology that you can use to provide personalized suggestions based on user data and behavior patterns. An example of a recommendation engine is Amazon Personalize. Recommendation engines are useful for enhancing customer experience. However, a recommendation engine does not provide the flexible conversational capabilities that you need for customer service. Recommendation engines do not engage in back-and-forth dialogue and connect to existing systems.
+
+    Speech recognition technologies convert spoken language into text. An example of a speech recognition service is Amazon Transcribe. Speech recognition can be a component of a conversational system. However, speech recognition by itself does not provide the flexible conversational capabilities that you need for customer service. Speech recognition does not understand context, generate responses, or connect to existing systems.
+	 
+    A chatbot is an AI technology that can add conversational capabilities to customer service applications. Amazon Lex provides chatbot capabilities. Chatbots can engage in flexible conversations, understand context, and connect to existing company systems. You can customize chatbots to handle a wide range of customer service scenarios. Therefore, chatbots provide the flexibility and integration capabilities that the company requires.
+      
+    Summarization is an AI technology that you can use to condense longer texts into shorter, concise versions while retaining key information. Summarization does not provide the conversational capabilities that you need for customer service. Summarization cannot engage in interactive dialogue. Summarization cannot understand context or connect to existing systems.
+    
+    ✅ Chatbot
+	  
+A medical company is developing an AI application. The company needs to store patient data locally to comply with regulations. The company wants to use Amazon S3 on Outposts to keep the data in the same country as the patient.Which data governance concept is the company using?:	  
+      
+    Data logging refers to the process of recording events, transactions, or activities within a system. Data logging has no direct relation to the physical location of data storage.
+
+    Data residency refers to the physical or geographic location where you store or process data. You can use S3 on Outposts to store patient data locally in the same country as the patient. Therefore, the medical company meets the data residency requirements
+
+    Data retention refers to the policy of maintaining and storing data for a specific period of time. Data retention does not address the requirement to store patient data locally in the same country.
+
+    Data protection focuses on methods to safeguard data from unauthorized access, corruption, or loss. Data protection is not related to the physical location of data storage.
+      
+      ✅ Data residency
+	  
+A car company wants to make an application for drivers. The application will summarize questions and answers from the car manual.Which AWS service can the company use to build this application?:	  
+      
+    Amazon Polly is a service that converts text to speech. Amazon Polly does not provide the capability to summarize questions and answers from a car manual.
+
+    Amazon Rekognition is a computer vision service that you can use to analyze images and videos. Amazon Rekognition does not have the capability to summarize text or answer questions from a car manual.
+
+    Amazon Personalize is a service that you can use to create personalized product recommendations and user experiences. Amazon Personalize does not provide the text summarization or question-answering capabilities you need to summarize a car manual.
+
+    Amazon Bedrock is a fully managed service that provides access to high-performing foundation models (FMs) through an API. Amazon Bedrock provides capabilities such as text summarization and question answering. You can use Amazon Bedrock language models to build applications that understand and generate human-like text. Therefore, this is the most suitable solution to create a question-answering application.
+
+    ✅ Amazon Bedrock
+
+A company notices that its model produces more accurate results when tested on one group of customers over another. The company wants to understand what is causing these results.Which AWS service can help identify the cause of the model's behavior? : 
+	   
+    SageMaker JumpStart provides pre-trained models to help you start using ML. SageMaker JumpStart does not detect bias on models.
+
+    SageMaker Model Monitor tracks the quality of deployed models and measures metrics such as data drift and model status. SageMaker Model Monitor does not detect bias on models.
+
+    If a model provides more accurate results for one group over another, then the model has bias. SageMaker Clarify detects bias in models and helps you identify the cause. Then, you can take corrective measures.
+
+    Amazon Bedrock Guardrails is a feature of Amazon Bedrock that you can use to filter and moderate inappropriate or unwanted content. Amazon Bedrock Guardrails do not provide insight into why a model has a different accuracy level for different customer groups.
+    
+    ✅ Amazon SageMaker Clarify
+       
+A sports company wants to broadcast sports programs with real-time captioning in many languages.Which solution will meet these requirements?:       
+    Amazon Transcribe is a speech recognition service that converts audio to text in real time. Amazon Translate is a machine translation service that can translate text into multiple languages quickly. This solution meets the requirement for real-time captioning in many languages for sports broadcasts. Amazon Transcribe converts the live sports commentary to text. Then, Amazon Translate translates the text into multiple languages simultaneously. This solution provides multi-language captioning in real time.
+
+    Amazon Translate is designed for text translation, not speech-to-text conversion. You can use Amazon Transcribe to convert speech to text, not to translate text
+
+    Amazon Comprehend is a natural language processing (NLP) service that you can use to extract insights from text. You would not use Amazon Comprehend for translation. Amazon Polly is a text-to-speech service, not a speech-to-text service. Neither service can provide the real-time speech-to-text and translation capabilities that you need for multi-language sports broadcast captioning.
+
+    Amazon Polly is a text-to-speech service, not a translation service. Amazon Comprehend is a natural language processing (NLP) service. Amazon Comprehend cannot convert speech to text.
+    
+    ✅ Use Amazon Transcribe to convert live audio to text, then Amazon Translate to generate real-time captions in multiple languages.
+    
+A global company has built a generative AI application by using Amazon Bedrock foundation models (FMs). The company's highest priority is cloud security.According to the AWS shared responsibility model, which option is solely the customer's responsibility?:        
+    AWS customers are solely responsible for managing, securing, and encrypting their data. Additionally, AWS customers are solely responsible for using AWS Identity and Access Management (IAM) tools to apply appropriate permissions. The customer maintains control over who can access their applications that run on AWS and how customer data is protected.
+
+    AWS manages the physical networking setup and configuration as part of the underlying infrastructure for Amazon Bedrock and other AWS services.
+
+    AWS is responsible for the host operating system and virtualization layer. Amazon Bedrock is a fully managed service, so AWS manages the underlying infrastructure and host operating system.
+
+    Security and compliance is a shared responsibility, not a sole responsibility for AWS customers. AWS obtains and maintains compliance certifications for the underlying AWS services, including Amazon Bedrock. The customer is responsible for complying with applicable standards in their use of AWS services, but not for the certifications themselves.
+    
+    ✅ Managing and securing customer data (prompts, inputs, outputs) and configuring access controls for Amazon Bedrock
+        
+An AI practitioner has built various models by using Amazon SageMaker AI. The AI practitioner needs to present a governance audit for model risks to senior leadership.What can the AI practitioner do to present the governance information?:       
+
+    SageMaker Model Cards are designed to document model governance and risk information. You can use SageMaker Model Cards to explain the intended use case for a model before production and outline all governance aspects. SageMaker Model Cards provide a structured way to document model details, performance metrics, responsible AI practices, and potential risks. Therefore, SageMaker Model Cards are suitable for governance audits.
+
+    QuickSight is a business intelligence tool that you can use to create dashboards and visualize data. QuickSight dashboards are more suitable for visualizing operational metrics and business data. Visualizing key metrics in a QuickSight dashboard does not provide the required governance information.
+
+    You can use SageMaker Model Dashboard to access and monitor models that are currently running in your account or that are available for deployment. SageMaker Model Dashboard provides operational insights. However, SageMaker Model Dashboard does not provide the detailed documentation of model risks and governance aspects that you would need for an audit presentation.
+
+
+    You can use SageMaker AI endpoints to deploy and test models in production environments. Endpoints do not provide the necessary tools or format to present governance audits or explain model risks.
+    
+    ✅ Use Amazon SageMaker Model Cards to document and present model governance and risk information
+
+A financial company wants to evaluate a large language model (LLM) that is used for text summarization. The company wants to evaluate the quality of the summaries.Which metric will meet the requirement to assess the quality of generated text summaries?:        
+    BLEU is an evaluation metric that primarily evaluates machine translation quality. You cannot use BLEU to evaluate text summarization performance.
+
+    You can use mAP to measure model performance. You would typically use mAP for object detection models. The mAP metric does not apply to evaluating text summaries.
+
+    ROUGE is a set of metrics that you can use to evaluate the quality of machine-generated summaries. ROUGE can compare the summaries to human-written summaries. ROUGE measures characteristics such as coverage and relevance. Therefore, this solution is suitable to assess the text summarization in the scenario.
+
+    The F1 score is an evaluation metric that you can use to measure the predictive performance of a model. The F1 score combines precision and recall scores. You would typically use F1 scores for binary classification. You cannot use F1 scores to evaluate text summarization performance
+    
+    ✅ ROUGE is the appropriate metric to assess the quality of generated text summaries.
+          
+A company needs to predict whether a patient has a medical issue based on radiology images.Which ML technique will meet this requirement?:          
+    Time series modeling is a technique that you can use to analyze structured data that is collected over time. Time series modeling can identify trends and make predictions that vary over time. The scenario requires a technique that can process unstructured visual data.  
+
+    You can use NLP to analyze and understand human language in text or speech form. The scenario requires a technique that can process unstructured visual data.
+
+    Computer vision involves training algorithms to interpret and analyze visual information from images or videos. Computer vision can process the unstructured data in radiology images to identify patterns and features to predict medical issues.
+
+    Regression modeling can predict a numerical value or classification based on structured data inputs. The scenario requires a technique that can process unstructured visual data.
+    
+    ✅ Computer vision is the ML technique that can analyze radiology images to predict medical issues.
+          
+A company wants to use a language model to generate human-like text for marketing materials. The company wants to ensure that the generated text is relevant and aligned with the company's professional tone. Which solution will meet these requirements with the LEAST operational effort?:          
+    Prompt engineering carefully designs the input prompts to steer the language model's generation toward the desired output characteristics. Output characteristics can include tone, style, and content relevance. This solution aligns the generated text with the company's professional tone and marketing goals
+
+    Creating a custom language model is a complex and resource-intensive process that is not necessary for this use case. Prompt engineering by using a well-trained, ready-to-use language model would meet the requirements with less operational effort.
+
+
+    Postprocessing techniques can be useful to refine and filter generated text. However, you should use postprocessing techniques in conjunction with prompt engineering, not as a replacement. Prompt engineering can guide the model's generation toward the desired output characteristics.
+
+
+    Ensemble methods combine multiple models. Ensemble methods can improve performance in some use cases. However, ensemble methods do not directly address the need for professional tone alignment and relevant text generation. Prompt engineering is a more targeted approach to shape the output of a single language model to meet the requirements.
+    
+    ✅ Prompt engineering
+
+A company needs to train an ML model to predict the company's electricity load usage. The dataset includes electricity load, temperature, and cloud coverage. Which ML technique will meet these requirements?:
+ 
+    Supervised learning involves training a model on labeled data. This technique includes both input features (temperature, cloud coverage) and the target variable (electricity load). The model learns to predict the target based on the features. The scenario represents a regression problem. Regression is a type of supervised learning.
+
+    Reinforcement learning involves an agent learning from its environment through trial and error. The company's requirement is to predict electricity load based on known variables. The scenario does not include learning from interactions with an environment. The scenario does not involve an agent making decisions and receiving rewards. An agent making decisions and receiving rewards are key components of reinforcement learning.
+
+    You can use unsupervised learning when there is no labeled target variable. Unsupervised learning focuses on finding patterns or structures in data without predefined outputs. In the scenario, the company has a clear target variable (electricity load) that needs to be predicted based on known features (temperature, cloud coverage). The presence of a labeled target variable makes this a supervised learning problem, not an unsupervised learning problem.
+
+
+    NLP is a branch of AI that deals with the interaction between computers and human language. NLP processes and analyzes large amounts of natural language data. The company's requirement involves numerical data (electricity load, temperature, cloud coverage) rather than text or speech. Predicting electricity load based on numerical features is a task for traditional ML techniques, not NLP.
+    
+    ✅ Supervised learning is the appropriate ML technique for predicting electricity load using labeled numerical features.
+           
+What is Retrieval Augmented Generation (RAG)?:           
+    RAG can augment the generation process by retrieving information from a knowledge base to improve performance. You can use RAG to ground the generated responses to an external data source. RAG is not a prompting technique that enhances generalization.
+
+
+    RAG can augment the generation process by retrieving information from a knowledge base to improve performance. You can use RAG to ground the generated responses to an external data source. RAG is not a prompting technique that enhances generalization.
+
+    RAG can augment the generation process by retrieving information from a knowledge base to improve performance. RAG does not compress prompts to decrease processing time.
+
+    RAG is a process that retrieves and incorporates relevant information from external sources before generating a response. You can use RAG to improve a model's output with up-to-date or specialized knowledge.
+    
+     ✅ RAG is a process that retrieves and incorporates relevant information from external sources before generating a response, enabling LLMs to produce more accurate, grounded, and contextually relevant outputs—especially for specialized or up-to-date knowledge.
+           
+An AI practitioner wants to deploy a trained model that is used for consistent, live, interactive, and low-latency predictions.Which solution will meet these requirements?:           
+   
+    Real-time inference endpoints in Amazon SageMaker AI are specifically designed for live, interactive, and low-latency prediction requirements. You can use real-time inference endpoints to deploy a trained model to SageMaker AI and obtain an endpoint that you can use for real-time inference. Real-time endpoints provide the necessary infrastructure to handle immediate requests and return predictions with minimal latency.
+
+    Batch transform jobs are designed for offline processing of large datasets. Batch transform jobs generate predictions in bulk rather than in real time. This approach introduces latency and does not support interactive queries.
+
+    Serverless inference provides scalability and cost-efficiency for unpredictable request patterns. However, serverless inference can take up to 60 seconds to process requests. Serverless inference is not suitable for consistent, live interactive predictions.
+
+    SageMaker Feature Store is a fully managed repository that you can use to store, share, and manage features for ML models. You cannot use SageMaker Feature Store to deploy a model.
+   
+    ✅ Deploy the model using a real-time (synchronous) inference endpoint
+ 
+ Which components of the ML pipeline are performed during or after model training? (Select TWO.):          
+           
+    Data collection is part of the data processing phase. The data processing phase occurs before model training. Model training requires training data.
+
+    Feature engineering prepares the data to be suitable for model training. Feature engineering occurs before model training.
+
+    Hyperparameter tuning occurs during the model training stage. The goal of hyperparameter tuning is to generate better model versions. You can use different tuning strategies to automate the process of generating better model versions.
+
+    Model evaluation occurs after model training. Model evaluation includes model performance and success metrics. When you perform hyperparameter tuning, model evaluation compares the different produced models and selects the most suitable model and hyperparameter combination.
+    
+    ✅ Hyperparameter tuning
+    ✅ Model evaluation    
+A company uses Amazon SageMaker AI to build ML applications. The applications must meet the company's data privacy, infrastructure security, and compliance goals.Select the correct AWS service from the following list for each objective. Each AWS service should be selected one time. (Select FOUR.):
+
+    Amazon CloudWatch
+    AWS Identity and Access Management (IAM)
+    AWS Key Management Service (AWS KMS)
+    AWS PrivateLink
+         
+           
+A company is predicting next year's sales by using monthly sales data from the previous 2 years. The dataset is in CSV format and consists of the year, month, and corresponding sales total for each month. Which type of data is the company using?:           
+            
+    Structured data has a predefined schema and is organized in a tabular format. The company's dataset consists of clear fields. The fields include year, month, and sales total. The fields are arranged in a tabular structure. Each row represents a month's sales figures. The scenario describes structured data. Structured data has a fixed schema that you can query. The scenario describes data that you could store in a relational database or spreadsheet, which are common tools for structured data
+
+
+    Unstructured data lacks a predefined data model or organization. Examples of unstructured data include images, video files, and free-form text. The company's sales data has a clear structure with defined fields (year, month, sales total) in a tabular format. This organized, predictable structure is inconsistent with the characteristics of unstructured data.
+
+    Semi-structured data falls between structured and unstructured data. Typically, semi-structured data contains tags or markers to separate semantic elements but lacks the strict data model of structured data. Examples of semi-structured data include XML and JSON formats. The company's sales data has a structure with clearly defined fields (year, month, sales total) in a tabular format.
+
+    Text data typically refers to unstructured or semi-structured data in the form of written language. Written language includes documents, emails, or social media posts. The company's dataset consists of numeric and date values (year, month, sales total) that is organized in a tabular format. Structured, quantitative data would not contain natural language content.
+    
+    ✅ Structured data
+
+A company released a generative AI chatbot for its internal users. The chatbot uses Amazon Bedrock. The company wants to collect metrics and display the metrics on a dashboard that shows the input and output tokens generated for each interaction with the chatbot.Which service should the company use to build a metric dashboard?:
+
+    CloudWatch is a monitoring and observability service that provides metrics, logs, and dashboards for AWS resources and applications. CloudWatch integrates natively with Amazon Bedrock. Therefore, you can use CloudWatch to monitor Amazon Bedrock usage, set alarms, and visualize metrics in near real time. CloudWatch can collect and graph metrics such as input and output tokens for Amazon Bedrock. CloudWatch can display the metrics on customizable CloudWatch dashboards.
+
+    CloudTrail is a service that provides governance, compliance, operational auditing, and risk auditing of your AWS account. CloudTrail tracks API calls that are made to AWS resources. However, CloudTrail does not provide application-level metrics or customizable dashboards. CloudTrail cannot collect or display metrics on input and output tokens for Amazon Bedrock.
+
+    Trusted Advisor is a tool that provides guidance based on best practices to help you optimize cost, security, and the performance of your AWS infrastructure. Trusted Advisor does not support collection and visualization of metrics, such as Amazon Bedrock input and output tokens.
+
+    AWS Config is a service that helps you assess, audit, and evaluate the configurations of your AWS resources. AWS Config provides a view of the configuration and relationship of AWS resources in your account. AWS Config can show how resource configurations change over time. However, AWS Config does not collect or visualize application data or service metrics, such as input and output tokens for Amazon Bedrock.
+    
+    ✅ Amazon CloudWatch 
+
+
+A company wants to use a database to support a generative AI model. The model will create intelligent agents that provide conversational search experiences. Which AWS services will meet these requirements? (Select TWO.):            
+
+    Neptune is a fully managed graph database service that includes vector search capabilities. You can use Neptune to support a generative AI–based conversational search experience by using Retrieval Augmented Generation (RAG).
+
+    Amazon EKS is a managed Kubernetes service that you can use to deploy and manage containerized applications. Amazon EKS is not a database that supports generative AI–based conversational search
+
+    Amazon S3 is an object storage service that provides scalability, data availability, security, and performance. Amazon S3 is not a database service. Amazon S3 does not optimize search performance or provide the database querying capabilities that you need to support a generative AI–based conversational search.
+
+    OpenSearch Service is a managed service that you can use to deploy, operate, and scale OpenSearch clusters in the AWS Cloud. OpenSearch Service supports vector search. You can use OpenSearch Service to implement generative AI–based conversational search experiences by using Retrieval Augmented Generation (RAG).
+
+    Amazon EMR is a managed cluster platform that you can use to process vast amounts of data. Amazon EMR is not a database that can support generative AI–based conversational search.
+    
+    ✅ Amazon Neptune
+    ✅ Amazon OpenSearch Service
+
+A company wants to use a large language model (LLM) to generate concise, feature-specific descriptions for the company's products.Which prompt engineering technique will meet these requirements in the MOST operationally efficient way?           
+            
+    To create a single generic prompt for all products does not meet the requirement for feature-specific descriptions. This approach would likely generate broad, non-specific content that does not highlight the unique features of each product. Editing the responses afterwards adds unnecessary manual work and does not use the LLM's capabilities effectively. The scenario requires a technique to generate concise, feature-specific descriptions. Therefore, this solution does not meet the requirements.
+
+    You can create prompts for each product category that highlight key features to generate concise, feature-specific descriptions. You can include the desired output format and length in each prompt. This technique ensures that the LLM generates tailored, focused content for each product category. This solution is the most operationally efficient way to create feature-specific descriptions. This solution provides concise outputs by specifying the desired length.
+
+    You can include a diverse range of product features in each prompt to lead to creative descriptions. However, this technique does not meet the requirement for concise, feature-specific descriptions. This technique could result in overly lengthy or unfocused content that does not highlight the key features of each product effectively. The scenario requires concise descriptions.
+
+    You can manually create detailed, product-specific prompts. However, this solution is not an operationally efficient prompt engineering technique, especially if the company has many individual products. A more operationally efficient technique would be to create prompts for product categories. The level of detail included in a prompt does not ensure concise outputs. The scenario requires a technique that balances specificity with conciseness.
+    
+    ✅ Create prompts for each product category that highlight key features — this is the most operationally efficient and effective prompt engineering technique for the stated goal.
+
+
+            
+How do embeddings help improve the accuracy of large language models (LLMs)?:            
+            
+    Latency is determined by factors such as model architecture, computational resources, and hardware specifications. These factors are separate from the embedding process that captures semantic meaning. Embeddings do not directly influence the latency or speed of model results.
+
+    Embeddings provide contextual information to the model. Embeddings do not specifically influence the selection of lower-probability outputs. Embeddings help guide the model's understanding. However, embeddings do not directly manipulate output probabilities.
+
+    Embeddings can improve the accuracy of LLMs by encoding words into dense vectors that capture semantic meaning and relationships. When words are used in different contexts, the words' embedding vectors adjust to reflect varied meanings. Then, the LLMs can understand that the same word can have different implications based on the surrounding context. This contextual understanding is important for improving the model's accuracy in interpreting and generating language.
+
+    Embeddings do not function to stop token generation in LLMs. Instead of stopping token generation, embeddings provide contextual information to inform and improve the quality of generated tokens. Embeddings enhance the model's understanding of language. Embeddings do not limit the model's output.
+    
+    ✅ Embeddings improve LLM accuracy by capturing contextual and semantic relationships between words, enabling the model to interpret and generate language more intelligently.
+
+A company wants to evaluate a large language model (LLM) from Amazon Bedrock.Select the correct model evaluation type from the following list for each use case. Each model evaluation type should be selected one or more times. (Select FOUR.)
+Automatic model evaluation
+Human-in-the-loop model evaluation
+    Accuracy of the text summarization on the built-in dataset:           
+    Automatic model evaluation is the process of assessing the performance of an AI model by using predefined metrics, without direct human intervention. This approach uses quantitative metrics to evaluate the model's outputs. Quantitative metrics include accuracy, precision, recall, and F1 score. Automatic evaluation is well-suited for tasks where the correct outputs can be objectively determined. For example, in text summarization, sentiment analysis, or named entity recognition, the outputs can be objectively determined. You can use automatic model evaluation to evaluate the accuracy of text summarization and to evaluate the toxicity of text generation.
+
+    Human-in-the-loop model evaluation involves direct engagement of human evaluators to assess the performance of an AI model. This approach relies on human judgment and a subjective assessment of the model's outputs. This approach does not rely on automated metrics. Human-in-the-loop evaluation is particularly useful for tasks that require more nuanced or contextual understanding. An example of a nuanced task is evaluating the factual correctness, linguistic quality, or overall coherence of generated text. By incorporating human feedback, this evaluation method can provide a more comprehensive and qualitative assessment of the model's capabilities. You can use human-in-the-loop model evaluation to evaluate the factual correctness of generated responses and the linguistic quality of text generation.
+
+
+What is a primary purpose of having separate training, validation, and testing datasets in ML?:            
+            
+    In ML, data is typically split into three subsets- training, validation, and testing. You use the training set to fit the model parameters. You use the validation set to evaluate the performance of the model type on the training dataset while you tune hyperparameters. You use the testing set to evaluate the final model performance on unseen data.
+
+    Parallelizing the training process across multiple datasets can potentially speed up the training time. However, the purpose of having separate training, testing, and validation datasets is to evaluate the model's performance on unseen data and prevent overfitting. The purpose is not to improve training speed.
+
+    Ensemble methods combine multiple models that are trained on different subsets of data. However, ensemble methods are not the purpose of having separate training, testing, and validation datasets. The purpose of the separation is to ensure unbiased performance estimation and effective generalization to unseen data
+
+    You can apply preprocessing techniques to the entire dataset before splitting the data into training, validation, and testing sets. However, the purpose of the separation is to ensure unbiased performance estimation and effective generalization to unseen data.
+     
+    ✅ Correct Answer: To evaluate model performance on unseen data and prevent overfitting.
+    
+    
+
+ 
+     
+A company has built an ML model to categorize different products. The company wants to deploy the model to production. The company wants a solution with the least operational overhead to deploy to production.Which solution will meet these requirements?:
+    SageMaker AI endpoints provide a fast and efficient way to deploy ML models to production. SageMaker AI endpoints are fully managed, scalable, and require minimal setup. SageMaker AI endpoints provide quick deployment. SageMaker AI manages the infrastructure and scaling. Therefore, this solution reduces the operational overhead for deployment.
+
+    Amazon Personalize is a service that you can use to generate recommendations for users. Amazon Personalize offers endpoints. However, the endpoints are specifically designed for personalization use cases. You cannot use Amazon Personalize endpoints to deploy a model.
+
+    A solution that stores a model in Amazon S3 and calls the model locally is not a production-ready solution to deploy an ML model. This solution would require significant additional infrastructure and code to handle model serving, scaling, and management. This method is more suitable for local testing or development environments rather than production deployment.
+
+    SageMaker notebook instances are primarily designed for model development, experimentation, and testing. SageMaker notebook instances are not designed for production deployment of ML models. You can run a model on a notebook instance. However, this solution is not scalable or suitable for production workloads. This solution requires manual management and lacks the automated scaling and serving capabilities needed for a production environment.
+    
+    ✅ SageMaker AI endpoints provide the fastest, most reliable, and lowest-overhead path to production deployment.
+
+            
+A company has deployed its generative AI model to production. The company wants to know how the model adjusts to unexpected data patterns and user inputs over time.Which stage of the generative AI foundation model (FM) lifecycle does this represent?:
+
+    Model evaluation is the process of assessing a trained model's performance before deployment by using a separate test dataset. Model evaluation occurs before production deployment. In the scenario, production deployment has already occurred. Model evaluation does not observe the model's behavior on user input in production.
+
+    Model monitoring focuses on the performance and behavior of a model after the model has been deployed. The model is continuously evaluated as the model interacts with real-world data and users. You can use model monitoring to observe how a model adjusts to unexpected data patterns and user inputs over time. Model monitoring helps detect issues that might emerge in production. For example, model monitoring can detect data drift or unfairness issues.
+
+    Model deployment is the stage where a trained and tested model is integrated into a production environment and made available to end users. In this scenario, the model is in production. Therefore, model deployment has already occurred
+
+    Data preparation is an early stage in the ML lifecycle. During data preparation, you collect, clean, and label the data that you will use to train the model. This stage occurs before model training and deployment. In the scenario, production deployment has already occurred. Therefore in this scenario, the data preparation stage has already occurred. The company's interest in how the model adjusts to new data patterns is not related to the initial data preparation process.
+             
+    
+    ✅ Model monitoring is the stage that involves observing how a deployed generative AI model adapts to unexpected inputs and evolving real-world conditions over time.
+    
+A company is building a chatbot application by using Amazon Bedrock. The company wants to avoid toxicity in the chatbot responses. The company wants to add safeguards before releasing the chatbot application to the public.Which feature of Amazon Bedrock can help filter out harmful and offensive content?:             
+             
+    You can use Amazon Bedrock agents to add autonomous agents to generative AI applications. You can use agents to orchestrate tasks and complete actions for end users. For example, you can query data sources, invoke knowledge bases, and make API calls. Agents cannot filter out harmful or offensive content.
+
+    You can use Amazon Bedrock knowledge bases to set up data sources for generative AI applications. Knowledge bases can help you build retrieval augmented generation (RAG) applications. You can use knowledge bases to securely connect foundation models (FMs) in Amazon Bedrock to your company data. Knowledge bases cannot filter out harmful or offensive content.
+
+    You can use custom models in Amazon Bedrock to adapt foundation models (FMs) to specific tasks and domains by using your own data. Model customization is helpful for domain-specific use cases. Model customization can help you improve performance and overall customer experience. Custom models cannot filter out harmful and offensive content.
+
+    You can use Amazon Bedrock guardrails to implement safeguards for your generative AI applications. Guardrails evaluate both user inputs and model responses to block unwanted topics, filter out harmful content, and avoid inappropriate language. You can use guardrails to configure custom safeguards based on the responsible AI policies of your company.
+             
+    ✅ Amazon Bedrock Guardrails is the feature designed to filter harmful and offensive content and enforce responsible AI behavior before public release.
+    
+An AI practitioner has built a deep learning model and wants to determine if the model is overfit.Which finding confirms that the model is overfit?:
+        A low gap between training and testing accuracy typically indicates a well-fitted model, not an overfit model. In an overfit model, you would typically see a significant difference between training and testing accuracy.
+
+        A high gap between training and testing accuracy is a strong indicator of overfitting. Overfitting occurs when the model performs well on the training data but performs poorly on unseen test data. Overfitting indicates that the model memorized the training set rather than learning generalizable patterns.
+        
+        ✅ A high gap between training and testing accuracy confirms that the model is overfit.
+
+Which method modifies the weights of a large language model (LLM)?:             
+
+    Prompt engineering is a technique that optimizes inputs to an LLM to improve outputs. This method focuses on designing effective prompts rather than modifying the model's internal weights
+
+    RAG is a process to enhance LLM outputs by incorporating external knowledge. RAG augments the model's context during inference without changing the model's weights.
+
+    Fine-tuning is a method that trains an existing model on a specific dataset to improve performance for a particular task or domain. Fine-tuning alters the model's internal weights.
+
+    Chain of thought is a prompt engineering technique. Chain of thought processes complex questions as a series of small tasks that mimics a reasoning process. This technique enhances the model's output quality during inference without changing its internal weights.
+       
+    ✅ Fine-tuning   
+             
+
+A company's employees provide product descriptions and recommendations to customers when customers call the customer service center. These recommendations are based on where the customers are located. The company wants to use foundation models (FMs) to automate this process.Which AWS service will meet these requirements?:            
+             
+    Macie is a fully managed data security and data privacy service. Macie uses ML and pattern matching to discover and protect sensitive data. Macie does not provide access to FMs that you can use to generate product descriptions and recommendations based on customer location. 
+
+    Amazon Transcribe is an automatic speech recognition service that uses ML models to convert audio to text. Amazon Transcribe does not provide access to FMs that you can use to generate product descriptions and recommendations based on customer location.
+
+    Amazon Bedrock is a fully managed service that you can use to access high-performing FMs. You can use Amazon Bedrock to access an FM that generates product descriptions and recommendations based on customer location.
+
+    Amazon Textract is an ML service that automatically extracts text, handwriting, and data from scanned documents. Amazon Textract does not provide access to FMs that you can use to generate product recommendations based on customer location.
+       
+
+    ✅ Amazon Bedrock    
+            
+A financial company wants to build a model to perform trend analysis. The company requires a high level of transparency and interpretability to understand how the model arrives at predictions.Which model provides the MOST interpretability?:            
+            
+    Linear regression models are highly interpretable because the model's coefficients directly represent the relationship between each feature and the target variable. Therefore, linear regression models provide a clear understanding of how the model arrives at its predictions
+
+
+    Deep neural networks are complex models that are often difficult to interpret and explain. Deep neural networks can achieve high performance. However, deep neural networks often lack transparency into how the model arrives at its predictions.
+
+
+    RCF models are ensemble models that combine multiple decision trees. Therefore, RCF models are less interpretable than simpler models like linear regression. You can explain RCF models through feature importance scores. However, understanding the exact relationship between features and the target variable is more challenging.
+
+
+    K-NN models are instance-based learning algorithms that can be difficult to interpret. K-NN models are especially difficult to interpret when you have high-dimensional data or non-linear relationships. You can explain k-NN models through feature importance scores. However, understanding the exact relationship between features and the target variable is more challenging.
+
+
+    ✅ Linear regression models provide the highest level of transparency and interpretability, making them ideal for financial trend analysis where understanding model reasoning is critical.
+
+A company is developing an ML model to predict customer turnover. The model performs well on the training dataset but does not accurately predict turnover for new data.Which solution will resolve this issue?:
+    Overfitting occurs when a model performs well on training data but poorly on new data. Regularization is an optimization technique that you can use to reduce overfitting. Decreasing the regularization parameter would increase model complexity. Therefore, this solution is the opposite of what you need to address the overfitting issue. Increasing model complexity would likely make the overfitting issue worse
+
+    The model's poor performance on new data despite good performance on training data is a sign of overfitting. Regularization is an optimization technique that you can use to reduce overfitting. Increasing the regularization parameter decreases model complexity. Therefore, this is the appropriate solution to address the overfitting issue. By increasing regularization, you constrain the model. Therefore, you reduce the model's tendency to overfit to the training data and improve the model's ability to generalize to new, unseen data.
+
+    Overfitting occurs when a model performs well on training data but poorly on new data. Adding more features to the input data is not likely to resolve the overfitting issue. This action could make the issue worse by increasing model complexity. When a model is already overfitting, adding more features can make the model even more likely to memorize the training data rather than learn generalizable patterns.  
+
+    Training the model for more epochs would not resolve the overfitting problem. When a model is already overfitting, additional training epochs are likely to further overfit the model to the training data. This action could make the issue worse rather than resolving the issue. The model would be even less capable of generalizing to new data.
+    
+    ✅ Increase the regularization parameter
+
+Formatting and data cleansing occur during which phase of the ML lifecycle?:          
+    In the business goal identification phase, you outline the problem that you need to solve, identify the business value, define the success criteria, and evaluate whether to proceed.
+
+    In the model development phase, you train, tune, and evaluate the ML model. During training, you provide the ML algorithm with training data to learn from. Hyperparameters tuning, or tuning, is the process of finding the most suitable set of hyperparameters for your model. For each model that you train, you will evaluate its performance against the test dataset by using the model evaluation metrics that you identify.
+
+    The data preprocessing phase of the ML lifecycle includes data collection and data preparation tasks. During data collection, you identify and collect the data that you need to train the model. During data preparation, you preprocess your data to address any data formatting or data cleansing issues. Issues could include missing values or outliers. Feature engineering is also part of data preparation.
+
+    The deployment phase of the ML lifecycle is when you deploy your trained model to production to make predictions on new data. Before you deploy your model to production, you must determine the inference method and the deployment strategy that you want to use.
+     
+    ✅ Data preparation (data preprocessing) phase   
+
+A company uses a foundation model (FM) on Amazon Bedrock for text summarization. The company wants to check the accuracy, robustness, and toxicity of the FM.Which Amazon Bedrock feature or resource can assess the FM to meet these requirements?:
+  
+    You can use Amazon Bedrock Agents to orchestrate multi-step tasks. Agents can build solutions that take actions based on a large language model's reasoning. You would not use Amazon Bedrock Agents to assess model performance. Agents do not provide metrics on the accuracy, robustness, or toxicity of FMs.
+
+    Amazon Bedrock model evaluation job report cards can assess FMs based on metrics. The metrics include accuracy, robustness, and toxicity. This feature addresses the requirement to check the specific aspects of a text summarization model. Report cards offer detailed insights into model performance through programmatic evaluation.
+
+    You can use Amazon Bedrock custom models to deploy your own ML models on Amazon Bedrock. Custom models do not provide built-in evaluation capabilities to assess the accuracy, robustness, and toxicity of FMs.
+
+    You can use Amazon Bedrock inference parameters to configure and fine-tune model behavior during inference. Behaviors can include adjusting temperature or Top K sampling. These parameters do not provide evaluation metrics or assessment capabilities for accuracy, robustness, and toxicity.
+    
+    ✅ Amazon Bedrock model evaluation job report cards can assess FMs based on metrics. The metrics include accuracy, robustness, and toxicity. This feature addresses the requirement to check the specific aspects of a text summarization model. Report cards offer detailed insights into model performance through programmatic evaluation
+             
+A music company wants to build a system to search for songs by the meaning of the lyrics.Which solution will meet this requirement?:             
+    QuickSight is a business intelligence and data visualization service. You cannot use QuickSight to perform semantic search or meaning-based search of song lyrics.
+
+
+    OpenSearch Service provides scalable vector storage and search capabilities. You can use the vector capabilities to build advanced search experiences. You can create vector embeddings from lyrics and use OpenSearch Service to search for songs by the meaning of the lyrics. Vector embeddings can capture semantic relationships in text. Therefore, the searches can be based on the meaning of lyrics.
+
+    Amazon Lex is a fully managed AI service that you can use to build conversational interfaces. Creating tokens from lyrics can be useful in some contexts. However, Amazon Lex does not have capabilities to search for songs based on the meaning of lyrics.
+    
+    ✅ OpenSearch Service provides scalable vector storage and search capabilities. You can use the vector capabilities to build advanced search experiences. You can create vector embeddings from lyrics and use OpenSearch Service to search for songs by the meaning of the lyrics. Vector embeddings can capture semantic relationships in text. Therefore, the searches can be based on the meaning of lyrics.
+
+Which statement describes Amazon SageMaker JumpStart?:             
+    SageMaker JumpStart is a hub with models, built-in algorithms, and prebuilt ML solutions. SageMaker JumpStart is not a compute or storage service.
+
+    SageMaker JumpStart is a hub with models, built-in algorithms, and prebuilt ML solutions. You can use SageMaker JumpStart to select the best solutions for your specific use case.
+
+    SageMaker JumpStart is a hub with models, built-in algorithms, and prebuilt ML solutions. SageMaker JumpStart does not provide an interface to manage code and scripts. Instead, SageMaker Notebooks provides an interface to manage code and scripts.
+
+    SageMaker JumpStart is a hub with models, built-in algorithms, and prebuilt ML solutions. The SDK that supports the code experience on SageMaker is the SageMaker Python SDK.
+              
+    ✅ Final Answer:
+    “SageMaker JumpStart is a hub with models, built-in algorithms, and prebuilt ML solutions. You can use SageMaker JumpStart to select the best solutions for your specific use case.”
+
+A company wants to teach its new ML practitioners reinforcement learning in an interactive and virtual environment.Which AWS service will meet these requirements?:              
+    
+    AWS DeepRacer is a service that teaches reinforcement learning in an interactive, virtual environment. AWS DeepRacer provides new ML practitioners with hands-on experience by using fully autonomous 1/18th scale race cars. Users can train and evaluate reinforcement learning models in a 3D racing simulator.
+
+    Amazon Comprehend is a natural language processing (NLP) service that uses ML to find insights and relationships in text. Amazon Comprehend does not provide an interactive environment for reinforcement learning.
+
+    PartyRock is a platform that you can use to experiment with generative AI models and prompt engineering without coding. PartyRock provides an interactive environment. However, PartyRock is not specifically designed to teach reinforcement learning. PartyRock focuses on generative AI rather than reinforcement learning techniques.
+
+    Amazon Q Developer is an AI-powered coding companion that provides code suggestions and recommendations. Amazon Q Developer does not provide an interactive environment for reinforcement learning.
+       
+    ✅ Correct Answer: AWS DeepRacer
+       
+                
+A company made a chatbot for an online grocery store. The company trained the chatbot by using historical customer questions. The company wants the chatbot's responses to adhere to current store policies. Which solution will meet these requirements?:                
+                
+    Unsupervised learning is an ML technique that finds patterns in unlabeled data. Unsupervised learning does not provide a mechanism to ensure the chatbot adheres to specific store policies.
+
+    Anomaly detection is a technique that you can use to identify unusual patterns that do not conform to expected behavior, such as outliers or unexpected responses. Anomaly detection does not provide a way to train a chatbot to follow specific store policies.
+
+    RLHF is a technique that can help the chatbot learn and improve its responses based on human input. By incorporating human feedback, you can train the chatbot to align its responses with the specific rules and guidelines of the online grocery store.
+
+    Artificial neural networks are a class of ML models that are inspired by biological neural networks. Artificial neural networks are useful for various tasks, including natural language processing (NLP). However, artificial neural networks do not ensure adherence to specific rules or policies.
+    
+    ✅ Correct Answer: RLHF (Reinforcement Learning from Human Feedback)
+                
+                
+A food company wants to use generative AI to automatically generate individualized targeted marketing based on a product catalog and customer profiles.Which solution will meet these requirements?  :          
+    
+    Amazon Bedrock standalone third-party FMs operate on general knowledge and can generate text. A third-party FM would not have access to the company's internal product catalog. You need the product catalog to generate accurate and relevant product descriptions.
+
+    A data lake provides a centralized repository to store structured and unstructured data. A data lake does not provide generative AI capabilities to create product descriptions based on the internal product catalog.
+
+    Implementing human-in-the-loop monitoring can improve data quality and accuracy. You can use this solution for data labeling or quality control. However, this method does not use generative AI to automatically create product descriptions
+
+    Amazon Bedrock knowledge bases use Retrieval Augmented Generation (RAG). RAG allows FMs to access a company's private data sources. By using RAG, the system can deliver more relevant, accurate, and customized product descriptions. The descriptions can be tailored to the products by using data from the internal product catalog. This solution automates the description generation process and ensures that the output is based on the company's proprietary data.
+            
+    ✅ Final Answer: Use Amazon Bedrock knowledge bases with RAG to enable generative AI that leverages internal product and customer data for targeted marketing.
+
+A company needs to obtain AWS security and compliance documents for Amazon Bedrock.Which AWS service provides these documents?:
+   
+   AWS Artifact provides access to AWS security and compliance documents, including documents for Amazon Bedrock. You can use AWS Artifact to download AWS security and compliance documents on demand. The documents can demonstrate the security and compliance of AWS infrastructure and services to auditors or regulators.
+
+    AWS Config assesses, audits, and evaluates the configurations of AWS resources. AWS Config can help with compliance monitoring by tracking resource configurations and changes. However, AWS Config does not provide access to AWS security and compliance documents.
+
+    Amazon Inspector is a vulnerability management service that continuously scans AWS workloads. The possible workloads include Amazon EC2 instances, container images in Amazon Elastic Container Registry (Amazon ECR), and AWS Lambda functions. Amazon Inspector scans for software vulnerabilities and unintended network exposure. Amazon Inspector does not provide access to AWS security and compliance documents.
+
+    Trusted Advisor is a service that provides recommendations on how to optimize AWS environments for cost, performance, security, fault tolerance, and service quotas. Trusted Advisor provides some security-related recommendations. However, Trusted Advisor does not provide access to AWS security and compliance documents. The main purpose of Trusted Advisor is to offer best practice recommendations, not to serve as a repository for compliance documentation.
+	 
+    ✅ Final Answer: AWS Artifact 
+
+A company wants to build an ML model to make predictions. The model's predictions must be interpretable.Which type of model has the HIGHEST interpretability?:
+                    
+    Linear regression models use a linear function to model the relationship between input features and output. Therefore, this model type helps you understand how each feature impacts the prediction. The coefficients directly indicate the influence of each feature. Therefore, this model type provides clear interpretation of the model's decision-making process.
+
+    Neural network models have low interpretability compared to linear regression models. A neural network model can capture complex patterns. However, neural networks have a multilayered structure and non-linear transformations. With neural network models, it is difficult to understand how specific inputs lead to particular predictions.
+
+    Models that use ensemble methods have low interpretability compared to linear regression models. Ensemble methods models combine multiple models. Individual models can be interpretable. However, the aggregation of many models makes it difficult to understand the overall decision-making process.
+
+    LLMs have very low interpretability. LLMs are based on complex transformer neural network architectures with billions of parameters. Therefore, it is extremely difficult to understand how an LLM arrives at specific predictions or outputs
+                    
+    ✅ Correct Answer: Linear regression models
+
+
+
+A company wants to use Amazon Bedrock to summarize customer documents that are in the company's database.Which metric will evaluate the accuracy of the summaries?:
+                    
+    BERTScore is a metric that you can use to evaluate the semantic similarity of text samples by comparing human-generated text to model-generated text. BERTScore uses pre-trained contextual embeddings from BERT models to calculate similarity between candidate and reference sentences. BERTScore can capture semantic similarities beyond exact word matches. Semantic similarities are important for evaluating summaries.
+
+    RMSE is a metric that you can use to evaluate numeric predictions. You would typically use RMSE in regression problems. RMSE measures the standard deviation of residuals (prediction errors). RMSE is not suitable for assessing the accuracy of text summaries
+
+    Toxicity is a metric that you can use to assess the level of toxicity in content from model outputs. The toxicity metric identifies potentially harmful or offensive content. Toxicity does measure how well a summary captures the key information from original customer documents.
+
+    MAPE is a metric that you can use to evaluate the accuracy of numeric predictions. You would typically use MAPE in time series forecasting or regression problems. MAPE expresses accuracy as a percentage of the error. The percentage of the error is not applicable to text summaries.
+    ✅ BERTScore 
+
+Which prompt engineering technique involves providing a model with examples of the desired input/output mapping before asking the model to perform the task?:
+                    
+    Zero-shot prompting provides a model with a detailed prompt that describes the task or desired output. However, zero-shot prompting does not provide any additional training data that is specific to that task. The model uses preexisting knowledge and understanding of language to generate appropriate responses or outputs based solely on the prompt. Zero-shot prompting does not provide any examples to the model.
+
+    Few-shot prompting provides a small number of examples to a language model to help the model understand the desired task before asking the model to generate outputs. This technique can improve performance compared to zero-shot prompting where no examples are given.
+
+    Chain-of-thought prompting is a technique where a model is prompted to break down a complex problem into a series of steps or "thoughts" before arriving at a final answer. Chain-of-thought prompting asks the model to show its step-by-step reasoning process.
+
+    ReAct prompting combines reasoning (Re) and action (Act). ReAct prompting provides explanations in a chain-of-thought format and associates the model's understanding with a task. An example of a task is an external REST API integration. ReAct prompting does not provide examples to the model before asking the model to perform a task.
+    ✅ Few-shot prompting
+    
+                    
+A company wants employees to train and supervise an AI system. The company wants employees to give feedback and validate AI responses.Which strategy will meet these requirements?:       
+
+    Unsupervised learning is a type of ML where algorithms find patterns in unlabeled data. This strategy would not involve humans labeling data. This strategy would not provide human feedback or validation of AI responses.  
+
+    Human-in-the-loop is a strategy that uses human inputs to improve decision-making across the ML lifecycle. You can use this strategy during data annotation and model output validation. By using this strategy, you can provide feedback and validate AI responses.
+
+    Sentiment analysis is a technique that you can use to determine the emotional tone of a piece of text. This technique would not provide employee feedback or validation of AI responses.
+
+    Entity recognition is a natural language processing (NLP) technique that identifies and classifies named entities in text. Entity recognition is also known as named-entity recognition. Entity recognition does not require you to train, supervise, or provide feedback on a model.
+    ✅ Final Answer: Human-in-the-loop              
+
+
+An online travel agency wants to give travel recommendations to customers by using AI. The agency wants to use a foundation model (FM) and the agency's data on traveler patterns.Which option is an advantage of using the FM with the agency's data? 
+
+    Personalization is a key advantage of using an FM with the agency's own data on traveler patterns. For an online travel agency, you can combine the FM with customer-specific data to provide highly personalized travel recommendations. Customer-specific data includes past trips, web histories, and travel preferences. This option provides a unique and tailored customer experience.
+
+    Producing creative marketing content is a potential use case for generative AI applications. However, this option does not address the travel agency's goal to provide personalized travel recommendations to customers. The scenario requires an FM with the agency's traveler pattern data. Therefore, improving customer experience through personalization is an advantage of using an FM.
+
+    Boosting employee productivity with code creation is a potential benefit of generative AI. However, this option does not relate to the travel agency's goal to provide travel recommendations to customers. The scenario requires using the FM with the agency's data on traveler patterns.
+
+    Removing the need to collect customer data would not be an advantage because the agency's proprietary data is used to create personalized recommendations. The combination of the FM and agency-specific data is necessary to meet the requirements.
+    
+    ✅ Correct Answer: Personalization is a key advantage of using an FM with the agency's own data on traveler patterns.
+    
+    
+An AI practitioner is generating a prompt for a large language model (LLM). The problem requires complex, multi-step reasoning.Which prompt engineering technique should the AI practitioner use to meet these requirements?:
+                
+    You can use chain-of-thought prompting for complex, multi-step reasoning in LLMs. This prompting technique breaks down complex tasks into intermediate reasoning steps. Then, the model can solve the problem logically. Chain-of-thought prompting guides the LLM to show its work, rather than solely providing a final answer. Therefore, this solution is suitable for problems that require detailed reasoning.
+
+    Zero-shot prompting involves asking the model to perform a task without any examples or prior context. You cannot use zero-shot prompting to produce the detailed, step-by-step reasoning to meet the requirements.
+
+    Prompt templates provide a standardized format for prompts. Prompt templates can improve consistency in model output. Prompt templates do not guide a model through complex logical steps.
+
+    RAG is a technique that gives an LLM access to external knowledge sources before generating a response. You can use RAG to improve the accuracy and breadth of knowledge in responses. RAG enhances the model's knowledge base. However, RAG does not guide the model through the process of breaking down and solving complex problems step by step.
+    
+    ✅ Chain-of-thought prompting
+    
+
+A startup company is using AWS services for its software development lifecycle. The company wants to use generative AI services to optimize programming productivity and to decrease time to market for the company's applications.Which combination of steps will meet these requirements? (Select TWO.):
+
+    Amazon Comprehend is a natural language processing (NLP) service that analyzes documents and extracts key information. You cannot use Amazon Comprehend for real-time code suggestions.
+
+    Amazon Q Developer is a generative AI assistant that generates code suggestions based on natural language comments. Amazon Q Developer can edit, scan, and optimize pre-existing code. Amazon Q Developer can create in-line suggestions or entirely new code content. You can use Amazon Q Developer to assist with programming efforts and to optimize productivity to decrease development time.
+
+    Amazon Fraud Detector is a service that automatically detects fraudulent activity. Amazon Fraud Detector uses custom fraud-detection models that are tailored to your data. Amazon Fraud Detector does not provide built-in security scans. With Amazon Fraud Detector, you need to provide data to build a model
+
+    Amazon Q Developer is a generative AI assistant that generates code suggestions based on natural language comments. Amazon Q Developer can scan pre-existing code for potential security or code quality issues. Then, Amazon Q Developer can suggest possible solutions. You can use the built-in security scans without extra steps or configuration. Therefore, Amazon Q Developer can optimize productivity and decrease development time.
+
+    Amazon Rekognition is a service that uses computer vision to analyze images and videos. Amazon Rekognition does not use generative AI or assist with coding productivity.
+    
+    ✅ Final Answer: The two statements about Amazon Q Developer (code generation and built-in security/code quality scanning).
+
+A company built an AI application by using Amazon Bedrock. The company needs to check if the application is in compliance with regulations.Which AWS service or feature checks if AWS resources comply with regulations?:
+                
+    Amazon Bedrock Guardrails is a feature of Amazon Bedrock that implements content safeguards and filters to remove undesirable content from AI model output. Amazon Bedrock Guardrails does not automatically check if your AWS workloads are in compliance with regulations
+
+    Amazon Bedrock model evaluation is a feature that you can use to evaluate and compare the performance of large language models (LLMs). Model evaluation can evaluate and compare tasks such as text generation and classification. Amazon Bedrock model evaluation does not automatically check if your AWS workloads are in compliance with regulations.
+
+    Audit Manager is a service that checks if AWS resources comply with regulations. Audit Manager provides a prebuilt framework specifically for auditing generative AI applications that are built by using Amazon Bedrock. Audit Manager audits against AWS best practices and regulatory requirements. You can use Audit Manager to automate compliance audits of AI workloads on AWS, including tracking model usage, flagging sensitive data, and alerting on compliance.
+
+     AWS Artifact provides on-demand access to AWS security and compliance documentation. AWS Artifact does not automatically check if your AWS workloads are in compliance with regulations.
+     ✅ Final Answer: Audit Manager is the AWS service that checks if AWS resources
+ 
+An online gaming company wants to introduce a new AI character in its fantasy game. The company wants to base the character on a well-known actor's voice and likeness. Which issue should concern the company?:
+
+    The company should be concerned that it is using an actor's voice and likeness without consent. The AWS Responsible AI Policy prohibits depicting a person's voice or likeness without their consent or other appropriate rights, including unauthorized impersonation
+
+    The actor's appearance in TV advertisements is not relevant to the decision of whether to use the actor's voice and likeness in a game. The main issue is the use of the actor's voice and likeness without obtaining permission.
+
+    The actor's known genre of work (comedies) is not relevant to the decision of whether to use the actor's voice and likeness in a game. The main issue is the use of the actor's voice and likeness without obtaining permission.
+
+    The actor's changing hairstyle or multilingual abilities is not relevant to the decision of whether to use the actor's voice and likeness. The main issue is the use of the actor's voice and likeness without obtaining permission.
+    
+    ✅ Correct Answer: The company should be concerned that it is using an actor's voice and likeness without consent. The AWS Responsible AI Policy prohibits depicting a person's voice or likeness without their consent or other appropriate rights, including unauthorized impersonation.
+
+
+A research company wants to develop a text summarization application that can ingest multiple research papers and summarize the research papers. The company wants to use an Amazon Bedrock foundation model (FM). The company wants to summarize the research papers in a single model call. The FM must be able to accept large inputs in a single prompt.Which model factor should the company consider before selecting an FM for this task?:
+
+    Vocabulary size refers to the number of unique words that an FM can understand. However, vocabulary size does not directly impact the model's ability to handle large inputs in a single prompt. FMs typically have large vocabularies. However, this factor is not the most relevant for summarizing multiple research papers in one call. The scenario relates to the model's input capacity rather than its vocabulary.
+
+    Model complexity generally refers to the architecture and number of parameters in an FM. A more complex model might have better performance for certain tasks. However, complexity does not necessarily correlate with the ability to accept larger inputs in a single prompt. The scenario requires a model that can handle long inputs rather than a complex architecture.
+
+    Model latency refers to the speed at which an FM can process inputs and generate outputs. Latency is important for overall performance. However, latency does not directly affect the model's ability to handle large inputs in a single prompt. The scenario relates to input capacity rather than processing speed.
+
+    The context window is the amount of text an FM can consider at once when generating an output. The context window directly impacts the model's ability to ingest and process large amounts of text in a single prompt. To summarize multiple research papers in one call, you need a larger context window. With a larger context window, the model can take in more text at once. Then the model can summarize multiple papers without splitting the input across multiple prompts.
+    ✅ Final Answer: The context window is the key model factor to consider.
+             
+An AI practitioner is testing a model that is hosted on Amazon Bedrock. The AI practitioner has prompted the model to require only the first token that the model returns. The rest of the response is always unneeded.What should the AI practitioner do to return only the first token?:
+
+    Response length is a parameter that specifies the exact number of tokens to return in the generated response. By setting the response length to 1, you ensure that the model returns only the first token.
+
+    Temperature is a parameter that affects the randomness of the model's output by influencing the probability distribution of token selection. Temperature can impact the model's creativity by controlling the likelihood of selecting lower-probability outputs. Changing the temperature is not related to the response length.
+
+    Top P is also known as nucleus sampling. Top P specifies the percentage of most likely candidates that the model considers for the next token. You can use this parameter to control the diversity of the output. You cannot use this parameter to limit the output length to a single token.
+
+    Top K is a parameter that specifies the number of most likely candidates that the model considers for the next token. This parameter affects token selection diversity. This parameter does not directly control the response length
+
+    Asynchronous inference is suitable for workloads that have a large payload of up to 1 GB or long processing times of up to 1 hour. You should use asynchronous inference for a data preprocessing job that requires the model to process megabytes of data without the need for an immediate response. Asynchronous inference is suitable when the workload does not require immediate responses and can be processed in batches.
+
+    Serverless inference is suitable for workloads that have idle periods of requests and that can handle cold starts. With serverless inference, you do not need to manage the underlying infrastructure. Serverless inference is designed to handle unpredictable traffic patterns. Serverless inference automatically scales based on the incoming traffic. You should use serverless inference to process predictions for near real-time requests without managing or scaling compute instances.
+    
+    ✅ Correct Answer: Response length is a parameter that specifies the exact number of tokens to return in the generated response. By setting the response length to 1, you ensure that the model returns only the first token.      

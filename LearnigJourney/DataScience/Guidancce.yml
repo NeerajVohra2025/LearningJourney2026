@@ -1,0 +1,32 @@
+Business Analyst:
+    Understand the business, BA team always with Delivery Team
+Data Analyst: 
+    Analysis the historical Data
+Data Scientist:
+   Predict the future, to predict the future data --machine learning algorithim
+MAchine Learning:
+   Machine Learn from historical data,enable system to learn from data.
+   using algorithim, e.g regression, classification and clustering 
+Deep Learning:
+   Model Complex Patterns with neural networks ( Image/Video can't be trainned using ML)
+   Neural networks, CNNs, RNNs, transformers
+Artificial Inteligence:
+   Simulate human inteligence (given by God) in machines
+LLM:
+  Understand and generate human-like language
+  text generation, embedding
+  Hugging Face, OpenAI API, Langchain
+Generative AI:
+  Generate new Contents(text,image,code,audio)
+  Text(LLM),Image(Diffusion),Code,Embedding
+Prompt Engineering:
+  Optimize prompts to guide LLM effectively
+  Language Instructions,tokens, few shots, chain of thoughts
+  OpenAI , Anthropic
+Agentic AI:
+    Build autonomous agents that plan ,reason,and act
+    Memory,planning,tools,decision-making,autonomy
+    LangGraph,CrewAI,OpenAI Agent SDK,AWS Bedrock
+    
+    
+    

@@ -1,0 +1,46 @@
+How LLM Works:
+ LLM generates next token ,How does LLM decide when to stop?:
+    max length
+    provide stop sequece
+    software system rules
+    user defined stop sequence ####
+    
+ if LLM makes a mistake and I correct it , will it update itself immediately:
+ 
+ If the LLM repeatedly generates one token at a time based on the current conversation, why I have seen it use information from a prior conversation (say from 1 week ago) in a response:
+ 
+ I understand that LLM have training cutoff date, and they don'y know about things that happened after that date. However they can answer quesions about events that happened after the cutoff date. How does this works:
+ 
+ If I include documents as part of prompt, can I ensure that the LLM uses only the provided documents when I generate the response? For example, If I upload a corporate expense policy document and ask a quesion, can I ensure that it uses only this document and not the policy documents found on the web that is happened to be traineed on:
+ 
+ LLM sometimes cite the sources that were used to generate the answer to a quesion. If an answer comes with supporting citation can I trust it?:
+ 
+ When we have many documents, we use RAG, where we first gather relevant information from documents and include only those in the prompt but modern LLM have long context windows,and we can easily incluse all the documents, Is RAG even necessary?:
+ 
+ Can LLM hallucinations be eliminated?:
+ 
+ Since LLM hallucinations and mistakes cannot be eliminated, we need to check the answers, How can we do this efficiently?:
+ 
+ We are building an LLM based cahtbot and would like to gurantee that its answer to a quesion stays unchanged when different users ask the same quesion?Is this possible?:
+ ######################################################################################################################
+ 
+ Trigger Node:
+ Action Node:
+ Cluster Node: group of nodes
+    root node
+    sub-node
+    
+On Chat Complition
+AI Agent
+   Google Gemini
+   Memory
+   Tools
+    Hacker News
+    
+    
+        
+ 
+ 
+ 
+ 
+  

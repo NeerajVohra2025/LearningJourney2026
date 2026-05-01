@@ -1,0 +1,54 @@
+🧠 1. Why OpenAI Agent SDK pushes you toward Hexagonal
+Look at how the SDK actually works:
+Core primitives:
+Agent
+Tools (functions)
+Runner (execution loop)
+Context (dependency injection)
+Handoff (multi-agent delegation)
+👉 These are NOT layered like Clean Architecture
+👉 They are plug-based, composable building blocks
+
+
+
+🔑 Key Insight
+Tools = external systems
+Context = injected dependencies
+Agent = core logic
+Runner = orchestrator
+👉 This is exactly Ports & Adapters
+
+
+🏗️ 2. Mapping SDK → Architecture
+OpenAI SDK → Hexagonal Mapping
+| SDK Concept           | Hexagonal Equivalent               |
+| --------------------- | ---------------------------------- |
+| Agent                 | Core domain logic                  |
+| Tools (function_tool) | Outbound adapters                  |
+| Context               | Dependency injection               |
+| Runner                | Application service / orchestrator |
+| Handoff               | Inter-service communication        |
+| Guardrails            | Domain policies                    |
+
+
+👉 The SDK literally implements Hexagonal natively
+⚠️ 3. Why Clean Architecture Alone is NOT Enough
+Clean Architecture focuses on:
+Layers
+Dependency rules
+
+But OpenAI SDK:
+Is tool-driven
+Is event-loop based
+Uses dynamic function calls
+Supports multi-agent orchestration
+👉 These don’t fit well into rigid layers.
+
+
+Example Problem with Pure Clean ❌
+You’ll struggle with:
+Dynamic tool registration
+Swappable LLMs
+Runtime agent composition
+Multi-agent handoffs
+

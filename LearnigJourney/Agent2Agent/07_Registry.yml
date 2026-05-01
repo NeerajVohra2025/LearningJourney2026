@@ -1,0 +1,219 @@
+    👉 Why a Registry is required (concept first):
+        🧠 PART 1 — WHY YOU NEED AN AGENT REGISTRY (FIRST PRINCIPLE)  :
+                Current situation (what you have now):
+                    LangGraph agent knows CrewAI URL
+                    Supervisor hardcodes URLs
+                All agents assumed to be:
+                    Same team
+                    Same network
+                    Same trust boundary
+                This breaks immediately when:
+                    Agents belong to different teams
+                    Agents are deployed independently
+                    Teams rotate keys
+                    Services scale dynamically   
+
+            🚨 Enterprise Problem Statement:
+                “How does an agent know who exists, what skills they provide, and whether it is allowed to call them?”:
+                    This is NOT an LLM problem.
+                    This is service governance.                
+
+        🧠 PART 2 — ENTERPRISE PATTERN (THIS IS STANDARD):
+                Every large system uses this pattern:
+                    Agent → Registry → Discovery → Authentication → Invocation:
+                        
+                This is identical to:
+                    Microservice registries (Consul, Eureka)
+                    API Gateways
+                    Service Meshes    
+
+
+        🧩 PART 3 — ARCHITECTURE WE WILL IMPLEMENT:
+                    We will build three components:
+                        1. Agent Registry Service
+                        2. Agent Self-Registration
+                        3. Authenticated Discovery + Invocation
+                    
+                    Visual flow:
+                            Agent Startup
+                               ↓
+                            Register with Registry
+                               ↓
+                            Registry stores AgentCard
+                               ↓
+                            Another Agent queries Registry
+                               ↓
+                            Gets endpoint + skills
+                               ↓
+                            Authenticates
+                               ↓
+                            Calls agent
+                
+            🧱 PART 4 — AGENT REGISTRY (STEP BY STEP):
+                        STEP 4.1 — Create Registry Service:
+                                From root:
+                                    uv init --package agent_registry
+                                    cd agent_registry
+                                    
+                        STEP 4.2 — pyproject.toml:
+                            📄 agent_registry/pyproject.toml 
+
+
+                        STEP 4.3 — AgentCard (shared contract):
+                            📄 agent_registry/src/agent_registry/models.py    
+
+                        STEP 4.4 — Registry Server:
+                            📄 agent_registry/src/agent_registry/server.py   
+
+                        ▶ Run Registry
+                            uv run agent-registry
+                                Registry now runs at:
+                                    http://localhost:7000
+
+
+            🧠 PART 5 — AGENT SELF-REGISTRATION (AUTOMATIC):
+                            Each agent registers itself on startup.:
+                        
+                        STEP 5.1 — Add .env to LangGraph Agent:
+                            📄 langgraph_agent/.env
+                                    REGISTRY_URL=http://localhost:7000/register
+                                    REGISTRY_API_KEY=registry-secret-key
+                                    TEAM=planning-team
+                    
+                
+                        STEP 5.2 — Registration Code (LangGraph example):
+                            📄 langgraph_agent/src/langgraph_agent/register.py
+
+                                        import os
+                                        import requests
+                                        from dotenv import load_dotenv
+
+                                        load_dotenv()
+
+                                        def register():
+                                            requests.post(
+                                                os.getenv("REGISTRY_URL"),
+                                                headers={"x-api-key": os.getenv("REGISTRY_API_KEY")},
+                                                json={
+                                                    "agent_id": "langgraph-planner",
+                                                    "team": os.getenv("TEAM"),
+                                                    "skills": ["plan"],
+                                                    "endpoint": "http://langgraph:8001/a2a"
+                                                }
+                                            )
+                        
+                        
+                        STEP 5.3 — Call Registration on Startup:
+                                    In server.py:
+                                        from langgraph_agent.register import register
+                                        register()
+                            📌 Now LangGraph announces itself automatically.
+                        
+    
+    
+            🧠 PART 6 — DISCOVERY (NO HARDCODED URLS ANYMORE):
+                        Supervisor no longer hardcodes endpoints.  
+                                    STEP 6.1 — Discover Agent by Skill:
+                                        📄 supervisor_agent/src/supervisor_agent/discovery.py:
+                                        
+                                                    import requests
+
+                                                    def discover(skill: str):
+                                                        response = requests.get(
+                                                            "http://localhost:7000/discover",
+                                                            params={"skill": skill}
+                                                        )
+                                                        return response.json()[0]["endpoint"]
+                                                                                    
+                                    STEP 6.2 — Supervisor Uses Discovery:
+                                                In executor.py:    
+                                                    from supervisor_agent.discovery import discover
+                                                    planner_url = discover("plan")
+                                                    executor_url = discover("execute")
+                                                    reasoner_url = discover("reason")
+                                                
+                        🎉 Now:
+                                Supervisor doesn’t care which team owns which agent
+                                Only cares about skills
+                                
+❌ Docker healthcheck command fails:
+    🧠 ENTERPRISE MENTAL MODEL (VERY IMPORTANT)
+            In enterprise systems, service lifecycle has 3 phases:
+            Start → process is running
+            Healthy → service is ready
+            Registered → service is discoverable
+
+        You implemented 1️) and 2️) but 3️)is missing.
+    
+    ✅ ENTERPRISE-STANDARD SOLUTION (NO STRUCTURE CHANGE):    
+            Agents must auto-register themselves with the registry at startup
+        
+        🧩 STEP 1 — WHAT REGISTRY EXPECTS (CLARITY):
+                Your registry already supports:
+                    POST /register:
+                    with payload like:
+                        {
+                          "agent_id": "langgraph-planner",
+                          "base_url": "http://langgraph:8001",
+                          "skills": [
+                            {"id": "plan"}
+                          ]
+                        }
+                So nothing to change in registry.
+                                    
+        🧩 STEP 2 — WHERE REGISTRATION SHOULD LIVE (ENTERPRISE RULE):
+                        Registration belongs to the Transport layer, not the Agent logic
+                        That means:
+                            NOT in executor.py
+                            NOT in LangGraph / CrewAI logic
+                            ✅ In app.py startup lifecycle
+                            This keeps intelligence decoupled from infrastructure.
+                            
+        🧩 STEP 3 — ADD A GENERIC REGISTRATION HELPER (SHARED, SAFE):
+                    Create (or reuse) a shared helper:    
+                        📁 shared/registry.py
+                                                        
+                                import os
+                                import requests
+                                import time
+
+                                def register_agent(agent_card: dict):
+                                    registry_url = os.getenv("REGISTRY_URL")
+                                    api_key = os.getenv("REGISTRY_API_KEY")
+
+                                    if not registry_url or not api_key:
+                                        print("⚠️ Registry config missing, skipping registration")
+                                        return
+
+                                    payload = {
+                                        "agent_id": agent_card["agent_id"],
+                                        "base_url": agent_card["base_url"],
+                                        "skills": agent_card.get("skills", [])
+                                    }
+
+                                    # Retry because registry may start slightly later
+                                    for attempt in range(5):
+                                        try:
+                                            r = requests.post(
+                                                f"{registry_url}/register",
+                                                headers={"X-API-Key": api_key},
+                                                json=payload,
+                                                timeout=5
+                                            )
+                                            if r.status_code == 200:
+                                                print(f"✅ Registered agent {agent_card['agent_id']}")
+                                                return
+                                        except Exception as e:
+                                            print(f"⏳ Registry not ready, retrying... ({attempt+1}/5)")
+                                            time.sleep(2)
+
+                                    raise RuntimeError("❌ Failed to register agent")
+                                    
+                        ✅ Enterprise traits:
+                                Retry
+                                No hard dependency
+                                No crash loops
+                                Safe failure handling                                  
+                                
+        🧩 STEP 4 — REGISTER LANGGRAPH AGENT ON STARTUP:
+                    📁 langgraph_agent/app.py                        

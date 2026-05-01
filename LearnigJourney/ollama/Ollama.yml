@@ -1,0 +1,32 @@
+How to access Models?:
+    We need api-keys + Money
+    Ollama run on local , no api-key , free
+Langchain:
+    All the models access
+
+Package:
+  Collection of Module:
+            Collection of python files
+            
+Ollama Commands:
+  serve       Start ollama
+  create      Create a model from a Modelfile
+  show        Show information for a model
+  run         Run a model
+  stop        Stop a running model
+  pull        Pull a model from a registry
+  push        Push a model to a registry
+  list        List models
+  ps          List running models
+  cp          Copy a model
+  rm          Remove a model
+  help        Help about any command      
+
+######################################################
+Install Unity with Python (using PyCharm or Visual Studio Code).
+Create a new project in Unity and import necessary libraries like PyTorch, OpenCV, etc.
+Create a neural network architecture that performs complex tasks using TensorFlow.
+Train the model using the training dataset.
+Once the model is trained, deploy it on inference mode to perform real-time processing on Unity.
+Use Unity for visualization and visualization of results.
+Evaluate the accuracy of your algorithm.  

@@ -1,0 +1,114 @@
+Now we will build tool-anaplan completely, step-by-step, in true Level-5 Enterprise Standard, aligned with:
+✅ A2A Protocol
+✅ Registry discovery
+✅ Dynamic capability routing
+✅ Multiple API operations
+✅ Clean Architecture
+✅ Config-driven
+✅ Independently deployable
+✅ Self-registering tool
+✅ No hardcoded endpoints in agents
+
+We will assume:
+platform-protocol exists
+platform-registry exists
+Tool will register itself to registry
+Agents will discover it via capability
+
+🏛 PHASE — BUILD tool-anaplan (ENTERPRISE TOOL):
+uv add fastapi uvicorn pydantic httpx tomli
+uv add ../platform-protocol
+
+tool-anaplan/
+│
+├── pyproject.toml
+├── config.toml
+├── tool.toml
+├── Dockerfile
+│
+└── src/
+    └── tool_anaplan/
+        │
+        ├── main.py
+        │
+        ├── bootstrap/
+        │   └── registration.py
+        │
+        ├── configuration/
+        │   └── settings.py
+        │
+        ├── domain/
+        │   ├── tool_request.py
+        │   ├── tool_response.py
+        │   └── tool_interface.py
+        │
+        ├── application/
+        │   └── tool_service.py
+        │
+        ├── infrastructure/
+        │   ├── operation_router.py
+        │   ├── http_client.py
+        │   └── operations/
+        │       ├── run_process.py
+        │       ├── upload_file.py
+        │       ├── get_workspace.py
+        │       ├── get_model.py
+        │       └── execute_action.py
+        │
+        └── interface/
+            └── a2a_controller.py
+            
+🏆 Enterprise Characteristics Achieved
+
+✔ Multi-operation support
+✔ Dynamic routing
+✔ Capability-based invocation
+✔ A2A compliant
+✔ Self-registering
+✔ Independently deployable
+✔ Clean architecture
+✔ Extensible tool marketplace model
+
+
+            
+            
+🔷 STEP 14 — Test Flow
+Start registry
+Start tool-anaplan
+Verify registration
+Use Postman:   
+
+POST
+http://localhost:8800/a2a
+{
+  "correlation_id": "123",
+  "source": "agent",
+  "target": "tool-anaplan",
+  "message_type": "REQUEST",
+  "capability": "anaplan.get_workspace",
+  "payload": {}
+}
+
+{
+  "correlation_id": "123",
+  "source": "agent",
+  "target": "tool-anaplan",
+  "message_type": "REQUEST",
+  "capability": "anaplan.get_workspace",
+  "payload": {}
+}
+
+| Component       | Status  |
+| --------------- | ------- |
+| Shared Kernel   | ✅       |
+| Protocol        | ✅       |
+| Registry        | ✅       |
+| Tool-LLM        | ✅       |
+| Tool-ServiceNow | ✅       |
+| Tool-Anaplan    | ✅       |
+| Agents          | 🔜 Next |
+| Orchestrator    | Pending |
+| Ingress         | Pending |
+         
+
+

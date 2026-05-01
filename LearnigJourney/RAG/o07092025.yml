@@ -1,0 +1,51 @@
+groq key
+
+
+#-----------------------------------------------------------------
+
+What is RAG?:
+    Retrieval Augmented Generation
+Use Case:
+ Create a Large Language Application Chat Bot On company policy
+ There are many departments in an organinzation and in each department there is specific person knows in_out of only that specific department.
+ 
+Retrieval: Fetching the data  # data must be available where? in vector database (number data sets)
+Augmented: combined the data
+Generation: Generate the Output
+Embeddings: Information stored in the form of vectors ( convert text in to numbers) Encoding
+cosine similerties:
+    QnVector Vs V1 ==>90%
+    QnVector Vs V2==> 85%
+    QnVector Vs V3==> 60%
+    QnVector Vs V4==> 50%
+    
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import Chroma
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+
+vectordb = Chroma.from_documents(
+    documents=docs,
+    embedding=embeddings,
+)
+vectordb.persist()
+
+retriever = vectordb.as_retriever(search_kwargs={"k": 10})  # 4 top chunks    
+
+
+Difference between RecursiveCharacterTextSplitter vs CharacterTextSplitter?:
+   Character-level splitting:
+        Splits text into chunks of fixed character length (e.g., 500 characters per chunk).
+        Splits text into chunks of fixed character length (e.g., 500 characters per chunk).
+        Pros: Simple to implement. 
+    Recursive splitting (hierarchical):
+       Splits text intelligently, e.g.:
+        First by document → sections
+        Then paragraphs
+        Then sentences, if needed.
+
+
+    
+                                
+Agent Behavior:
+Memory behavior:
+Chain:  

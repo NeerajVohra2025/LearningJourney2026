@@ -1,0 +1,17 @@
+CKA :
+logs of api/cm/etcd/Scheduler:
+kubectl logs api-pod -n kube-system  # container logs /application logs
+
+log of kubelet: running as a service
+journalctl -u kubelet -f
+
+CR:
+journalctl -u containerd -f
+
+
+
+
+
+
+
+

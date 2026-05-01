@@ -1,0 +1,136 @@
+🏛 ROLE OF ORCHESTRATOR
+
+In Level-5 architecture:
+Orchestrator is NOT:
+A business logic agent ❌
+A tool ❌
+A direct API integrator ❌
+
+It IS:
+Workflow engine
+Agent coordinator
+Graph executor
+Capability router
+Control Plane component
+
+🏗 HIGH-LEVEL FLOW:
+Ingress → Orchestrator → Agents → Tools → External Systems
+Example Flow:
+
+1️⃣ Webhook received
+2️⃣ Orchestrator builds graph
+3️⃣ Executes:
+agent-incident
+agent-anaplan
+agent-rca
+4️⃣ Aggregates result
+5️⃣ Returns final response
+
+
+🔷 ARCHITECTURE PRINCIPLES (STRICT):
+1️⃣ Orchestrator is the ROOT of the graph
+All workflow decisions originate here.
+
+2️⃣ Orchestrator never contains business logic
+It coordinates agents only.
+
+3️⃣ Agents are discovered dynamically
+No static endpoint configuration.
+
+4️⃣ Graph is state-driven
+Routing is based on workflow state.
+
+5️⃣ Conditional edges must exist
+To support branching and future growth.
+
+6️⃣ Orchestrator must support:
+Sequential flows
+Conditional routing
+Parallel execution (future ready)
+Aggregation
+Error routing
+Visualization
+
+
+In Level-5 enterprise design:
+Orchestrator is the single authority of workflow state
+Agents are execution workers
+Agents never route workflow
+Agents never decide next step
+Aggregation logic belongs to Control Plane, not graph node
+So we will now correctly redesign the Control Orchestrator.
+
+🏛 Correct Level-5 Control Plane Model:
+
+Ingress
+   ↓
+Orchestrator (Root + State Manager)
+   ↓
+Agent A
+   ↓
+Orchestrator updates state
+   ↓
+Agent B
+   ↓
+Orchestrator finalizes
+
+fastapi
+uvicorn
+pydantic
+httpx
+tomli
+langgraph
+-e ../platform-protocol
+
+
+control-orchestrator/
+│
+├── pyproject.toml
+├── config.toml
+├── orchestrator.toml
+├── Dockerfile
+│
+└── src/control_orchestrator/
+    │
+    ├── main.py
+    │
+    ├── bootstrap/
+    │   └── registration.py
+    │
+    ├── configuration/
+    │   └── settings.py
+    │
+    ├── domain/
+    │   ├── workflow_state.py
+    │   └── workflow_status.py
+    │
+    ├── application/
+    │   └── orchestration_service.py
+    │
+    ├── workflow/
+    │   ├── graph_builder.py
+    │   ├── root_step.py
+    │   ├── incident_step.py
+    │   ├── anaplan_step.py
+    │   └── error_step.py
+    │
+    ├── infrastructure/
+    │   ├── registry_client.py
+    │   ├── agent_client.py
+    │   └── logging_config.py
+    │
+    ├── utilities/
+    │   └── graph_visualizer.py
+    │
+    └── interface/
+        └── a2a_controller.py 
+            
+            
+🔷 STEP 4 — Test Visualization:
+Start orchestrator:    
+uv run uvicorn control_orchestrator.main:app --port 9200
+Open:
+http://localhost:9200/graph
+        
+
+
