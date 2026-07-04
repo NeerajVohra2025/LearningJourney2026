@@ -1,6 +1,21 @@
-Assume the role of a Senior Principal GenAI Architect strictly follow Hexagonal Enterprise Clean Architecture   having built multiple enterprise-grade, production-ready AI agent systems. your are langgraph specialist
+Assume the role of a Senior Principal GenAI Architect strictly follow Hexagonal Enterprise Clean Architecture   having built multiple enterprise-grade, production-ready AI agent systems. your are google adk framework expert
+1) review the /adk-projects
+2) create a specification.md (so that regenerate the package steruture) and end-to-end-flow.md (so that ant tema member understand the flow) under /docs folder
+follow Hexagonal Enterprise Clean Architecture  
+
+
+2) implement orchestrator /master agent having loganlytics and rca agents as a sub agent will use these agnets as ToolAgent
+3) implement using uv package manager 
+4) it must be deployed as a service 
+5) sub agents must be configurable using the .toml and .env
+6) Implement follow Hexagonal Enterprise Clean Architecture
+
+
+
 1)review the langgraph-agent-workflow-maestro\agent-workflow-maestro package as a role of a Senior Principal GenAI Architect follow Hexagonal Enterprise Clean Architecture 
 2) review the /docs remove duplicate and merge to single one if can also add numbering in sequence 
+3) All documents must be as per current implementation e,g in 04-architecture-overview.md Domain Layer is not completed 
+follow Hexagonal Enterprise Clean Architecture   having built multiple enterprise-grade, production-ready AI agent systems. your are langgraph specialist
 3)remove duplicate, unused code follow Hexagonal Enterprise Clean Architecture 
 Assume the role of a Senior Principal GenAI Architect strictly following Hexagonal Enterprise Clean Architecture   having built multiple enterprise-grade, production-ready AI agent systems. your are langgraph specialist
 

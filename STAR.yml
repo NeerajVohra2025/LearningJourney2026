@@ -1,0 +1,86 @@
+MTTR Reduction via Agentic AI (40%):
+Situation: High incident volume with manual L1/L2 triage and slow root cause analysis
+Task: Reduce MTTR and automate incident lifecycle
+Action: Designed a multi-agent system using LangGraph + OpenAI Agents SDK + RAG + MCP, including log analysis, RCA, and remediation agents with observability (OpenTelemetry + CloudWatch)
+Result: Reduced MTTR by 40%, eliminated manual triage, improved RCA consistency
+
+
+2. AI-Driven Incident Lifecycle Automation
+Situation: Fragmented incident workflows and inconsistent RCA outcomes
+Task: Build an end-to-end automated incident management solution
+Action: Implemented agent orchestration with memory, tool-calling, and human-in-loop validation integrated with ServiceNow
+Result: Standardized RCA, improved resolution speed, reduced operational overhead
+
+3. LLM Optimization for Developer Productivity (50–60%)
+Situation: Low developer productivity in code generation and debugging
+Task: Improve engineering efficiency using LLMs
+Action: Optimized GPT, Codex, Copilot workflows with prompt engineering and tool integration
+Result: Increased developer productivity by 50–60%
+
+Cloud Cost Optimization (35%)
+Situation: Over-provisioned ECS/Fargate workloads and rising cloud costs
+Task: Reduce infrastructure cost without impacting performance
+Action: Implemented right-sizing, auto-scaling, Fargate Spot usage, and Terraform-based automation
+Result: Reduced cloud cost by 35%, improved resource utilization
+
+5. CI/CD and Release Optimization (45%)
+Situation: Slow and manual deployment cycles
+Task: Accelerate release velocity and reliability
+Action: Built CI/CD pipelines using GitHub Actions with automated build, test, and deployment workflows
+Result: Reduced release cycle time by 45%
+
+
+Kubernetes Reliability Engineering (40%)
+Situation: Downtime and instability during deployments
+Task: Improve deployment reliability
+Action: Implemented Helm-based deployments with Rolling, Blue-Green, and Canary strategies across Kubernetes, GKE, and ECS environments
+Result: Improved system reliability by 40%
+
+
+Observability & Monitoring Transformation
+Situation: Limited visibility into distributed systems
+Task: Enable real-time monitoring and faster incident detection
+Action: Deployed OpenTelemetry + AWS ADOT + CloudWatch dashboards
+Result: Reduced detection and response time, contributing to MTTR reduction
+
+
+
+API & Platform Engineering
+Situation: Need for scalable backend services for AI systems
+Task: Build high-performance APIs
+Action: Developed FastAPI-based async microservices and containerized workloads using Docker/Podman
+Result: Delivered scalable, production-grade API platform
+
+
+Cloud Transformation (35% Cost Reduction)
+Situation: Legacy infrastructure with high operational cost
+Task: Modernize and migrate to cloud
+Action: Led AWS migration using EKS, Lambda, Terraform (IaC)
+Result: Reduced cloud cost by 35%, improved scalability
+
+
+Kubernetes Microservices Architecture
+Situation: Monolithic systems limiting scalability
+Task: Build scalable architecture
+Action: Designed Kubernetes-native microservices platform
+Result: Improved system scalability, resilience, and performance
+
+
+Situation: Integration challenges across heterogeneous systems
+Task: Improve interoperability
+Action: Designed SOA architecture using SOAP/REST and WSDL standards
+Result: Improved system integration efficiency by 40%
+
+
+Designed and developed scalable Java applications using Spring and Hibernate, improving maintainability and performance
+
+
+
+
+Forward-thinking Solutions Architect with advanced specializing in Agentic AI, Multi-Agent Systems, and cloud-native architectures. Proven expertise in designing scalable AI-driven systems using OpenAI Agents SDK, AWS Bedrock, LangGraph, CrewAI, MCP, and RAG frameworks.
+
+Forward-thinking Solutions Architect with 20+ years of experience in cloud-native architecture, distributed systems, and DevOps, with specialization in Generative AI (GenAI), Agentic AI, and multi-agent systems. Expertise in designing and delivering scalable AI platforms using OpenAI Agents SDK, LangGraph, AWS Bedrock, Retrieval-Augmented Generation (RAG), and Model Context Protocol (MCP). Strong background in building production-grade, cloud-native solutions across AWS and GCP with a focus on performance, scalability, and reliability.
+
+
+
+

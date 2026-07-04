@@ -1,0 +1,609 @@
+Chapter 8 – The Role of JSON-RPC 2.0:
+
+MCP uses JSON-RPC 2.0 as its communication protocol.
+
+JSON provides a lightweight, structured format that is easy for systems to exchange.
+RPC (Remote Procedure Call) allows one system to request that another system execute a specific operation.
+Instead of exchanging arbitrary messages, MCP clients invoke well-defined methods and receive structured responses.
+
+This makes communication predictable, language-independent, and easy to implement.
+
+
+Chapter 1 – What is a Transport?:
+Before understanding MCP Transport, let's first understand the meaning of transport.
+
+Imagine you want to send a parcel from Delhi to Mumbai.
+
+The parcel contains important business documents.
+
+There are multiple ways to deliver it:
+
+Road
+Air
+Train
+Courier
+
+Although the transportation method changes, the parcel remains exactly the same.
+
+The only thing that changes is how it travels.
+
+The same concept applies to MCP.
+
+The AI Client wants to send a JSON-RPC request to an MCP Server.
+
+The request is always the same.
+
+Only the communication medium changes.
+
+This communication medium is called the Transport Layer.
+
+Transport defines how MCP messages travel between the Client and the Server.
+
+
+
+
+Chapter 2 – Where Does Transport Fit?:
+
+Let's first understand the complete architecture.
+                User
+
+                  │
+
+                  ▼
+
+        OpenAI Agent SDK
+           LangGraph
+
+                  │
+
+             MCP Client
+
+                  │
+          (Transport Layer)
+
+        STDIO / HTTP /
+      Streamable HTTP
+
+                  │
+
+             MCP Server
+
+                  │
+
+      Database / API / Files /
+      Kubernetes / CRM / ERP
+      
+      
+Notice something important.:
+
+The MCP Client and MCP Server always communicate using JSON-RPC 2.0.
+
+The Transport Layer only decides how these JSON messages move.      
+
+
+Chapter 3 – Why Do We Need Different Transports?:
+
+Different deployment environments require different communication methods.
+
+For example:
+
+Scenario 1:
+
+Your AI application and MCP Server are running on the same laptop.
+
+No internet is required.
+
+The fastest communication method is STDIO.
+
+Scenario 2:
+
+Your MCP Server is running inside Kubernetes.
+
+Your AI application is running in another cloud.
+
+Now both applications communicate over HTTP.
+
+Scenario 3:
+
+The server continuously streams progress updates.
+
+Normal HTTP is not efficient.
+
+Streamable HTTP becomes the better choice.
+
+So the transport depends entirely on where the client and server are deployed.
+
+
+Chapter 4 – Types of MCP Transport:
+
+Today MCP mainly supports three transport mechanisms.
+Transport Types
+
+├── STDIO
+│
+├── HTTP
+│
+└── Streamable HTTP
+
+Each serves a different purpose.
+
+
+Chapter 5 – STDIO Transport:
+STDIO stands for
+
+Standard Input / Standard Output
+
+This is the simplest transport.
+
+Imagine launching a Python program.
+python weather_server.py
+
+The MCP Client starts the server as a child process.
+
+Instead of communicating over the network, both communicate using operating system pipes
+    MCP Client
+
+    ↓
+
+    stdin
+
+    ↓
+
+    Weather Server
+
+    ↓
+
+    stdout
+
+    ↓
+
+    Client
+    
+There is no TCP.
+
+No HTTP.
+
+No REST API.
+
+Everything happens locally.
+
+
+How STDIO Works:
+Step 1:
+
+Client starts the MCP Server.  
+weather_server.py
+
+Step 2:
+
+Operating System creates  
+stdin
+
+stdout
+
+communication channels.
+
+
+Step 3:
+
+Client writes JSON-RPC request.
+stdin
+
+↓
+
+initialize
+
+Step 4:
+
+Server reads request.
+
+Processes it.
+
+Step 5:
+
+Server writes response.
+
+stdout
+
+↓
+
+Initialization Result
+
+Step 6:
+
+Client reads response.
+
+Communication continues.
+
+Everything happens locally.
+
+
+When STDIO is Used:
+
+Perfect for
+
+Claude Desktop
+Cursor
+VS Code
+Local development
+Testing
+
+
+Chapter 6 – HTTP Transport:
+
+Now suppose the server is no longer on your laptop.
+
+It is running in Google Cloud.
+
+How will the client communicate?
+
+Obviously not through stdin.
+
+Now communication happens using HTTP.
+
+    Client
+
+    ↓
+
+    POST
+
+    ↓
+
+    Internet
+
+    ↓
+
+    HTTP Server
+
+    ↓
+
+    MCP Server
+    
+    
+HTTP Request Flow:
+
+Suppose the user asks
+
+Show today's weather.
+
+
+Step 1:
+
+The AI Agent understands it needs weather data.   
+
+Step 2:
+
+The MCP Client creates a JSON-RPC request. 
+
+initialize
+
+or
+
+tools/list
+
+or
+
+tools/call
+
+
+Step 3:
+
+The request is wrapped inside an HTTP POST request.
+POST /mcp
+
+
+Step 4:
+
+    The request travels through the network.
+    Internet
+
+    ↓
+
+    Load Balancer
+
+    ↓
+
+    API Gateway
+
+    ↓
+
+    MCP Server
+    
+
+Step 5:
+
+The server processes the request.    
+
+Step 6:
+
+The server returns a JSON response.
+HTTP Response
+
+↓
+
+JSON-RPC Result
+
+
+Step 7:
+
+The client receives the response.
+
+The connection ends.
+
+This is called Request–Response Communication.
+
+Characteristics:
+
+✔ Stateless
+
+✔ One request
+
+✔ One response
+
+✔ Connection usually closes after completion
+
+Very similar to REST APIs.
+
+
+Chapter 7 – Why Standard HTTP Is not Enough:
+
+Suppose an AI Agent asks:
+
+Analyze one million sales records.
+
+The operation takes
+
+30 seconds
+2 minutes
+5 minutes
+
+Should the client simply wait?
+
+That creates a poor user experience.
+
+Users expect updates like:
+10%
+
+30%
+
+50%
+
+Analyzing...
+
+Almost Finished...
+
+Traditional HTTP cannot efficiently deliver these intermediate updates while remaining responsive.
+
+This is where Streamable HTTP becomes valuable.
+
+
+Chapter 8 – Streamable HTTP:
+
+Streamable HTTP extends normal HTTP by allowing the server to send multiple messages during a single interaction.
+
+Instead of:
+    Request
+
+    ↓
+
+    Response
+
+    ↓
+
+    Finished
+    
+The communication becomes:
+    Request
+
+    ↓
+
+    Accepted
+
+    ↓
+
+    Progress
+
+    ↓
+
+    Progress
+
+    ↓
+
+    Progress
+
+    ↓
+
+    Final Result    
+    
+Think of downloading a large file.
+
+Instead of waiting until the download completes,
+
+you continuously see
+    10%
+
+    25%
+
+    60%
+
+    90%
+
+    Completed    
+    
+    
+Chapter 9 – Streamable HTTP Initialization:
+
+Before exchanging business requests, the client and server establish a session.    
+Step 1 – Client Initializes:
+
+The client sends an initialize request using HTTP POST.
+
+This request includes:
+
+Supported protocol version
+Client capabilities
+Client information
+
+The goal is to introduce itself to the server.
+
+
+Step 2 – Server Responds:
+
+The server returns:
+
+Supported protocol version
+Server capabilities
+Server information
+
+Most importantly, it creates a unique MCP Session ID and returns it in the response headers.
+
+This Session ID identifies the client for future requests.
+
+Step 3 – Client Confirms:
+
+The client sends a small notification:
+notifications/initialized
+This tells the server:
+
+"Initialization is complete. I'm ready to communicate."
+
+Now the session is fully established.
+
+
+Chapter 10 – Business Request Flow:
+
+Now the user asks
+
+Generate a quarterly sales report.
+
+The sequence is:
+
+Step 1:
+
+AI decides which tool is required.
+
+Step 2:
+
+Client sends
+tools/call
+
+Step 3:
+
+Server immediately acknowledges.
+202 Accepted
+Meaning:
+
+"I've received the request and started processing."
+
+Step 4:
+
+Server begins streaming updates.
+Reading Database...
+
+20%
+
+Fetching Sales...
+
+45%
+
+Calculating Revenue...
+
+70%
+
+Generating Charts...
+
+95%
+
+
+Step 5:
+
+Finally,
+
+the server sends
+Completed
+
+Quarterly Revenue
+
+Growth
+
+Summary
+The client receives the complete result without repeatedly polling the server.
+
+
+Chapter 11 – Stateful vs Stateless Communication:
+Stateless HTTP:
+
+Every request is independent.
+Request 1
+
+↓
+
+Complete
+
+Connection Ends
+
+-----------------
+
+Request 2
+
+↓
+
+Complete
+
+Connection Ends
+
+The server remembers nothing unless the client includes the required context in each request.
+
+
+Stateful Streamable HTTP:
+
+A session is created once.
+Initialize
+
+↓
+
+Session Created
+
+↓
+
+Session ID
+
+↓
+
+Request 1
+
+↓
+
+Request 2
+
+↓
+
+Request 3
+
+↓
+
+Same Session
+
+The Session ID lets the server associate multiple requests with the same client, enabling richer interactions such as progress updates and server-initiated events.
+
+Chapter 12 – Transport Comparison:
+| Feature               | STDIO             | HTTP       | Streamable HTTP      |
+| --------------------- | ----------------- | ---------- | -------------------- |
+| Communication         | Local Process     | Network    | Network              |
+| Same Machine Required | Yes               | No         | No                   |
+| Internet Required     | No                | Yes        | Yes                  |
+| Long Running Tasks    | Limited           | Basic      | Excellent            |
+| Progress Updates      | No                | Limited    | Yes                  |
+| Streaming Responses   | No                | Limited    | Yes                  |
+| Best Use Case         | Local development | Cloud APIs | Enterprise AI agents |
+
+Final Takeaway:
+
+Think of JSON-RPC 2.0 as the language spoken by the MCP Client and MCP Server. Transport is the road that carries those messages.
+
+STDIO is like walking down a hallway in the same building—fast and local.
+HTTP is like sending a courier package—you send one request and receive one response.
+Streamable HTTP is like tracking a live delivery—you receive continuous updates until the work is complete.
+
+The message format stays the same across all transports. Only the communication path changes. This separation allows MCP to remain transport-independent while supporting both local development and large-scale enterprise deployments
+

@@ -1,0 +1,1430 @@
+Chapter 1 – What is Sampling?:
+
+Before defining Sampling, let's understand the problem it solves.
+
+Imagine an MCP Server whose job is to retrieve information from a database.
+
+Now imagine the server receives this request:
+
+"Summarize the last 500 customer support tickets."
+
+The server can certainly fetch the 500 tickets from the database.
+
+But can it generate an intelligent summary?
+
+No.
+
+Because the MCP Server is not an AI model.
+
+It is simply a service exposing tools and resources.
+
+To summarize the tickets, the server needs help from an LLM.
+
+But here's the question:
+
+How can an MCP Server ask the client's AI model to perform reasoning?
+
+This is exactly why Sampling exists.
+
+
+Chapter 2 – Why Was Sampling Introduced?:
+
+Normally the communication flow looks like this:
+
+User
+
+↓
+
+Client
+
+↓
+
+MCP Server
+
+↓
+
+Database
+
+The client asks the server for data.
+
+The server returns data.
+
+Simple.
+
+Now consider another scenario.
+
+The server retrieves 50 MB of documents.
+
+Instead of sending all 50 MB back to the client, it wants the client's LLM to summarize them first.
+
+The server now needs to ask the client:
+
+"Can your AI summarize this for me?"
+
+This reverses the normal direction of communication.
+
+
+Chapter 3 – What is Sampling?:
+
+Sampling is an MCP capability that allows an MCP Server to request the MCP Client to perform an LLM inference on its behalf.
+
+Notice something important.
+
+Normally:
+
+Client
+
+↓
+
+Server
+
+With Sampling:
+
+Server
+
+↓
+
+Client's LLM
+
+The server temporarily becomes the requester.
+
+The client temporarily becomes the AI provider.
+
+
+Chapter 4 – Why Does not the Server Call OpenAI Directly?:
+This is an important design decision.
+
+Suppose every MCP Server called OpenAI directly.
+
+Then every server would need:
+
+OpenAI API Keys
+Anthropic Keys
+Gemini Keys
+Billing
+Model Selection
+Security Policies
+
+This creates many problems.
+
+Instead,
+
+the client already owns:
+
+AI model
+Authentication
+User permissions
+Model configuration
+Cost controls
+
+So the server simply asks:
+
+"Can your AI do this for me?"
+
+
+Chapter 5 – Real Enterprise Example:
+
+Imagine a Legal MCP Server.
+A lawyer asks:
+
+"Summarize this 800-page contract."
+
+The server can:
+
+Read the PDF
+Extract text
+Retrieve metadata
+
+But it cannot understand legal language.
+
+Instead of embedding an LLM,
+
+it sends a Sampling request.
+
+Legal Server
+
+↓
+
+Client
+
+↓
+
+GPT-4 / Gemini / Claude
+
+↓
+
+Summary
+
+↓
+
+Legal Server
+
+↓
+
+User
+
+The intelligence remains with the client.
+
+
+Chapter 6 – End-to-End Sampling Flow:
+
+Let's walk through every step.
+Step 1 – User Asks a Question:
+
+The user asks:
+
+"Summarize all support tickets from last month."
+
+
+Step 2 – Client Calls MCP Tool:
+
+The AI decides to use the Support MCP Server.
+
+It sends:
+
+tools/call
+
+GetSupportTickets
+
+
+Step 3 – Server Retrieves Data:
+
+The server queries its database.
+
+Database
+
+↓
+
+500 Tickets
+
+Now the server has all the raw data.
+
+
+Step 4 – Server Realizes It Needs AI:
+
+The server thinks:
+
+"I have the data, but I can't intelligently summarize it."
+
+Instead of returning everything,
+
+it creates a Sampling request.
+
+
+Chapter 7 – What is a Sampling Request?:
+
+The server sends a request back to the client.
+
+Conceptually it looks like:
+
+sampling/createMessage
+
+
+The request contains:
+
+Messages
+Instructions
+Preferred model (optional)
+Temperature
+Max Tokens
+System Prompt (optional)
+
+Think of it as saying:
+
+"Dear Client,
+
+Please ask your AI model to summarize these tickets."
+
+
+
+Chapter 8 – Client Receives Sampling Request:
+
+The client now receives:
+Sampling Request
+
+↓
+
+Summarize 500 Tickets
+
+
+The client checks:
+
+Is Sampling enabled?
+Does the user allow this?
+Which model should be used?
+Are there policy restrictions?
+
+If everything is allowed,
+
+the client proceeds.
+
+
+
+Chapter 9 – Client Calls Its Own LLM:
+
+Notice something important.
+
+The server never talks directly to GPT, Gemini, or Claude.
+Instead:
+MCP Server
+
+↓
+
+Sampling Request
+
+↓
+
+MCP Client
+
+↓
+
+OpenAI
+
+↓
+
+Response
+
+The client owns the LLM interaction.
+
+
+Chapter 10 – LLM Generates the Answer:
+
+The client's AI analyzes all the support tickets.
+
+It generates:
+Summary
+
+↓
+
+Top Issues
+
+↓
+
+Root Causes
+
+↓
+
+Recommended Actions
+
+
+
+Chapter 11 – Client Returns Result to Server:
+
+The client sends the generated response back to the MCP Server.
+
+
+Chapter 12 – Server Completes the Original Tool Call:
+
+Remember the user's original request?
+
+It was:
+
+"Summarize support tickets."
+
+Now the server responds with:
+Top Issue
+
+↓
+
+Login Failures
+
+↓
+
+35%
+
+Second Issue
+
+↓
+
+Payment Errors
+
+↓
+
+22%
+
+The user never sees the internal Sampling process.
+
+
+
+Chapter 13 – Visual Sequence Diagram:
+User
+ │
+ │ Ask Question
+ ▼
+MCP Client
+ │
+ │ tools/call
+ ▼
+MCP Server
+ │
+ │ Read Database
+ ▼
+Support Database
+ │
+ │ Return 500 Tickets
+ ▼
+MCP Server
+ │
+ │ sampling/createMessage
+ ▼
+MCP Client
+ │
+ │ Call GPT/Gemini
+ ▼
+LLM
+ │
+ │ Generate Summary
+ ▼
+MCP Client
+ │
+ │ Return Summary
+ ▼
+MCP Server
+ │
+ │ Complete Tool Response
+ ▼
+MCP Client
+ │
+ ▼
+User
+
+
+Chapter 14 – Why Is Sampling Better?:
+
+Without Sampling:
+Every MCP Server
+
+↓
+
+Needs OpenAI Keys
+
+↓
+
+Needs Billing
+
+↓
+
+Needs Model Selection
+
+↓
+
+Needs Security
+
+Every server duplicates AI logic.
+
+
+With Sampling:
+One Client
+
+↓
+
+One LLM
+
+↓
+
+Many MCP Servers
+Every server reuses the same AI.
+
+
+Chapter 15 – Enterprise Example:
+
+Imagine a company has:
+
+HR MCP Server
+Finance MCP Server
+Legal MCP Server
+SAP MCP Server
+CRM MCP Server
+
+None of these servers contain AI.
+
+Whenever intelligence is required:
+
+HR Server
+
+↓
+
+Sampling
+
+↓
+
+Client AI
+
+
+Finance Server
+
+↓
+
+Sampling
+
+↓
+
+Client AI
+
+
+Legal Server
+
+↓
+
+Sampling
+
+↓
+
+Client AI
+
+
+One AI.
+
+Many servers.
+
+
+Chapter 16 – Is Sampling Mandatory?:
+
+No.
+
+Sampling is an optional MCP capability.
+
+
+A server may:
+
+Never use Sampling.
+Use it occasionally.
+Use it extensively.
+
+Similarly, a client may:
+
+Support Sampling.
+Reject Sampling requests.
+Require user approval before executing them.
+
+During the initialize handshake, the client and server negotiate whether Sampling is supported.
+
+
+
+Chapter 17 – Relationship Between Tools and Sampling:
+
+This is where many people get confused.
+
+A Tool is a business capability exposed by the server.
+
+Examples:
+
+Execute SQL
+Read File
+Search Documents
+
+Sampling is not a Tool.
+
+Sampling is an MCP protocol capability that allows the server to borrow the client's reasoning ability.
+
+A common sequence looks like this:
+
+User
+
+↓
+
+Tool Call
+
+↓
+
+Server Reads Data
+
+↓
+
+Server Needs AI
+
+↓
+
+Sampling Request
+
+↓
+
+Client LLM
+
+↓
+
+Summary
+
+↓
+
+Server
+
+↓
+
+Final Tool Response
+
+
+Final Mental Model
+
+Think of a hospital:
+
+MCP Client → The hospital that employs a specialist doctor (the LLM).
+MCP Server → A laboratory that performs blood tests but cannot diagnose diseases.
+Tool Call → "Run a blood test."
+Sampling → The laboratory asks the specialist doctor, "Please interpret these test results."
+LLM → The specialist doctor provides the diagnosis.
+Server → Includes the diagnosis with the lab report and returns it.
+User → Receives a complete, intelligent answer.
+
+The key insight is that Sampling lets an MCP Server temporarily "borrow" the client's AI model without ever owning or directly calling the model itself. This keeps AI configuration, security, billing, and governance centralized in the client while allowing servers to add intelligent reasoning whenever needed.
+
+The client does NOT send the LLM response over the same SSE stream. It sends it as a new JSON-RPC message (typically over HTTP in the opposite direction). SSE is only one mechanism for the server to push events to the client.
+Let's build this from scratch.
+
+Chapter 1 – First Understand SSE:
+
+SSE stands for Server-Sent Events.
+
+Notice the name carefully.
+
+Server
+
+↓
+
+↓
+
+↓
+
+Client
+
+The word Server-Sent tells us something important.
+Only the server can push messages.
+
+The client cannot push messages on the SSE stream.
+
+Think of watching a live cricket score.
+
+Score Server
+
+↓
+
+4 Runs
+
+↓
+
+6 Runs
+
+↓
+
+Wicket
+
+↓
+
+Client
+
+Can your mobile send
+"Please score another six"
+
+through the same live score stream?
+
+No.
+
+You need a separate request.
+
+Exactly the same applies here.
+
+
+
+Chapter 2 – What Does SSE Actually Do?:
+
+Suppose the client starts a long-running tool.
+
+Client
+
+↓
+
+tools/call
+
+The server begins processing.
+
+Now it continuously sends updates.
+
+10%
+
+20%
+
+35%
+
+Reading Database
+
+65%
+
+Generating Report
+
+100%
+
+Completed
+
+This is a one-way event stream.
+
+Nothing travels from client to server on this stream.
+
+
+Chapter 3 – Then How Can Two-Way Communication Happen?:
+
+Because MCP is not built only on SSE.
+
+Think of MCP Streamable HTTP as having two communication paths.
+
+               HTTP Request
+
+Client ----------------------> Server
+
+
+               SSE Events
+
+Client <---------------------- Server
+
+
+So there are two independent channels:
+
+Client → Server (HTTP POST carrying JSON-RPC requests)
+Server → Client (SSE carrying JSON-RPC responses/events)
+
+This is why it supports full duplex communication even though SSE itself is one-way.
+
+
+Chapter 4 – Normal Tool Call:
+
+Let's first revisit a normal tool call.
+
+Step 1:
+
+Client sends
+HTTP POST
+
+↓
+
+tools/call
+
+Step 2:
+
+Server starts processing.
+
+
+Step 3:
+
+Server sends SSE events.
+10%
+
+20%
+
+40%
+
+80%
+
+Completed
+
+Everything is straightforward.
+
+
+Chapter 5 – Now Introduce Sampling:
+
+Now let's change the story.
+
+The server is processing a tool.
+Read 500 PDFs
+
+Suddenly it realizes
+
+"I need an LLM."
+
+The server cannot call GPT directly.
+
+So what happens?
+
+Chapter 6 – Server Sends a Sampling Request
+
+Instead of sending
+
+10%
+
+20%
+
+30%
+
+the server sends an SSE event that contains a JSON-RPC request.
+
+Conceptually:
+
+SSE Event
+
+↓
+
+sampling/createMessage
+
+Notice something unusual.
+
+The server is now asking the client to do work.
+
+This request travels from Server → Client because that's exactly what SSE is for.
+
+
+Chapter 7 – Client Receives the Sampling Request:
+
+The client receives:
+sampling/createMessage
+
+↓
+
+Please summarize these 500 tickets.
+
+The client pauses processing.
+
+Now it invokes its configured LLM.
+
+Client
+
+↓
+
+GPT
+
+↓
+
+Summary
+
+The client now has the answer.
+
+
+Chapter 8 – How Does the Client Return the Answer?:
+Here's the important part.
+
+The client does not send the answer through SSE.
+
+Why?
+
+Because SSE only supports:
+Server
+
+↓
+
+Client
+
+Instead, the client creates a new HTTP POST.
+
+HTTP POST
+
+↓
+
+sampling/createMessage Result
+
+Think of it as replying to the server with a brand-new JSON-RPC message.
+
+Chapter 9 – Visual Timeline:
+Client                            Server
+
+ |                                 |
+ |----tools/call-----------------> |
+ |                                 |
+ |<=== SSE ======================= |
+ |  sampling/createMessage         |
+ |================================ |
+ |                                 |
+ |------Call GPT-----------------> |
+ |                                 |
+ |<-----GPT Summary--------------- |
+ |                                 |
+ |----HTTP POST------------------> |
+ | sampling result                 |
+ |                                 |
+ |<=== SSE ======================= |
+ |  Continue Processing            |
+ |================================ |
+ |                                 |
+ |<=== SSE ======================= |
+ |  Completed                      |
+
+Notice there are two different directions:
+
+Server → Client using SSE
+Client → Server using HTTP POST
+
+
+Chapter 10 – Sequence Diagram:
+
+                 Session XYZ
+=====================================================
+
+Client                                Server
+
+HTTP POST
+tools/call
+------------------------------------->
+
+                           Read Database
+
+                           Need AI
+
+<========== SSE =========================
+sampling/createMessage
+=========================================
+
+Client calls GPT
+
+Client gets Summary
+
+HTTP POST
+sampling Result
+------------------------------------->
+
+                           Continue Tool
+
+<========== SSE =========================
+80%
+=========================================
+
+<========== SSE =========================
+Completed
+=========================================
+
+
+Chapter 12 – Why Didn't MCP Use WebSockets?:
+
+A natural question is:
+
+"If communication is two-way, why not use WebSockets?"
+
+The MCP designers intentionally chose HTTP + SSE because:
+
+HTTP works with existing infrastructure (load balancers, proxies, gateways).
+SSE is simpler than WebSockets for server-to-client streaming.
+HTTP requests are ideal for client-to-server commands.
+It avoids the complexity of maintaining a fully bidirectional socket protocol.
+
+So the communication model becomes:
+Client → Server : HTTP POST (JSON-RPC Requests)
+
+Server → Client : SSE (JSON-RPC Responses, Progress, Sampling Requests)
+
+Client → Server : HTTP POST (Sampling Results, New Requests)
+
+
+Final End-to-End Picture:
+                    MCP SESSION
+=========================================================
+
+             (Logical Session XYZ)
+
+=========================================================
+
+Client                                    Server
+
+HTTP POST
+tools/call
+-------------------------------------------->
+
+                               Processing
+
+<================= SSE =======================
+sampling/createMessage
+==============================================
+
+Client
+│
+├── Calls GPT
+├── Gets Summary
+│
+└── Creates HTTP POST
+
+HTTP POST
+sampling Result
+-------------------------------------------->
+
+                               Continues Processing
+
+<================= SSE =======================
+10%
+==============================================
+
+<================= SSE =======================
+40%
+==============================================
+
+<================= SSE =======================
+Completed
+==============================================
+
+The key takeaway:
+
+There are three independent concepts working together:
+
+HTTP POST → Used by the client to send JSON-RPC requests (including sampling results) to the server.
+SSE → Used only by the server to push JSON-RPC messages, progress updates, and sampling requests to the client.
+MCP Session → A logical context that ties all these HTTP requests and SSE events together using the same Session ID.
+
+This separation is why MCP can support rich, bidirectional interactions while still using the simple and widely supported combination of HTTP + SSE instead of requiring WebSockets.
+
+
+Important: In the latest MCP Streamable HTTP specification, the server can send any JSON-RPC message over the server→client stream. That includes:
+
+Responses
+Progress notifications
+Logging notifications
+Sampling requests
+Other server-initiated requests
+
+So yes, the stream is not just for "responses"; it can also carry requests initiated by the server.
+
+Now let's answer each question.
+
+Question 1 Can SSE send both streaming responses and streaming requests?:
+Yes.
+
+Think of the SSE stream as a one-way pipeline:
+Server
+   │
+   ▼
+Client
+
+Anything the server wants to send travels through this pipeline.
+For example:
+Event 1
+
+10% Completed
+
+Event 2
+
+20% Completed
+
+Event 3
+
+Sampling Request
+
+Event 4
+
+Continue Processing
+
+Event 5
+
+Completed
+
+Notice something.
+
+The transport doesn't care whether the payload is
+
+a progress notification,
+a JSON-RPC response,
+or a JSON-RPC request.
+
+It simply delivers events.
+
+
+Question 2 When the server sends a Sampling request, does it pause?:
+
+Yes—typically the processing of that particular tool invocation pauses.
+Let's see why.
+
+Suppose the tool is:
+
+Summarize 500 Tickets
+
+The server performs:
+
+Read Database
+
+↓
+
+500 Tickets
+
+Now it needs AI reasoning.
+
+The server cannot continue because it doesn't yet have the summary.
+
+So internally it reaches a point like:
+summary = ?
+
+Need Client LLM
+
+The server sends:
+
+sampling/createMessage
+
+Now that tool invocation waits:
+
+Think of it like calling another department.
+Finance
+
+↓
+
+Waiting for HR Approval
+
+Finance cannot finish until HR responds.
+
+Exactly the same.
+So the state becomes:
+Tool Request 101
+
+↓
+
+Paused
+
+↓
+
+Waiting for Sampling Result
+
+Notice:
+
+Only Request 101 is paused.
+
+The server itself is not paused.
+
+Other requests can continue.
+
+Server
+
+├── Request 101 (Waiting)
+├── Request 102 (Running)
+├── Request 103 (Running)
+└── Request 104 (Completed)
+
+
+This is a very important distinction.
+
+
+Question 3 Does the client pause while waiting for the LLM?:
+
+Yes.
+
+Let's follow the flow.
+Server
+
+↓
+
+Sampling Request
+
+Client receives:
+
+Summarize These Tickets
+
+Now the client starts:
+
+GPT
+
+↓
+
+Thinking...
+During this time,
+
+the client cannot answer the Sampling request because GPT hasn't responded yet.
+
+So for that Sampling request, the client waits.
+
+Sampling Request
+
+↓
+
+Waiting for GPT
+
+↓
+
+GPT Responds
+
+↓
+
+Continue
+
+Again,
+
+this does not freeze the entire client.
+
+If the client supports concurrency, it may still process:
+
+another tool response,
+another progress event,
+another user request.
+
+Only that Sampling workflow is waiting.
+
+
+Question 4:
+After GPT returns, who creates the HTTP POST?
+
+The MCP Client does.
+
+Let's see it step by step.
+
+Server
+
+↓
+
+Sampling Request
+
+Client receives it.
+
+MCP Client
+
+↓
+
+Calls GPT
+
+Now the client has the result.
+
+The MCP Client itself constructs a new JSON-RPC message.
+
+Conceptually:
+{
+   id : 5001
+
+   result : "Top Issue..."
+}
+
+Then the MCP Client sends it using HTTP POST.
+HTTP POST
+
+↓
+
+Server
+
+GPT never knows anything about MCP.
+
+GPT simply returns text.
+
+The MCP Client is responsible for:
+
+packaging the JSON-RPC response,
+attaching the Session ID,
+sending the HTTP request.
+
+So the flow is:
+
+GPT
+
+↓
+
+Plain Text
+
+↓
+
+MCP Client
+
+↓
+
+Create JSON-RPC Response
+
+↓
+
+HTTP POST
+
+↓
+
+Server
+
+
+Question 5 How does the server know which paused Sampling request this response belongs to?:
+
+This is where JSON-RPC Request IDs become extremely important.
+Let's walk through it carefully.
+
+Step 1:
+Server creates a Sampling request.
+
+id = 9001
+
+It sends:
+
+sampling/createMessage
+id = 9001
+
+
+Client receives:
+
+id = 9001
+
+The client stores:
+Sampling Request
+Sampling Request
+
+ID
+
+9001
+
+Now GPT generates the answer.
+
+The MCP Client sends:
+{
+   id : 9001
+
+   result : "Summary..."
+}
+
+Notice
+
+The same ID comes back.
+
+Now the server looks into its pending work.
+
+Waiting Requests
+
+9001
+
+↓
+
+Paused
+
+Immediately it finds
+Request
+
+9001
+
+↓
+
+Resume
+
+This is exactly how JSON-RPC works.
+
+The id is the correlation mechanism.
+
+
+
+Complete Internal View:
+
+Imagine the server has three Sampling requests waiting.
+Pending Sampling Table
+
+----------------------------------
+
+ID      Status
+
+9001    Waiting
+
+9002    Waiting
+
+9003    Waiting
+
+Client replies:
+
+id = 9002
+
+The server checks:
+9002
+
+↓
+
+Found
+
+↓
+
+Resume Processing
+
+Requests 9001 and 9003 continue waiting.
+
+The Full End-to-End Picture:
+                    Session XYZ
+======================================================
+
+Client                                   Server
+
+                  Tool 101 Running
+
+--------------------------------------------->
+
+                 Read Database
+
+                 Need AI
+
+                 Pause Tool 101
+
+<============== SSE =========================
+
+sampling/createMessage
+
+ID = 9001
+
+=============================================
+
+Client receives
+
+↓
+
+Calls GPT
+
+↓
+
+GPT Thinking...
+
+↓
+
+GPT Returns Summary
+
+↓
+
+MCP Client Creates
+
+JSON-RPC Response
+
+ID = 9001
+
+HTTP POST
+--------------------------------------------->
+
+Server
+
+↓
+
+Lookup Pending Table
+
+↓
+
+ID = 9001 Found
+
+↓
+
+Resume Tool 101
+
+↓
+
+Generate Final Report
+
+<============== SSE =========================
+
+Completed
+
+=============================================
+
+
+One More Important Clarification
+
+There are actually two different IDs in play:
+
+1. Tool Call ID (or the original JSON-RPC request ID)
+Tool Request
+
+ID = 101
+
+This tracks the user's original tool invocation.
+
+
+2. Sampling Request ID
+Sampling
+
+ID = 9001
+
+This tracks the nested request that the server sent to the client.
+
+So internally, the server may maintain something like:
+
+Tool Request 101
+        │
+        └── Waiting for Sampling 9001
+
+When Sampling response 9001 arrives:
+
+9001 Complete
+
+↓
+
+Resume Tool 101
+
+↓
+
+Finish Tool 101
+
+↓
+
+Return Final Response
+
+This nested request/response model is what allows MCP to support advanced workflows like Sampling while still following standard JSON-RPC semantics. It's one of the reasons the protocol remains clean and extensible despite supporting complex, asynchronous interactions.
+
+
+
+

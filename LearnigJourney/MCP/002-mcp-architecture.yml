@@ -1,0 +1,122 @@
+Chapter 6 – Understanding the MCP Architecture:
+
+At a high level, MCP follows a client–server architecture.
+
+There are three main components:
+1. MCP Host:
+The main AI application or environment (e.g., Claude Desktop, an IDE, custom agent app, or framework like LangChain). This is where the user interacts with the AI
+
+The Host is the application where the AI runs.
+
+Examples include:
+
+Claude Desktop
+Cursor
+VS Code
+LangGraph applications
+OpenAI Agent SDK applications
+
+The Host manages the user interaction and initiates communication with external systems.
+
+2. MCP Client:
+Embedded in the Host. It manages connections to servers, translates AI requests into MCP protocol messages, handles discovery, and streams results back.
+
+The Client is responsible for communicating with MCP servers.
+
+Its responsibilities include:
+
+Discovering available tools
+Requesting resources
+Invoking tools
+Receiving responses
+Passing information back to the AI model
+
+You can think of it as the communication manager.
+
+
+3. MCP Server:
+The provider of context/tools (e.g., a local file server, database connector, CRM integration, or cloud service). Servers expose capabilities securely.
+
+The Server exposes enterprise capabilities in a standardized way.
+
+An MCP Server can represent:
+
+A SQL database
+A CRM
+A document repository
+A cloud service
+A REST API
+A Kubernetes cluster
+A vector database
+
+Rather than exposing raw APIs directly to AI models, the server presents well-defined capabilities through MCP.
+
+
+Chapter 7 – How Do They Work Together?:
+Let's walk through a real business example.
+
+A sales manager asks:
+
+"Show me the total sales for Q2 and summarize the key trends."
+
+Step 1 – User Request:
+
+The request reaches the AI application.
+
+The AI understands that answering this question requires current sales data.
+
+
+Step 2 – Tool Discovery:
+
+The MCP Client asks the connected servers:
+
+"What capabilities do you provide?"
+
+The Sales MCP Server responds:
+
+Execute SQL
+Get Sales Report
+Fetch Regional Revenue
+
+Now the AI knows which business capability is available.
+
+Step 3 – Tool Invocation:
+
+The AI decides to use the Get Sales Report tool.
+
+The MCP Client sends a request to the server.
+
+Step 4 – Business Logic:
+
+The MCP Server executes the required logic.
+
+Internally it may:
+
+Query a database
+Call SAP
+Invoke an internal REST API
+Aggregate multiple data sources
+
+The AI never needs to know these implementation details.
+
+
+Step 5 – Structured Response:
+
+The server returns structured data such as:
+
+Revenue
+Profit
+Region
+Growth percentage
+
+Step 6 – AI Reasoning:
+
+Now the AI has real business data.
+
+It analyzes the information and generates insights, for example:
+
+Sales increased by 12%.
+Western region contributed the highest growth.
+Profit margin improved compared to the previous quarter.
+
+The AI is reasoning over trusted enterprise data rather than relying on memory or assumptions.

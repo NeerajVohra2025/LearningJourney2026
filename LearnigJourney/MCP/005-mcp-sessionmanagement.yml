@@ -1,0 +1,1409 @@
+Chapter 1 – Why Do We Need a Session?:
+
+Let's first understand the problem.
+
+Suppose you walk into a bank.
+
+The receptionist gives you a token.
+Token : A102
+Now every time you meet a different officer, you don't explain who you are again.
+
+You simply say
+My Token is A102
+Immediately everyone knows
+
+your identity
+your application
+your previous requests
+your documents
+
+That token makes the conversation stateful.
+
+Exactly the same idea is used in MCP.
+
+Instead of giving the server your identity every time, the server gives the client a Session ID.
+
+
+Chapter 2 – Stateless Communication:
+
+Suppose no session exists.
+
+Every request is completely independent.
+
+Client
+
+↓
+
+Who are you?
+
+↓
+
+Server
+
+↓
+
+I don't know.
+
+Please introduce yourself.
+
+Again..
+Client
+
+↓
+
+Call SQL Tool
+
+↓
+
+Server
+
+↓
+
+Who are you?
+
+Which protocol version?
+
+Which capabilities?
+
+Authenticate again.
+
+Again...
+Client
+
+↓
+
+Read File
+
+↓
+
+Server
+
+↓
+
+Who are you?
+
+Everything starts from scratch.
+
+This is called Stateless Communication.
+
+
+Chapter 3 – Stateful Communication:
+
+Now let's use a session.
+
+The client introduces itself only once.
+Client
+
+↓
+
+Hello
+
+↓
+
+Server
+
+↓
+
+Welcome
+
+Session ID = XYZ123
+Now every future request becomes
+Client
+
+↓
+
+Session ID = XYZ123
+
+Execute SQL
+Server immediately understands
+
+This is the same client.
+
+No need to negotiate again.
+
+
+Chapter 4 – Session Establishment:
+This is the first communication.
+
+Nothing about business.
+
+Only setup.
+
+Imagine a brand-new MCP Client starts.
+OpenAI Agent SDK
+
+↓
+
+MCP Client
+
+↓
+
+No Session Exists
+The first thing the client does is initialize.
+
+
+Step 1 — Client Sends Initialize Request:
+
+The client sends
+POST /mcp
+
+Body
+initialize
+
+Inside this initialize request it sends
+MCP protocol version
+Client Name
+Client Version
+Supported Features
+Capabilities
+
+Example
+Client
+
+↓
+
+initialize
+
+↓
+
+Protocol = 2025
+
+Capabilities
+
+✓ Tools
+
+✓ Resources
+
+✓ Prompts
+
+✓ Sampling
+
+Think of it as introducing yourself.
+
+
+Step 2 — Server Reads Initialize Request:
+
+The server now checks
+
+Protocol Compatible?
+
+↓
+
+Yes
+
+Capabilities Supported?
+
+↓
+
+Yes
+
+If everything matches,
+
+the server creates a brand-new session.
+
+
+Step 3 — Server Generates Session:
+
+The server now creates
+Session
+
+↓
+
+XYZ-987654
+This session is stored inside server memory.
+
+Server Memory
+
+Session
+
+XYZ987654
+
+↓
+
+Client
+
+Capabilities
+
+Authentication
+
+Permissions
+
+Tool Access
+
+
+Step 4 — Server Returns Session ID:
+
+Now the server replies
+
+HTTP Response
+
+Headers
+
+MCP-Session-ID
+
+XYZ987654
+
+Notice
+
+The Session ID is generally returned in the HTTP headers—not inside the JSON body.
+
+
+Step 5 — Client Stores Session:
+
+Now the client saves
+Session
+
+XYZ987654
+
+From this moment,
+
+the client never needs to initialize again until the session expires.
+
+
+
+Chapter 5 – Initialized Notification:
+
+One more step remains.
+
+The client now sends
+notifications/initialized
+
+This means
+
+Initialization completed successfully.
+
+
+Server replies
+
+Nothing.
+
+Because notifications don't expect responses.
+
+Now both sides are ready.
+
+
+Chapter 6 – Business Communication Starts:
+Now the user asks
+
+Show today's sales.
+
+The AI understands
+
+"I need SQL."
+
+The Agent asks the MCP Client.
+
+Client sends
+
+POST /mcp
+
+Headers
+
+MCP-Session-ID
+
+XYZ987654
+
+Body
+
+tools/call
+
+ExecuteSQL
+
+
+Notice
+
+The client sends the Session ID again.
+
+YES
+
+Every future HTTP request includes
+
+Session ID
+
+Otherwise,
+
+the server cannot identify which conversation this request belongs to.
+
+Chapter 7 – What Happens Inside Server?:
+
+The request reaches
+MCP Server
+Server immediately checks
+
+Session ID
+
+↓
+
+XYZ987654
+
+↓
+
+Found
+
+
+Server loads
+User
+
+Permissions
+
+Capabilities
+
+Authentication
+
+Tool Context
+No initialization required.
+
+
+Chapter 8 – Long Running Task:
+
+Suppose SQL takes
+
+30 seconds.
+
+Should the client simply wait?
+
+That would look like
+
+Waiting...
+
+Waiting...
+
+Waiting...
+
+Poor user experience.
+
+Instead,
+
+the server streams progress.
+
+
+Chapter 9 – Is This SSE?:
+
+This is the most common interview question.
+
+The answer is
+
+Yes, typically Streamable HTTP uses Server-Sent Events (SSE) or another streaming mechanism underneath, depending on the implementation.
+
+Think of SSE as a one-way communication channel:
+Server
+
+↓
+
+↓
+
+↓
+
+↓
+
+↓
+
+Client
+
+Only the server continuously sends updates.
+
+The client only listens.
+
+
+Chapter 10 – Streaming Begins:
+
+Client sends
+tools/call
+
+Server replies immediately
+Accepted
+
+Processing Started
+
+Now
+
+the HTTP connection remains open.
+
+Server starts sending events.
+event
+
+↓
+
+10%
+
+Reading Database
+
+Few seconds later
+event
+
+↓
+
+20%
+
+Executing SQL
+Again
+event
+
+↓
+
+45%
+
+Filtering Records
+
+Again
+event
+
+↓
+
+70%
+
+Generating Summary
+
+Again
+event
+
+↓
+
+95%
+
+Formatting Response
+
+Finally
+Completed
+Connection closes.
+
+
+Chapter 11 – Visual Timeline:
+Client                     Server
+
+ |                           |
+ |----Initialize-----------> |
+ |                           |
+ |<---Session ID------------ |
+ |                           |
+ |----Initialized----------> |
+ |                           |
+ |                           |
+ |----tools/call-----------> |
+ |                           |
+ |<------10%---------------- |
+ |<------20%---------------- |
+ |<------45%---------------- |
+ |<------70%---------------- |
+ |<------95%---------------- |
+ |<------Completed---------- |
+ 
+ Notice
+
+Only one request.
+
+Multiple responses.
+
+
+Chapter 12 – Next Request:
+
+Five minutes later
+
+User asks
+Summarize Revenue
+Client sends
+
+POST /mcp
+
+Headers
+
+Session-ID
+
+XYZ987654
+
+
+Body
+
+tools/call
+
+SummarizeRevenue
+
+Server immediately knows
+
+Same Client
+
+Same Session
+
+Same Permissions
+
+No initialization.
+
+No capability negotiation.
+
+No authentication handshake.
+
+
+
+Chapter 13 – Why Session Makes MCP Stateful:
+
+Without a session:
+Every request is independent.
+Request
+
+↓
+
+Authenticate
+
+↓
+
+Negotiate
+
+↓
+
+Execute
+
+↓
+
+Forget Everything
+
+
+With a session:
+Initialize Once
+
+↓
+
+Session Created
+
+↓
+
+Request 1
+
+↓
+
+Request 2
+
+↓
+
+Request 3
+
+↓
+
+Request 4
+
+↓
+
+Session Ends
+
+The server remembers the client throughout the lifetime of the session.
+
+
+Chapter 14 – When Does the Session End?:
+
+A session typically ends when:
+
+The client explicitly disconnects.
+The server times out due to inactivity.
+The server restarts.
+The session expires based on policy.
+Authentication is revoked.
+
+After that, the client must perform the initialization handshake again to establish a new session.
+
+
+
+Chapter 15 – Putting It All Together:
+User
+ │
+ ▼
+OpenAI Agent SDK
+ │
+ ▼
+MCP Client
+ │
+ │ ① Initialize
+ ▼
+MCP Server
+ │
+ │ ② Create Session
+ │
+ │ ③ Return Session ID
+ ▼
+Session Established
+ │
+ │
+ │ ④ tools/call (Session ID included)
+ ▼
+Database
+ │
+ ▼
+Server Processing
+ │
+ ├── 10% Reading Data
+ ├── 20% Executing Query
+ ├── 45% Processing Results
+ ├── 70% Generating Summary
+ ├── 95% Formatting Output
+ ▼
+Completed Response
+ │
+ ▼
+Client Receives Final Result
+ │
+ ▼
+Next Request → Same Session ID → Same Context
+
+
+Important Clarification:
+
+One subtle but important point: the Session ID does not store the AI conversation or memory. It identifies the communication session between the MCP client and server. Conversation history, agent memory, or workflow state (if needed) is typically managed by the AI application or framework (such as the OpenAI Agent SDK or LangGraph), not by MCP itself.
+
+So you can think of it this way:
+
+Session ID → "Who is this client connection?"
+Agent Memory → "What has this user been discussing?"
+MCP Server → "What tools and resources can this client access?"
+
+Keeping these responsibilities separate is one of the reasons MCP remains simple, scalable, and interoperable across different AI frameworks and enterprise systems.
+
+
+HTTP Connection, MCP Session, and TCP Connection. They are three different things.
+Three Different Concepts:
+| Concept         | Lifetime                                    | Purpose                                               |
+| --------------- | ------------------------------------------- | ----------------------------------------------------- |
+| HTTP Connection | One request (or until HTTP keep-alive ends) | Carries the request and response                      |
+| MCP Session     | Multiple requests                           | Maintains client identity and negotiated capabilities |
+| TCP Connection  | Managed by HTTP/OS                          | Physical network connection                           |
+
+
+Think of a Bank Example
+
+Imagine you visit a bank.
+
+You receive
+
+Token Number : A102
+
+Now let's distinguish three things.
+
+Your Token
+A102
+
+This is like
+
+MCP Session
+
+It remains valid until your work is finished.
+
+Walking to Counter 5:
+
+You walk to Counter 5.
+
+Talk.
+
+Finish.
+
+Walk away.
+
+This is like
+
+HTTP Request
+
+Conversation ends.
+
+
+Going Again to Counter 8:
+
+Later you visit another counter.
+
+You again show
+
+Token A102
+
+This is another HTTP request.
+
+Same session.
+
+Different interaction.
+
+Understanding Request vs Stream vs Session vs TCP Connection:
+Chapter 1 – Let's Start with a Real-Life Example
+
+Imagine you order food from Swiggy.
+
+There are four different things happening simultaneously.
+Internet Connection
+        │
+        ▼
+Your Login
+        │
+        ▼
+Your Food Order
+        │
+        ▼
+Live Order Tracking
+
+
+These are completely different concepts.
+
+Let's map them.
+| Swiggy              | MCP              |
+| ------------------- | ---------------- |
+| Internet Connection | TCP Connection   |
+| Login               | MCP Session      |
+| Food Order          | JSON-RPC Request |
+| Live Order Tracking | SSE Stream       |
+
+Notice that they are related, but each has a different responsibility.
+
+
+Chapter 2 – Layer 1: TCP Connection (The Physical Road)
+
+Let's begin with the lowest layer.
+
+Suppose your laptop wants to communicate with an MCP Server running in AWS.
+
+Before sending any data, the operating system creates a TCP connection.
+
+Think of TCP as building a road.
+
+Laptop
+    │
+====Road========================
+    │
+AWS MCP Server
+
+Without this road, nothing can travel.
+
+TCP doesn't know anything about:
+
+AI
+MCP
+JSON
+Tools
+Sessions
+
+It only knows:
+
+"I transport bytes reliably."
+
+
+What Happens?
+Client
+
+↓
+
+TCP Handshake
+
+↓
+
+Connection Established
+
+↓
+
+Ready to Transfer Data
+
+
+Now the road exists.
+
+Nothing more.
+
+
+
+Chapter 3 – Layer 2: HTTP Lives on TCP
+
+Now imagine you already have a road.
+
+Can the restaurant know what you want?
+No.
+
+You still need to send an order.
+
+This is HTTP.
+
+TCP Road
+
+↓
+
+HTTP POST
+
+↓
+
+Server
+
+HTTP is simply a structured message travelling over TCP.
+
+Example:
+POST /mcp
+
+Body
+
+{
+   JSON-RPC
+}
+
+Notice
+
+HTTP is using TCP.
+
+It doesn't create another network.
+
+
+Chapter 4 – Modern HTTP Keep-Alive:
+
+Now comes an important question.
+
+Instead of building a new road every time,
+
+can we reuse the same road?
+
+Yes.
+
+Modern HTTP does exactly that.
+
+TCP Connection
+
+=================================
+
+Request 1
+
+↓
+
+Response
+
+↓
+
+Request 2
+
+↓
+
+Response
+
+↓
+
+Request 3
+
+↓
+
+Response
+
+=================================
+
+One TCP connection.
+
+Many HTTP requests.
+
+This is called
+
+HTTP Keep-Alive.
+
+
+Chapter 5 – Then Why Do We Need an MCP Session?:
+
+This is the biggest confusion.
+
+People think
+
+TCP Connection = MCP Session
+
+They are completely different.
+
+Let's understand why.
+
+Suppose the TCP connection breaks because of Wi-Fi issues.
+TCP
+
+Disconnected
+
+Does your login disappear?:
+No.
+
+You reconnect.
+
+Continue working.
+
+Exactly the same happens with MCP.
+
+The session still exists.
+
+Only the network connection was interrupted.
+
+
+Think of Gmail
+
+You login to Gmail.
+Session
+
+ABC123
+
+Now
+
+Wi-Fi disconnects.
+
+After reconnecting,
+
+you are still logged in.
+Because
+Session
+
+ABC123
+
+Still Exists
+TCP and Session are independent.
+
+
+Chapter 6 – What Exactly is an MCP Session?:
+
+An MCP Session represents the logical relationship between one client and one server.
+
+When the client initializes,
+
+the server creates
+Session
+
+XYZ123
+
+Inside the session,
+
+the server remembers:
+Client Name
+
+Authentication
+
+Permissions
+
+Capabilities
+
+Protocol Version
+
+Notice:
+It does NOT remember
+TCP connection
+HTTP request
+JSON-RPC request
+It only remembers:
+"Who is this client?"
+
+Chapter 7 – Why Send Session ID in Every Request?:
+
+Suppose after initialization,
+
+the client sends
+tools/call
+How will the server know
+which client?
+
+Simple.
+
+Headers
+which client?
+
+Simple.
+
+Headers
+MCP-Session-ID
+
+XYZ123
+Now the server loads
+Session
+
+XYZ123
+
+Immediately it knows
+Client
+
+Capabilities
+
+Authentication
+
+Permissions
+
+No initialization again.
+
+
+Chapter 8 – JSON-RPC Request IDs:
+
+Now imagine
+
+the user asks
+
+Summarize Sales
+The client sends
+Request ID
+
+101
+
+Immediately,:
+
+before the first task finishes,
+
+the user asks
+
+Search Customer
+
+Client sends
+Request ID
+
+102
+
+Then
+Read PDF
+Request ID
+
+103
+
+Notice
+
+All belong to the same session.
+Session XYZ
+
+↓
+
+Request 101
+
+↓
+
+Request 102
+
+↓
+
+Request 103
+
+
+Chapter 9 – Why Request IDs Are Needed:
+
+Suppose
+
+Request 103 finishes first.
+
+Then
+
+Request 101.
+
+Then
+
+Request 102.
+
+How will the client know which response belongs to which request?
+
+Because every response contains
+Request ID
+Example
+Request
+
+101
+
+↓
+
+Response
+
+101
+
+Request
+
+102
+
+↓
+
+Response
+
+102
+
+No confusion.
+
+
+
+Chapter 10 – What is an SSE Stream?:
+
+Now let's assume
+
+Request 101
+
+takes 60 seconds.
+
+Instead of waiting,
+
+the server starts streaming.
+
+Request ID
+
+101
+
+↓
+
+10%
+
+↓
+
+20%
+
+↓
+
+40%
+
+↓
+
+80%
+
+↓
+
+Completed
+
+This continuous flow of events is called an SSE (Server-Sent Events) Stream.
+
+Notice
+
+The stream belongs only to
+
+Request
+
+101
+
+Not the entire session.
+
+
+Chapter 11 – Complete Picture:
+
+Suppose one session contains three requests.
+
+Session XYZ
+
+│
+├── Request 101
+│      │
+│      ├──10%
+│      ├──40%
+│      ├──80%
+│      └──Completed
+│
+├── Request 102
+│      │
+│      ├──20%
+│      ├──70%
+│      └──Completed
+│
+└── Request 103
+       │
+       └──Completed
+       
+Each request has its own stream.
+
+All belong to the same session.    
+
+
+Chapter 12 – Multiple Concurrent Requests:
+
+This is where MCP becomes powerful.
+
+Suppose an AI Agent decides to perform three operations simultaneously.  
+Search SQL
+
+Search PDF
+
+Call Weather API
+
+
+The client sends:
+Request 201
+
+↓
+
+SQL
+
+Request 202
+
+↓
+
+PDF
+
+
+Request 203
+
+↓
+
+Weather API
+
+
+All share
+Session
+
+XYZ123
+
+
+Chapter 13 – Server Processing:
+
+The server starts processing all three requests independently.
+Session XYZ
+
+│
+├──201 SQL
+│
+├──202 PDF
+│
+└──203 Weather
+
+Each request has its own progress.
+
+SQL
+
+10%
+
+30%
+
+80%
+
+
+PDF
+
+20%
+
+50%
+
+Completed
+
+Weather
+
+Completed
+
+Everything happens simultaneously.
+
+
+Chapter 14 – How Does the Client Match Responses?:
+
+Imagine the server sends
+Request ID
+
+202
+
+↓
+
+Completed
+The client immediately knows
+This belongs to
+
+PDF Search
+
+Then
+Request ID
+
+201
+
+↓
+
+40%
+The client updates only the SQL progress.
+Then
+
+
+Request ID
+
+203
+
+↓
+
+Completed
+
+Weather request finishes.
+
+No confusion because every event carries its Request ID.
+
+
+
+Chapter 15 – Answering Your Question: If HTTP Keep-Alive Already Supports Multiple Requests, Why Do We Need MCP Sessions?
+
+This is a very important distinction.
+
+
+HTTP Keep-Alive:
+
+HTTP Keep-Alive is a network optimization.
+
+Its only job is to avoid creating a new TCP connection for every request.
+
+It remembers nothing about:
+
+the client
+permissions
+negotiated capabilities
+protocol version
+
+If the TCP connection closes, Keep-Alive ends
+
+
+MCP Session:
+
+The MCP Session is an application-level concept.
+
+It stores logical state such as:
+
+Client identity
+Protocol version
+Supported capabilities
+Authentication context
+Authorization and permissions
+
+Even if the underlying TCP connection is dropped and a new one is established, the client can continue using the same MCP Session ID (provided the session is still valid on the server). The server recognizes the client because of the Session ID, not because of the TCP connection.
+
+
+So:
+
+TCP Keep-Alive improves network efficiency.
+MCP Session provides logical continuity across requests.
+
+
+Chapter 16 – Complete End-to-End Sequence:
+
+                  TCP CONNECTION
+==================================================
+Established Once
+==================================================
+
+                  HTTP REQUESTS
+==================================================
+Initialize
+Tools/List
+Tools/Call
+Resources/Read
+Tools/Call
+==================================================
+
+                  MCP SESSION
+==================================================
+Session ID = XYZ123
+Authentication
+Capabilities
+Permissions
+==================================================
+
+             JSON-RPC REQUEST IDs
+==================================================
+Request 101 → SQL Query
+Request 102 → Read PDF
+Request 103 → Weather API
+==================================================
+
+                SSE STREAMS
+==================================================
+Request 101
+10%
+20%
+50%
+Completed
+
+----------------------------
+
+Request 102
+30%
+70%
+Completed
+
+----------------------------
+
+Request 103
+Completed
+==================================================
+
+
+Final Mental Model:
+
+Think of these layers as a corporate office building:
+
+TCP Connection → The road leading to the office building.
+HTTP → Each visit through the reception desk to submit a task.
+MCP Session → Your employee ID badge, proving who you are across many visits.
+JSON-RPC Request ID → The ticket number assigned to each individual task.
+SSE Stream → The live status updates for that specific ticket ("In Progress", "50% Complete", "Completed").
+
+Each layer has a unique responsibility, and together they enable MCP to support efficient, stateful, concurrent communication without mixing networking concerns with application state.
+
+
+

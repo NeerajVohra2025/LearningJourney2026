@@ -1,0 +1,439 @@
+Chapter 1 – First Understand Who the "Client" Really Is:
+
+Most people imagine this.
+User
+
+↓
+
+MCP Client
+
+↓
+
+Server
+
+This is not the complete picture.
+
+The real architecture looks like this.
+
+User
+
+↓
+
+OpenAI Agent SDK
+(LangGraph / Claude Desktop)
+
+↓
+
+MCP Client
+
+↓
+
+MCP Server
+
+Notice something.
+
+The MCP Client is only one component inside the application.
+
+It is not the AI.
+
+
+
+Chapter 2 – What Does the MCP Client Actually Do?:
+
+Think of the MCP Client as a communication library
+
+Its responsibilities are:
+
+Create Session
+Send JSON-RPC Requests
+Receive JSON-RPC Messages
+Maintain Session IDs
+Maintain Request IDs
+Parse Messages
+
+That's it.
+
+It doesn't know how to think.
+
+It doesn't know GPT.
+
+It doesn't summarize documents.
+
+It is simply the communication layer.
+
+Think of it like a JDBC driver.
+
+Application
+
+↓
+
+JDBC Driver
+
+↓
+
+Database
+
+The JDBC Driver never decides which SQL to execute.
+
+The application does.
+
+Exactly the same idea.
+
+
+
+Chapter 3 – So Who Owns the LLM?:
+
+The AI Host Application.    .
+
+For example,
+OpenAI Agent SDK
+
+↓
+
+GPT-5
+
+↓
+
+Response
+
+or
+Claude Desktop
+
+↓
+
+Claude
+
+↓
+
+Response
+
+or
+Cursor
+
+↓
+
+GPT
+
+↓
+
+Response
+
+The MCP Client simply forwards requests.
+
+
+Chapter 4 – Complete Architecture:
+
+Let's expand the architecture.
+
+                    User
+                      │
+                      ▼
+             OpenAI Agent SDK
+             (Actual AI Logic)
+                      │
+                      ▼
+               MCP Client
+          (Communication Layer)
+                      │
+        HTTP + JSON-RPC + Session
+                      │
+                      ▼
+                MCP Server
+                      │
+                      ▼
+                 SQL Database
+                 
+Now let's see where Sampling enters.
+
+
+Chapter 5 – User Starts a Tool:
+
+Suppose the user asks
+Summarize Support Tickets
+The Agent decides
+
+Need Support Tool
+
+The MCP Client sends
+
+tools/call
+
+to the server.
+
+
+
+Chapter 6 – Server Needs AI:
+
+The server retrieves
+500 Tickets
+
+Now it thinks
+I cannot summarize.
+
+Need LLM.
+
+The server creates
+
+sampling/createMessage
+
+
+Chapter 7 – Where Does Sampling Reach?:
+
+The Sampling request arrives over the server→client stream.
+Server
+
+↓
+
+Sampling Request
+
+↓
+
+MCP Client
+
+At this point,
+
+the MCP Client reads the JSON.
+
+It recognizes
+Method
+
+sampling/createMessage
+
+Now an important thing happens.
+
+The MCP Client does not execute GPT.
+
+Instead,
+
+it raises an event (or callback) to the host application.
+
+Think of it as saying:
+Host,
+
+the server is requesting Sampling.
+
+Please handle it.
+
+
+Chapter 8 – The Host Application Takes Over:
+
+Now the flow becomes:
+MCP Client
+
+↓
+
+Host Application
+
+↓
+
+OpenAI Agent SDK
+
+↓
+
+GPT
+
+Notice
+
+The MCP Client is finished.
+
+It has only delivered the message.
+
+
+Chapter 9 – Why Does not the MCP Client Call GPT?:
+
+Because the MCP Client has no knowledge of:
+
+GPT
+Claude
+Gemini
+API Keys
+Billing
+Prompt Engineering
+Memory
+Guardrails
+Human Approval
+
+All of that belongs to the Host.
+
+Imagine the MCP Client tried to call GPT.
+
+Which model?
+
+GPT?
+
+Claude?
+
+Gemini?
+
+Llama?
+
+It doesn't know.
+
+The Host decides.
+
+    
+
+Chapter 10 – Host Creates the Prompt:
+The Sampling request contains something like
+
+Summarize these tickets.
+
+The Host may enhance it.
+
+For example,
+
+System Prompt
+
+↓
+
+Use enterprise policy.
+
+↓
+
+Don't expose PII.
+
+↓
+
+Temperature = 0.2
+
+↓
+
+Use GPT-5
+
+Only the Host knows these rules. 
+
+
+Chapter 11 – Host Calls the LLM:
+
+Now the Host invokes            
+GPT
+
+↓
+
+Thinking...
+
+↓
+
+Summary Generated
+
+GPT returns
+Top Issue
+
+Login Failure
+
+35%
+
+The Host receives the response.
+
+
+Chapter 12 – Who Sends the Response Back?:
+
+Again,
+
+not GPT.
+
+Not the Agent SDK directly.
+
+The Host hands the response back to the MCP Client.    
+
+Chapter 12 – Who Sends the Response Back?
+
+Again,
+
+not GPT.
+
+Not the Agent SDK directly.
+
+The Host hands the response back to the MCP Client.
+GPT
+
+↓
+
+Host
+
+↓
+
+MCP Client
+
+Now the MCP Client creates the JSON-RPC response.
+{
+   id : 9001,
+
+   result : "Summary..."
+}
+
+Then it performs
+HTTP POST
+
+↓
+
+Server
+
+
+Chapter 13 – Visual End-to-End Flow:
+               USER
+                 │
+                 ▼
+        OpenAI Agent SDK
+      (Actual AI Requester)
+                 │
+                 ▼
+            MCP Client
+      (Communication Layer)
+                 │
+──────────────────────────────────
+                 │
+            MCP Server
+                 │
+           Read Database
+                 │
+        Need AI Summary
+                 │
+──────────────────────────────────
+                 │
+Sampling Request
+                 │
+                 ▼
+            MCP Client
+                 │
+      Callback to Host
+                 │
+                 ▼
+        OpenAI Agent SDK
+                 │
+                 ▼
+               GPT
+                 │
+          Generate Summary
+                 │
+                 ▼
+        OpenAI Agent SDK
+                 │
+                 ▼
+            MCP Client
+                 │
+HTTP POST (Sampling Result)
+                 │
+                 ▼
+            MCP Server
+                 │
+          Resume Tool Call
+                 │
+                 ▼
+        Final Response
+        
+        
+Chapter 14 – Why This Design Is Brilliant:
+
+This separation of responsibilities is intentional      
+
+| Component                                                         | Responsibility                                                                                                                |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| MCP Client                                                        | Protocol communication (sessions, JSON-RPC, message routing)                                                                  |
+| Host Application (OpenAI Agent SDK, Claude Desktop, Cursor, etc.) | Decides whether to honor the sampling request, applies policies, selects the model, invokes the LLM, and receives the result. |
+| LLM                                                               | Performs reasoning and generates the answer.                                                                                  |
+| MCP Server                                                        | Requests AI assistance when needed and continues processing after receiving the result.                                       |
+  
+  
+This design allows the same MCP Client library to work with any AI model because it never hardcodes model-specific logic.
+  

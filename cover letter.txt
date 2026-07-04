@@ -1,0 +1,18 @@
+Dear Hiring Manager,
+
+I am applying for the GenAI Architect position. I bring over 20 years of experience in cloud-native architecture, distributed systems, and DevOps, with recent specialization in Generative AI, Agentic AI, and multi-agent systems.
+
+In my current role at HCL Technologies, I designed and implemented a production-grade AI-driven incident management platform using LangGraph, OpenAI Agents SDK, Model Context Protocol (MCP), and Retrieval-Augmented Generation (RAG). This solution automates the entire incident lifecycle—from ingestion and analysis to root cause identification and remediation—resulting in a 40% reduction in MTTR and eliminating dependency on manual L1/L2 operations.
+
+I have extensive experience building scalable, cloud-native platforms across AWS and GCP, including ECS, EKS, Fargate, and GKE. I have delivered measurable business impact by reducing cloud infrastructure costs by 35% through Terraform-based Infrastructure as Code and workload optimization. My expertise also includes Kubernetes, Helm, Istio, CI/CD pipelines (GitLab, Jenkins), and observability frameworks such as OpenTelemetry and CloudWatch.
+
+What differentiates my profile is the combination of deep experience in distributed systems and modern GenAI architectures. I focus on building enterprise-grade AI systems that integrate reasoning, memory, and tool execution at scale, ensuring they are production-ready, scalable, and cost-efficient.
+
+I would welcome the opportunity to contribute to your organization by designing and delivering next-generation AI platforms. I am open to opportunities in the United States and remote roles.
+
+Thank you for your time and consideration.
+
+Sincerely,
+Neeraj Vohra
+Email: [vohraaneeraj@gmail.com](mailto:vohraaneeraj@gmail.com)
+Phone: +91-9871037773

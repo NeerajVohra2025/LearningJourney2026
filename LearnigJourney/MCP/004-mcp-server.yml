@@ -1,0 +1,66 @@
+Chapter 9 – What Are Resources, Tools, and Prompts?:
+
+These are the three primary concepts exposed by an MCP Server.
+Resources:
+
+Resources provide information.
+
+Examples:
+
+PDF documents
+SQL tables
+Configuration files
+Knowledge base articles
+
+Resources are typically read-only.
+
+
+Tools:
+
+Tools perform actions.
+
+Examples:
+
+Execute SQL
+Send Email
+Create Jira Ticket
+Deploy Kubernetes Application
+Search Documentation
+
+Unlike resources, tools can modify external systems.
+
+
+Prompts:
+
+Prompts are reusable templates that guide AI behavior.
+
+Instead of rewriting complex prompts repeatedly, organizations can publish standardized prompts through MCP.
+
+
+Chapter 10 – Where Do Agent Frameworks Fit?:
+
+Many people think MCP replaces agent frameworks.
+
+It does not.
+
+Agent frameworks and MCP solve different problems.
+
+For example, the OpenAI Agent SDK or LangGraph is responsible for:
+
+Planning
+Reasoning
+Multi-agent orchestration
+Memory
+Guardrails
+Workflow execution
+
+MCP is responsible for:
+
+Discovering enterprise capabilities
+Accessing data
+Executing tools
+Standardizing communication
+
+An agent framework decides what should happen.
+
+MCP provides the standardized way to interact with external systems to make it happen.

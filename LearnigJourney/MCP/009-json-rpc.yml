@@ -1,0 +1,466 @@
+Part 1 – Why JSON-RPC?
+Why MCP chose JSON-RPC instead of REST
+Difference between HTTP and JSON-RPC
+Why every MCP message is a JSON-RPC message
+How Transport and JSON-RPC work togetherx`
+
+Chapter 1 – Understanding JSON-RPC:
+
+Imagine you call customer care.
+
+Instead of saying:
+
+"Do something..."
+
+you say
+
+"Reset my password."
+
+The operator immediately understands
+
+what operation
+what parameters
+who requested it
+
+JSON-RPC follows exactly the same idea.
+
+Every message contains
+Who am I?
+
+↓
+
+What operation?
+
+↓
+
+What parameters?
+
+↓
+
+Which request?
+
+↓
+
+Where should I return the result?
+
+
+Chapter 2 – Anatomy of Every JSON-RPC Message:
+
+We'll explain every field
+{
+   "jsonrpc":"2.0",
+
+   "id":101,
+
+   "method":"tools/call",
+
+   "params":{...}
+}
+We'll explain
+jsonrpc
+
+↓
+
+id
+
+↓
+
+method
+
+↓
+
+params
+One by one.
+
+
+
+Chapter 3 – Request Object:
+
+We'll explain
+What is Request?
+
+Why Request ID?
+
+When ID is generated?
+
+Who generates it?
+
+Why server never changes it?
+Then
+
+Complete JSON
+{
+  "jsonrpc":"2.0",
+  "id":101,
+  "method":"tools/call",
+  "params":{
+      ...
+  }
+}
+
+We'll trace every field.
+
+Chapter 4 – Parameters Object:
+
+We'll explain
+
+Why params exist.
+
+Without params
+
+Execute SQL
+
+Which SQL?
+
+Impossible.
+
+With params
+{
+   query:
+   SELECT * FROM SALES
+}
+
+Now the server understands.
+
+Then
+
+Nested params
+
+Objects
+
+Arrays
+
+Optional parameters
+
+Validation
+Complete examples.
+
+Chapter 5 – Notification Object:
+
+One of the most misunderstood topics.
+
+We'll explain
+Request
+
+↓
+
+expects response
+vs:
+Notification
+
+↓
+
+No response
+
+Example:
+notifications/initialized
+Why server never replies.
+
+How notification reduces traffic.
+
+When notification should NOT be used.
+
+
+Chapter 6 – Response Object:
+
+We'll explain
+
+How server returns
+{
+  id:101,
+
+  result:{...}
+}
+
+Why same ID returns.
+
+How client matches response.
+
+What happens if responses arrive out of order.
+
+Chapter 7 – Error Object
+
+We'll explain
+
+Normal response
+
+vs
+
+Error response
+{
+   error:{
+      code,
+
+      message,
+
+      data
+   }
+}
+
+
+Difference between
+Tool Error
+
+Transport Error
+
+Protocol Error
+
+Application Error
+
+
+Chapter 8 – Batch Requests:
+
+Very few tutorials explain this correctly.
+
+We'll explain
+
+Why Batch exists.
+
+Instead of
+
+Request 1
+
+↓
+
+Request 2
+
+↓
+
+Request 3
+
+Client sends
+
+[
+ Request1,
+
+ Request2,
+
+ Request3
+]
+
+
+Server processes independently.
+
+Responses may return
+103
+
+↓
+
+101
+
+↓
+
+102
+
+Still works because of IDs.
+
+
+Chapter 9 – End-to-End Flow:
+
+We'll build a complete enterprise example.
+
+User asks
+Generate Quarterly Report
+
+Complete flow:
+User
+
+↓
+
+OpenAI Agent SDK
+
+↓
+
+MCP Client
+
+↓
+
+JSON Request
+
+↓
+
+HTTP
+
+↓
+
+MCP Server
+
+↓
+
+SQL
+
+↓
+
+Sampling
+
+↓
+
+LLM
+
+↓
+
+Sampling Response
+
+↓
+
+Resume
+
+↓
+
+JSON Response
+
+↓
+
+HTTP
+
+↓
+
+Client
+
+↓
+
+User
+
+
+Every JSON payload shown.
+
+Every Request ID shown.
+
+Every Session ID shown.
+
+Every Notification shown.
+
+Every SSE event shown.
+
+Every Error shown.
+
+
+
+
+Chapter 10 – Sequence Diagram:
+
+Complete enterprise sequence.
+Initialize
+
+↓
+
+Response
+
+↓
+
+Notification
+
+↓
+
+Tools/List
+
+↓
+
+Response
+
+↓
+
+Tools/Call
+
+↓
+
+Progress
+
+↓
+
+Sampling
+
+↓
+
+Sampling Response
+
+↓
+
+Continue
+
+↓
+
+Final Response
+
+
+Chapter 11 – Real JSON Payloads:
+
+We'll build actual payloads like
+
+Initialize:
+{
+  "jsonrpc":"2.0",
+  "id":1,
+  "method":"initialize",
+  "params":{
+      "protocolVersion":"2025-06-18",
+      "capabilities":{
+          "sampling":{},
+          "tools":{},
+          "resources":{}
+      },
+      "clientInfo":{
+          "name":"OpenAI Agent SDK",
+          "version":"1.0"
+      }
+  }
+}
+
+
+Tool Call:
+{
+  "jsonrpc":"2.0",
+  "id":101,
+  "method":"tools/call",
+  "params":{
+      "name":"execute_sql",
+      "arguments":{
+          "query":"SELECT * FROM SALES"
+      }
+  }
+}
+
+Progress Notification (Server → Client):
+{
+  "jsonrpc":"2.0",
+  "method":"notifications/progress",
+  "params":{
+      "progress":40,
+      "message":"Reading Database"
+  }
+}
+
+
+Sampling Request:
+{
+  "jsonrpc":"2.0",
+  "id":9001,
+  "method":"sampling/createMessage",
+  "params":{
+      "messages":[
+          {
+              "role":"user",
+              "content":"Summarize these tickets."
+          }
+      ]
+  }
+}
+
+Sampling Response:
+{
+  "jsonrpc":"2.0",
+  "id":9001,
+  "result":{
+      "content":"Top issue is Login Failure..."
+  }
+}
+
+
+Final Tool Response:
+{
+  "jsonrpc":"2.0",
+  "id":101,
+  "result":{
+      "summary":"Revenue increased by 12%."
+  }
+}
