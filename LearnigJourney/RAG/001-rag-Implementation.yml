@@ -1,0 +1,231 @@
+Just as we studied FastMCP, we'll study RAG from the API perspective.:
+RAG
+
+↓
+
+Load Documents
+
+↓
+
+Split Documents
+
+↓
+
+Generate Embeddings
+
+↓
+
+Store Vectors
+
+↓
+
+Query
+
+↓
+
+Retrieve
+
+↓
+
+Rerank
+
+↓
+
+Prompt
+
+↓
+
+LLM
+
+Part 1 — Packages:
+
+Instead of just installing packages, let's understand why each one exists.
+
+Core Packages
+uv add langchain
+uv add langchain-community
+uv add langchain-core
+
+uv add langchain-text-splitters
+
+uv add langchain-ollama
+
+uv add langchain-chroma
+
+uv add chromadb
+
+uv add pypdf
+
+uv add unstructured
+
+uv add sentence-transformers
+
+uv add fastapi
+
+uv add uvicorn
+
+
+
+Why each package?:
+langchain
+
+Think of it as
+Spring Framework
+It provides
+
+Chains
+Documents
+Retrievers
+Runnables
+Prompts
+
+
+langchain-community
+Contains
+PDF Loader
+
+Word Loader
+
+CSV Loader
+
+SQL Loader
+
+SharePoint Loader
+All integrations.
+
+
+langchain-text-splitters
+Contains
+Character Splitter
+
+Recursive Splitter
+
+Markdown Splitter
+
+HTML Splitter
+
+Token Splitter
+
+
+
+langchain-ollama
+Connects
+Python
+
+↓
+
+Ollama
+
+↓
+
+Llama3
+
+
+langchain-chroma
+
+Vector Store integration.
+Python
+
+↓
+
+ChromaDB
+
+
+chromadb
+
+Actual Vector Database.
+
+
+sentence-transformers
+
+Embedding models.
+
+
+pypdf
+
+Reads PDF.
+
+
+unstructured
+
+Enterprise parser.
+
+Reads
+
+PDF
+DOCX
+HTML
+PPT
+Email
+
+Project Structure:
+rag-demo/
+
+src/
+
+rag_demo/
+
+loaders/
+
+splitters/
+
+embeddings/
+
+vectordb/
+
+retrievers/
+
+chains/
+
+prompts/
+
+config/
+
+utils/
+
+
+RAG APIs:
+
+Unlike MCP
+
+which has
+tool()
+
+resource()
+
+prompt()
+RAG has:
+
+DocumentLoader
+
+↓
+
+TextSplitter
+
+↓
+
+EmbeddingModel
+
+↓
+
+VectorStore
+
+↓
+
+Retriever
+
+↓
+
+Prompt
+
+↓
+
+LLM
+
+↓
+
+Chain
+
+
+
+

@@ -1,0 +1,202 @@
+PART 2:
+Ingestion APIs:
+
+Raw Documents
+
+↓
+
+Document Loader
+
+↓
+
+Document Parser
+
+↓
+
+Document Cleaner
+
+↓
+
+Chunking
+
+↓
+
+Embedding
+
+↓
+
+Metadata
+
+↓
+
+Vector Store
+
+
+Chapter 1:
+Document Loaders
+
+Base class
+
+BaseLoader
+Important implementations:
+PyPDFLoader
+
+DirectoryLoader
+
+CSVLoader
+
+TextLoader
+
+JSONLoader
+
+WebBaseLoader
+
+UnstructuredPDFLoader
+
+SharePointLoader
+
+ConfluenceLoader
+
+Every constructor parameter.
+
+
+
+Chapter 2:
+Documents
+
+Everything becomes
+
+Document
+Internally:
+Document
+
+↓
+
+page_content
+
+↓
+
+metadata
+
+
+Example:
+Document(
+
+page_content="...",
+
+
+metadata={
+
+page:10,
+
+source:"policy.pdf"
+
+}
+
+)
+
+
+
+Chapter 3:
+Splitters
+
+Base
+
+TextSplitter
+
+Implementations:
+RecursiveCharacterTextSplitter
+
+CharacterTextSplitter
+
+TokenTextSplitter
+
+MarkdownTextSplitter
+
+HTMLTextSplitter
+
+PythonCodeSplitter
+
+LatexSplitter
+
+Every parameter:
+chunk_size
+
+chunk_overlap
+
+length_function
+
+keep_separator
+
+add_start_index
+
+strip_whitespace
+
+We'll explain each parameter.
+
+Chapter 4:
+Embeddings
+
+Base
+
+Embeddings
+
+Implementations:
+OllamaEmbeddings
+
+OpenAIEmbeddings
+
+HuggingFaceEmbeddings
+
+VertexAIEmbeddings
+
+BedrockEmbeddings
+
+AzureOpenAIEmbeddings
+
+
+Important methods:
+embed_query()
+
+embed_documents()
+Every parameter.
+
+Chapter 5:
+Vector Stores
+
+Chroma
+
+FAISS
+
+Pinecone
+
+Milvus
+
+Qdrant
+
+Weaviate
+
+MongoDB Atlas
+
+PGVector
+
+Methods:
+add_documents()
+
+add_texts()
+
+delete()
+
+update()
+
+persist()
+
+similarity_search()
+
+similarity_search_with_score()
+
+max_marginal_relevance_search()
+
+as_retriever()
+
+We'll explain every method.

@@ -1,0 +1,47 @@
+Step 1 – Install Python:
+python --version
+
+Step 2 – Install uv:
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+uv --version
+
+Step 3 – Install Ollama:
+ollama --version
+
+Step 4 – Pull Llama:
+
+Example
+ollama pull llama3.2
+or
+ollama pull qwen3
+or
+ollama pull mistral
+
+ollama run llama3.2
+
+
+Step 5 – Create Project:
+
+Step 6 – Install Packages:
+uv add a2a-sdk
+uv add langgraph
+uv add openai-agents
+uv add langchain
+uv add langchain-ollama
+uv add fastapi
+uv add uvicorn
+uv add httpx
+uv add python-dotenv
+
+
+Step 9 – Configure Ollama:
+
+Create
+
+.env
+Example
+
+OLLAMA_BASE_URL=http://localhost:11434
+
+MODEL_NAME=llama3.2

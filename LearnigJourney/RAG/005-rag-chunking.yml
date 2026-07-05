@@ -1,0 +1,1052 @@
+Chapter 7 – Text Splitters (Chunking):
+Step 1 – Why do we need Chunking?:
+
+Suppose HR gives us a PDF.
+HRPolicy.pdf
+
+↓
+
+500 Pages
+
+↓
+
+5 MB
+
+Question:
+
+Can we send the entire PDF to the LLM?
+
+HRPolicy.pdf
+
+↓
+
+LLM
+
+Answer
+
+No.
+
+Why?
+
+Every LLM has a context window.
+
+Example
+Llama 3
+
+↓
+
+128K Tokens
+
+---------------------
+
+GPT-4.1
+
+↓
+
+Large Context
+
+---------------------
+
+Gemini
+
+↓
+
+Very Large Context
+
+
+Even if the context window is large,:
+
+sending the whole document is:
+
+Slow
+Expensive
+Mostly irrelevant
+
+Suppose user asks
+
+"How many casual leaves are allowed?"
+
+Should we send
+
+Salary Policy
+
+Travel Policy
+
+IT Policy
+
+Medical Policy
+
+Leave Policy
+
+Holiday Calendar
+
+No.
+
+Only the relevant part.
+
+
+Step 2 – What is Chunking?:
+
+Chunking simply means
+Large Document
+
+↓
+
+Small Pieces
+
+Example:
+500 Pages
+
+↓
+
+Page 1
+
+↓
+
+Page 2
+
+↓
+
+Page 3
+
+
+Not exactly.
+
+We usually split by meaning, not pages.
+
+Example
+
+HR Policy
+
+↓
+
+Leave Policy
+
+↓
+
+Medical Policy
+
+↓
+
+Work From Home Policy
+
+↓
+
+Travel Policy
+
+Each becomes a chunk.
+
+
+Step 3 – Complete Lifecycle:
+PDF
+
+↓
+
+Document Loader
+
+↓
+
+Document Objects
+
+↓
+
+Text Splitter
+
+↓
+
+Chunk 1
+
+Chunk 2
+
+Chunk 3
+
+↓
+
+Embedding
+
+↓
+
+Vector DB
+
+Notice:
+
+Embedding never sees
+
+the entire PDF.
+
+It only sees
+
+small chunks.
+
+
+Step 4 – Which Package?:
+
+Install
+uv add langchain-text-splitters
+
+Import
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+Question
+
+Why a separate package?
+
+Earlier
+
+splitters were inside LangChain.
+
+Now
+
+they are maintained independently.
+
+
+Step 5 – Available Splitters:
+
+LangChain provides many.
+CharacterTextSplitter
+
+RecursiveCharacterTextSplitter
+
+TokenTextSplitter
+
+SentenceTransformersTokenTextSplitter
+
+MarkdownHeaderTextSplitter
+
+HTMLHeaderTextSplitter
+
+RecursiveJsonSplitter
+
+PythonCodeTextSplitter
+
+LatexTextSplitter
+
+Each solves
+
+a different problem
+
+
+
+Step 6 – Which Splitter Should I Use?:
+| Document    | Recommended Splitter           |
+| ----------- | ------------------------------ |
+| PDF         | RecursiveCharacterTextSplitter |
+| Word        | RecursiveCharacterTextSplitter |
+| Markdown    | MarkdownHeaderTextSplitter     |
+| HTML        | HTMLHeaderTextSplitter         |
+| Python Code | PythonCodeTextSplitter         |
+| JSON        | RecursiveJsonSplitter          |
+| Source Code | Language-aware Splitter        |
+
+
+Step 7 – Most Important Splitter:
+RecursiveCharacterTextSplitter
+
+This is the default choice for enterprise RAG.
+
+Create
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200
+)
+
+Question
+
+Did it split anything?
+
+No.:
+
+Like
+loader = PyPDFLoader(...)
+it only creates
+
+a Splitter object.
+
+
+Step 8 – Constructor Parameters:
+
+Let's understand every parameter.
+RecursiveCharacterTextSplitter(
+
+    chunk_size,
+
+    chunk_overlap,
+
+    length_function,
+
+    separators,
+
+    keep_separator,
+
+    is_separator_regex,
+
+    add_start_index,
+
+    strip_whitespace
+
+)
+
+We'll study them
+
+one by one.
+
+Parameter 1 – chunk_size:
+
+Most important parameter.
+
+Example
+
+chunk_size=1000
+
+Question
+
+1000 what?
+
+Characters?
+
+Tokens?
+
+Words?
+
+By default:
+
+Characters.
+
+Example
+
+Suppose
+
+This is a company policy...
+
+When text reaches
+
+1000 characters
+
+↓
+
+Create
+
+Chunk 1
+
+Continue
+
+↓
+
+Chunk 2
+
+Visual:
+Document
+
+──────────────────────────────
+
+1000 Characters
+
+↓
+
+Chunk 1
+
+──────────────────────────────
+
+1000 Characters
+
+↓
+
+Chunk 2
+
+──────────────────────────────
+
+Interview Question:
+
+Should chunk size always be 1000?
+
+No.
+
+Depends upon
+
+Embedding Model
+LLM
+Query Type
+Document Type
+
+Typical values
+
+Small FAQ
+
+200–400
+
+------------------
+
+Enterprise PDF
+
+500–1200
+
+------------------
+
+Code
+
+100–300
+
+------------------
+
+Contracts
+
+800–1500
+
+
+Parameter 2 – chunk_overlap:
+
+This is probably
+
+the most misunderstood parameter.
+
+Example
+
+chunk_overlap=200
+
+Question
+
+Why duplicate text?
+
+Suppose
+
+Chunk 1 ends:
+Employees are entitled
+Chunk 2 starts:
+
+to 20 days annual leave
+
+The sentence breaks.
+
+Meaning is lost.
+
+Instead
+
+Chunk 2 starts:
+
+earlier.
+
+Visual
+
+Without overlap:
+
+Chunk 1
+
+Employees are entitled
+
+----------------------
+
+Chunk 2
+
+to 20 days annual leave
+Bad.
+
+With overlap:
+Chunk 1
+
+Employees are entitled to 20 days
+
+----------------------------
+
+Chunk 2
+
+entitled to 20 days annual leave...
+
+Now
+
+meaning is preserved.
+
+Interview Question
+
+Should overlap always exist?:
+
+Almost always
+
+Yes.
+
+Typical values
+10%
+
+15%
+
+20%
+
+25%
+
+
+Parameter 3 – length_function:
+
+Default
+
+len
+
+Meaning
+
+count characters.:
+
+But
+
+we can use
+
+tiktoken:
+
+to count tokens.
+
+Example
+
+length_function=len
+
+or
+
+length_function=my_token_counter
+
+Useful:
+
+when chunking
+
+based on LLM tokens.
+
+
+Parameter 4 – separators:
+
+This is where
+
+Recursive Splitter
+
+becomes intelligent.
+
+Default separators:
+
+Conceptually
+
+Paragraph
+
+↓
+
+Sentence
+
+↓
+
+Space
+
+↓
+
+Character
+
+Internally:
+
+tries
+"\n\n"
+
+↓
+
+"\n"
+
+↓
+
+" "
+
+↓
+
+""
+
+Question
+
+Why?
+
+Because
+
+paragraphs preserve
+
+meaning.
+
+If paragraph
+
+is too large,
+
+split by sentence.
+
+Still too large,
+
+split by words.
+
+Still too large,
+
+split by characters.
+
+Example:
+
+Input:
+
+Paragraph 1
+
+Paragraph 2
+
+Paragraph 3
+
+Splitter first attempts
+
+Paragraph Split
+If
+
+paragraph exceeds
+
+chunk size
+
+↓
+
+Sentence Split
+
+↓
+
+Word Split
+
+↓
+
+Character Split
+
+This is why it's called
+
+Recursive.
+
+
+Parameter 5 – keep_separator:
+
+Example
+keep_separator=True
+
+Suppose
+
+separator
+
+is
+
+\n
+
+Should
+
+newline
+
+remain?
+
+True
+
+↓
+
+Keep it.
+
+False
+
+↓
+
+Remove it.
+
+
+Parameter 6 – is_separator_regex:
+
+Default
+
+False
+
+If True
+
+separator becomes
+
+Regex.
+
+Useful
+
+for:
+
+Chapter \d+
+
+Section.*
+
+Heading.*
+
+
+Parameter 7 – add_start_index:
+
+Example
+
+True
+
+Metadata becomes
+Chunk
+
+↓
+
+Start Position
+
+↓
+
+1500
+
+Useful
+
+for highlighting
+
+original document.
+
+
+Parameter 8 – strip_whitespace:
+
+Default
+
+True
+
+Removes
+
+Extra Spaces
+
+Tabs
+
+Newlines
+
+Keeps chunks clean.
+
+
+Step 9 – Splitting Documents:
+
+Suppose
+
+Loader returned
+
+documents
+
+Split
+
+chunks = splitter.split_documents(documents)
+
+Internally
+
+List<Document>
+
+↓
+
+Read Page 1
+
+↓
+
+Split
+
+↓
+
+Chunk
+
+↓
+
+Chunk
+
+↓
+
+Chunk
+
+↓
+
+Next Page
+
+↓
+
+Chunk
+
+↓
+
+Return List<Document>
+
+Notice
+
+Output
+
+is still
+
+List[Document]
+
+Only
+
+page_content
+
+has become smaller.
+
+
+
+Step 10 – Memory Lifecycle:
+HRPolicy.pdf
+
+↓
+
+Loader
+
+↓
+
+Document
+
+↓
+
+Splitter
+
+↓
+
+Chunk 1 (Document)
+
+↓
+
+Chunk 2 (Document)
+
+↓
+
+Chunk 3 (Document)
+
+↓
+
+Embedding
+
+Notice
+
+Chunks are also
+
+Document objects.
+
+Only their
+
+page_content
+
+is shorter.
+
+
+
+Step 11 – What Happens to Metadata?:
+
+Original
+
+{
+  "page":10,
+  "source":"HR.pdf"
+}
+
+Every chunk inherits it.
+
+Example
+
+Chunk 1
+
+{
+ "page":10,
+ "source":"HR.pdf"
+}
+
+Chunk 2
+
+{
+ "page":10,
+ "source":"HR.pdf"
+}
+
+This is extremely important because later
+
+the retriever can tell you
+
+which page
+
+the answer came from.
+
+
+Step 12 – Types of Chunking:
+
+Enterprise RAG doesn't always use the same splitter.
+
+1. Fixed Character Chunking:
+1000 Characters
+
+↓
+
+1000
+
+↓
+
+1000
+
+↓
+
+1000
+Simple
+
+Fast
+
+Poor semantic quality.
+
+
+2. Recursive Chunking (Recommended):
+Paragraph
+
+↓
+
+Sentence
+
+↓
+
+Word
+
+↓
+
+Character
+Best general-purpose choice.
+
+
+3. Token Chunking:
+512 Tokens
+
+↓
+
+512 Tokens
+
+↓
+
+512 Tokens
+Useful
+
+for OpenAI,
+
+Llama,
+
+Gemini,
+
+Claude.
+
+
+4. Semantic Chunking:
+
+Instead of
+
+counting
+
+characters,
+
+it groups
+
+sentences
+
+by meaning.
+
+Example
+Leave Policy
+
+↓
+
+One Chunk
+
+Medical Policy
+
+↓
+
+Another Chunk
+
+Excellent retrieval.
+
+More expensive.
+
+
+5. Document-Aware Chunking:
+
+Uses
+
+document structure.
+
+Heading
+
+↓
+
+Sub Heading
+
+↓
+
+Content
+
+Perfect
+
+for
+
+manuals
+
+contracts
+
+technical documents.
+
+
+6. Sliding Window Chunking:
+
+Chunk 1
+
+1–1000
+
+Chunk 2
+
+800–1800
+
+Chunk 3
+
+1600–2600
+
+Notice
+
+overlap.
+
+Very common
+
+in production.
+
+
+
+Step 13 – Enterprise Recommendations:
+| Document Type   | Best Splitter                  |
+| --------------- | ------------------------------ |
+| HR Policies     | RecursiveCharacterTextSplitter |
+| Legal Contracts | Semantic + Document-aware      |
+| Source Code     | PythonCodeTextSplitter         |
+| Markdown Docs   | MarkdownHeaderTextSplitter     |
+| HTML Pages      | HTMLHeaderTextSplitter         |
+| JSON            | RecursiveJsonSplitter          |
+
+
+Complete Chunking Lifecycle:
+HRPolicy.pdf
+        │
+        ▼
+PyPDFLoader
+        │
+        ▼
+Document
+        │
+        ▼
+RecursiveCharacterTextSplitter
+        │
+        ▼
+Chunk 1 (Document)
+        │
+        ▼
+Chunk 2 (Document)
+        │
+        ▼
+Chunk 3 (Document)
+        │
+        ▼
+Embedding Model
+
+
+Interview Questions:
+Q1. Why not send the whole PDF to the LLM?:
+
+Because of context window limits, higher cost, slower inference, and reduced relevance. RAG retrieves only the chunks most relevant to the user's question.
+
+
+Q2. Why is RecursiveCharacterTextSplitter the default recommendation?:
+
+It tries to preserve semantic structure by splitting on paragraphs first, then sentences, then words, and finally characters only if necessary. This usually produces higher-quality chunks than fixed-size splitting.
+
+
+Q3. Why is chunk_overlap important?:
+
+It preserves context across chunk boundaries. Without overlap, a sentence or concept may be split across two chunks, reducing retrieval quality.
+

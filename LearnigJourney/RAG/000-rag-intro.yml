@@ -1,0 +1,923 @@
+Chapter 1 – Why RAG?:
+Before understanding RAG,
+
+let's understand why it was invented.
+
+Suppose we ask ChatGPT:
+
+What is our company's leave policy?
+
+Question:
+
+How does ChatGPT know your company's HR policy?
+
+Answer
+
+It doesn't.
+
+Because
+LLM
+
+↓
+
+Only knows
+
+Training Data
+
+It has never seen
+Company Policy.pdf
+
+stored inside your company.
+
+Suppose we ask:
+
+What is the balance in my SBI account?
+
+Can GPT answer?
+
+No.
+
+Because
+
+it cannot directly access
+Database
+
+SAP
+
+SharePoint
+
+PDF
+
+ServiceNow
+
+Confluence
+
+This is the biggest limitation of LLMs.
+
+
+Chapter 2 – Problems with LLMs:
+
+LLMs suffer from several limitations.
+1. Knowledge Cutoff:
+
+Example
+
+Ask
+
+What happened yesterday?
+
+LLM doesn't know.
+
+
+2. Private Data:
+
+LLM doesn't know
+Your Company Wiki
+
+↓
+
+HR Policy
+
+↓
+
+Invoices
+
+↓
+
+Contracts
+
+↓
+
+Medical Records
+
+
+3. Hallucination:
+
+Sometimes
+
+LLM invents answers.
+Example
+
+Company policy allows 90 days leave.
+
+Reality
+
+Only 20 days.
+
+Business impact
+
+Wrong decisions.
+
+
+Chapter 3 – Solution:
+
+How can we give
+LLM
+
+access to
+
+company documents?
+
+Option 1:
+
+Train LLM again.
+
+Impossible.
+
+Very expensive.
+
+Option 2:
+
+Before asking LLM,
+
+search
+
+company documents,
+
+retrieve
+
+relevant information,
+
+then send it to the LLM.
+
+Exactly
+
+this is
+
+RAG.
+
+
+Chapter 4 – What is RAG?:
+
+RAG
+
+stands for
+
+Retrieval-Augmented Generation
+
+Break it down.
+
+Retrieval:
+
+Find relevant documents.
+
+
+Augmented:
+
+Add them to the prompt.
+
+
+Generation:
+
+LLM generates
+
+the answer.
+
+Architecture:
+Question
+
+↓
+
+Retrieve
+
+↓
+
+Relevant Documents
+
+↓
+
+Prompt
+
+↓
+
+LLM
+
+↓
+
+Answer
+
+
+Notice
+
+LLM
+
+is no longer
+
+guessing.
+
+
+
+Chapter 5 – Complete RAG Lifecycle:
+                Documents
+
+                    │
+
+          Ingestion Phase
+
+                    │
+
+       Chunking
+
+                    │
+
+       Embedding
+
+                    │
+
+      Vector Database
+
+────────────────────────────────────
+
+                User Query
+
+                    │
+
+           Query Embedding
+
+                    │
+
+          Similarity Search
+
+                    │
+
+        Top K Documents
+
+                    │
+
+          Prompt Builder
+
+                    │
+
+               LLM
+
+                    │
+
+               Answer
+               
+This is the complete pipeline.
+
+
+
+
+Part 2 – Ingestion Phase:
+
+This is where many beginners start.
+
+But now
+
+you know
+
+WHY.
+               
+Chapter 6 – What is Ingestion?:
+Think of a library.
+Suppose
+you buy
+1000 books.
+
+Question:
+Can people search them immediately?
+No.
+First
+the librarian
+must
+read title
+classify
+assign shelf
+create catalogue
+
+Only then
+people can search.
+Exactly
+the same.               
+
+
+Documents
+
+↓
+
+Need preparation.
+
+This preparation
+
+is called
+
+Ingestion.
+
+
+Ingestion Pipeline:
+Raw Documents
+
+↓
+
+Load
+
+↓
+
+Parse
+
+↓
+
+Clean
+
+↓
+
+Chunk
+
+↓
+
+Embedding
+
+↓
+
+Metadata
+
+↓
+
+Vector DB
+
+After this
+
+documents
+
+are searchable.
+
+
+
+Chapter 7 – Document Loading:
+
+Question
+
+Where do documents come from?
+
+Possible sources
+PDF
+
+Word
+
+Excel
+
+CSV
+
+Database
+
+REST API
+
+SharePoint
+
+Confluence
+
+ServiceNow
+
+S3
+
+Google Drive
+
+Everything starts here.
+
+
+Chapter 8 – Parsing:
+Suppose
+PDF contains
+
+Header
+
+Footer
+
+Page Number
+
+Images
+
+Tables
+
+
+Parser extracts:
+
+actual content.
+
+Example:
+Page 10
+
+↓
+
+Remove Header
+
+↓
+
+Remove Footer
+
+↓
+
+Extract Text
+
+
+
+Chapter 9 – Cleaning:
+Raw text
+contains
+Extra Spaces
+
+HTML
+
+Tabs
+
+Noise
+
+Duplicate Lines
+
+Cleaning removes them.
+
+
+Chapter 10 – Chunking (One of the Most Important Chapters):
+Question
+Why can't we send
+
+a 500-page PDF
+
+directly to the LLM?
+
+Because
+
+context window
+
+is limited.
+
+So we split the document.
+
+This is called
+
+Chunking:
+
+Types of Chunking:
+1. Fixed-size Chunking:
+1000 characters
+
+↓
+
+1000
+
+↓
+
+1000
+
+↓
+
+1000
+
+Simple
+
+but may break sentences.
+
+
+2. Recursive Chunking:
+
+Splits using
+Paragraph
+
+↓
+
+Sentence
+
+↓
+
+Word
+
+3. Semantic Chunking:
+
+Uses
+
+meaning
+
+instead of size.
+
+Example
+
+Keep
+
+one topic
+
+inside one chunk.
+
+Much better
+
+for RAG.
+
+
+4. Token Chunking:
+
+Split by
+
+LLM Tokens
+
+instead of characters.
+
+
+
+5. Document-aware Chunking:
+
+Keep
+
+Heading
+
+↓
+
+Subheading
+
+↓
+
+Content
+
+Together.
+
+Excellent
+
+for enterprise documents.
+
+
+
+
+6. Sliding Window Chunking:
+Chunk 1
+
+1–500
+
+Chunk 2
+
+400–900
+
+Overlap
+
+100 Tokens
+
+Prevents
+
+context loss.
+
+
+
+Chapter 11 – Embedding:
+
+Suppose
+
+Sentence
+
+I love dogs.
+
+Question
+
+Can Vector DB understand English?:
+
+No.
+
+It understands
+
+numbers.
+
+Embedding converts
+
+
+"I love dogs"
+
+↓
+
+[0.25, -0.73, 0.91...]
+This numeric representation
+
+captures
+
+meaning.
+
+
+Chapter 12 – Vector Store:
+
+Question
+
+Where do we store embeddings?
+
+Answer
+
+Vector Database.
+
+Examples
+
+Pinecone
+
+Milvus
+
+Qdrant
+
+Weaviate
+
+ChromaDB
+
+FAISS
+
+
+Stored:
+
+Embedding
+
++
+
+Metadata
+
++
+
+Original Text
+
+
+Chapter 13 – Metadata:
+Every chunk
+
+stores metadata.
+
+Example
+Document
+
+HR Policy.pdf
+
+Page
+
+15
+
+Department
+
+HR
+
+Version
+
+3.2
+Useful
+
+for filtering.
+
+
+Chapter 14 – Indexing:
+Question
+
+Can Vector DB compare
+
+10 million vectors
+
+one by one?
+
+Very slow.
+
+Instead
+
+it creates
+
+Approximate Nearest Neighbor (ANN)
+
+indexes.
+
+Examples
+
+HNSW
+
+IVF
+
+PQ
+
+DiskANN
+
+These make similarity search scalable.
+
+
+
+Part 3 – Query Phase:
+
+User asks
+
+"What is maternity leave policy?"
+
+
+Chapter 15 – Query Processing:
+
+Query
+
+↓
+
+Clean
+
+↓
+
+Rewrite
+
+↓
+
+Expand
+
+↓
+
+Embed
+
+
+
+Chapter 16 – Query Embedding:
+
+Exactly same embedding model.
+
+Question
+
+↓
+
+Vector
+
+
+
+Chapter 17 – Search:
+
+This deserves several chapters.
+
+Semantic Search:
+
+Meaning
+
+not keywords.
+
+
+
+Keyword Search (Lexical):
+
+Uses
+
+BM25
+
+TF-IDF
+
+Exact words.
+
+
+Hybrid Search:
+
+Semantic
+
+Keyword
+
+Best
+
+for enterprise.
+
+
+Metadata Filtering:
+
+Example
+
+Only search
+
+Department = HR
+
+
+
+Multi-vector Search:
+
+Use
+
+multiple embeddings
+
+for better retrieval.
+
+Dense Search:
+
+Embedding vectors.
+
+Sparse Search:
+
+Keyword-based vectors.
+
+
+ANN Search:
+
+Fast approximate search.
+
+
+
+Chapter 18 – Retrieval:
+
+Top K
+
+documents.
+
+Example
+
+Top 5
+
+Most Similar Chunks
+
+
+
+Chapter 19 – Re-ranking:
+
+Sometimes
+
+Top 5
+
+aren't in the ideal order.
+
+A reranker (often a cross-encoder model)
+
+re-scores them.
+
+Better relevance.
+
+
+Chapter 20 – Augmentation:
+
+Now
+
+Prompt Builder
+
+creates
+
+Question
+
++
+
+Retrieved Chunks
+
++
+
+Instructions
+
+↓
+
+LLM
+
+This is
+
+Augmentation.
+
+
+Chapter 21 – Generation:
+LLM
+
+reads
+
+only
+
+retrieved context.
+
+Produces
+
+grounded answer.
+
+
+Complete Lifecycle:
+Company Documents
+        │
+        ▼
+Load
+        │
+        ▼
+Parse
+        │
+        ▼
+Clean
+        │
+        ▼
+Chunk
+        │
+        ▼
+Embedding
+        │
+        ▼
+Metadata
+        │
+        ▼
+Vector Database
+──────────────────────────────────────
+User Question
+        │
+        ▼
+Query Embedding
+        │
+        ▼
+Hybrid Search
+        │
+        ▼
+Top-K Retrieval
+        │
+        ▼
+Re-ranking
+        │
+        ▼
+Prompt Augmentation
+        │
+        ▼
+LLM
+        │
+        ▼
+Grounded Answer
+
+
+Today, the most commonly used Python frameworks are:
+| Framework           | Usage                                     |
+| ------------------- | ----------------------------------------- |
+| **LangChain**       | Most popular for enterprise RAG           |
+| **LlamaIndex**      | Specialized for RAG and document indexing |
+| **Haystack**        | Enterprise search pipelines               |
+| **Semantic Kernel** | Microsoft ecosystem                       |
+| **OpenAI SDK**      | Direct vector store and responses APIs    |
+
+

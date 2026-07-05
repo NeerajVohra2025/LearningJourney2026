@@ -1,0 +1,1393 @@
+Chapter 5: langchain
+Document Class
+
+This is probably the most overlooked class in RAG.
+
+Everyone jumps directly to
+loader.load()
+
+without understanding:
+
+what is actually returned.
+
+Everything in LangChain revolves around one object
+
+Document
+If you understand this class,
+
+everything else becomes easy.
+
+Step 1:
+What is a Document?
+
+Suppose HR gives you
+
+LeavePolicy.pdf
+
+Question
+
+Can LangChain directly store
+LeavePolicy.pdf
+
+inside ChromaDB?
+
+No.
+
+Why?
+
+Because every loader
+
+returns a common object.
+
+That object is
+
+Document
+
+Think of Java.
+
+Suppose Oracle
+
+MySQL
+
+MongoDB
+
+return different objects.
+
+Spring converts everything into
+
+Entity
+
+Exactly the same idea.
+
+Different file formats become
+Document
+
+
+Step 2:
+
+Suppose
+
+we have
+
+HRPolicy.pdf
+
+
+
+Internally:
+LangChain converts
+PDF
+
+↓
+
+Document
+
+↓
+
+Chunk
+
+↓
+
+Embedding
+
+↓
+
+Vector
+
+Notice:
+
+Every document loader eventually creates
+
+Document objects.
+
+Step 3:
+
+Let's install
+
+uv add langchain-core
+Why?
+
+Because
+
+Document
+
+belongs to
+
+Why?
+
+Because
+
+Document
+
+belongs to
+
+langchain_core.documents
+
+not
+
+langchain
+
+
+Step 4:
+
+Import
+
+from langchain_core.documents import Document
+
+Question
+
+What is
+
+Document?
+
+Answer
+
+A Python class.
+
+Exactly like
+
+class Employee:
+
+
+Step 5:
+
+Create
+
+our first document.
+
+from langchain_core.documents import Document
+
+doc = Document(
+    page_content="Employees are entitled to 20 days annual leave.",
+    metadata={
+        "source":"HRPolicy.pdf",
+        "page":10
+    }
+)
+
+Very simple.
+
+Question
+
+What happened?
+
+Internally
+
+Python created
+
+Document Object
+
+↓
+
+Memory
+
+
+Step 6:
+
+Memory Representation
+
+Internally
+Document
+
+────────────────────────
+
+page_content
+
+↓
+
+Employees are entitled...
+
+────────────────────────
+
+metadata
+
+↓
+
+Dictionary
+
+────────────────────────
+
+Notice
+
+Only
+
+two important fields.
+
+
+
+Step 7:
+
+Constructor
+
+Let's understand every parameter.
+
+Document(
+    page_content,
+    metadata,
+    id
+)
+
+Some versions of LangChain also include an optional id field. Older versions only expose page_content and metadata.
+
+Parameter 1:
+page_content
+
+Most important parameter.
+
+Stores
+
+actual text.
+
+Example
+
+page_content="Leave policy..."
+
+Internally
+
+String
+
+↓
+
+Stored
+
+↓
+
+Memory
+
+Question
+
+Can it store
+
+PDF?
+
+No.
+
+Only extracted text.
+
+
+Parameter 2:
+
+metadata
+
+Another important field.
+
+Example
+
+metadata={
+    "page":12,
+    "department":"HR",
+    "country":"India"
+}
+
+Question
+
+Why metadata?
+
+Suppose
+
+Company has
+
+100000 PDFs.
+
+Later
+
+User asks
+
+Show HR policy.
+
+Instead of searching
+
+every chunk
+
+we filter
+
+department=HR
+
+Very fast.
+
+
+Parameter 3
+
+id
+
+Newest versions support
+
+id="chunk-100":
+
+Useful for
+
+Update
+
+Delete
+
+Audit
+
+Not mandatory.
+
+
+
+Step 8:
+
+Accessing Values
+
+Exactly like
+
+Java POJO.
+
+print(doc.page_content)
+
+Output
+
+Employees are entitled...
+
+Metadata
+
+print(doc.metadata)
+
+Output
+
+{
+ "page":10,
+ "source":"HR.pdf"
+}
+
+
+Step 9:
+
+Can we modify?
+
+Yes.
+
+doc.metadata["department"]="HR"
+
+Now
+
+Memory
+
+changes.
+
+Document
+
+↓
+
+Metadata
+
+↓
+
+department=HR
+
+
+Step 10:
+
+Multiple Documents
+
+Suppose
+
+Loader reads
+
+100 pages.
+
+Question
+
+One Document?
+
+No.
+
+Page 1
+
+↓
+
+Document
+
+----------------
+
+Page 2
+
+↓
+
+Document
+
+----------------
+
+Page 3
+
+↓
+
+Document
+
+Eventually
+
+List
+
+↓
+
+Document
+
+↓
+
+Document
+
+↓
+
+Document
+
+
+Python
+
+documents=[]
+
+documents.append(doc)
+
+
+
+Step 11:
+
+Who Creates Document Objects?
+
+Question
+
+Do we manually create
+
+Document?
+
+Normally
+
+No.
+
+Document Loader does.
+
+Example
+
+loader=PyPDFLoader("HR.pdf")
+
+documents=loader.load()
+
+Internally
+
+Read PDF
+
+↓
+
+Extract Text
+
+↓
+
+Create Document
+
+↓
+
+Create Document
+
+↓
+
+Create Document
+
+↓
+
+Return List
+
+Notice
+
+You never create
+
+Document manually.
+
+Loader creates them.
+
+Step 12:
+
+Complete Lifecycle
+HR.pdf
+
+↓
+
+PyPDFLoader
+
+↓
+
+Read Pages
+
+↓
+
+Extract Text
+
+↓
+
+Create Document Objects
+
+↓
+
+List<Document>
+
+↓
+
+Text Splitter
+
+↓
+
+Chunks
+
+↓
+
+Embeddings
+
+↓
+
+Vector DB
+
+
+
+Step 13:
+
+Enterprise Example
+
+Suppose
+
+Company has
+
+1000 PDFs
+
+500 Word Files
+
+200 Excel Files
+
+100 SharePoint Sites
+
+Different formats.
+
+Different loaders.
+
+Eventually
+
+everything becomes
+
+Document
+
+↓
+
+Common Object
+
+This is exactly why LangChain introduced the Document abstraction.
+
+
+Step 14:
+
+Interview Questions
+
+Q1. Why does LangChain use a Document class?:
+
+Answer:
+
+To provide a common representation for content regardless of its original source (PDF, Word, HTML, CSV, database, etc.), allowing downstream components like splitters, embedding models, and retrievers to work with a consistent object.
+
+Q2. Does ChromaDB store Document objects?:
+
+Answer:
+
+No.
+
+ChromaDB stores:
+
+Embedding vector
+Original chunk text (usually from page_content)
+Metadata
+Optional document ID
+
+The Document object exists in your application memory. Before storing data, LangChain extracts the relevant fields and sends them to the vector database.
+
+
+Q3. Can Document store images?:
+
+By default, page_content is textual. Images are typically processed by a multimodal pipeline (OCR, image captioning, or multimodal embeddings) before being represented as text or associated metadata in a Document.
+
+
+Next Chapter:
+
+The next chapter is the most important class in the ingestion pipeline:
+
+Chapter 6 – Document Loaders:
+We'll cover every loader in detail:
+
+PyPDFLoader
+DirectoryLoader
+TextLoader
+CSVLoader
+JSONLoader
+UnstructuredPDFLoader
+WebBaseLoader
+SharePointLoader
+ConfluenceLoader
+
+For each loader, we'll explain:
+
+Constructor parameters
+Internal implementation
+Memory lifecycle
+load(), lazy_load(), and aload()
+How pages become Document objects
+Performance considerations
+Enterprise use cases
+Complete sequence diagrams
+
+This is where the real RAG ingestion pipeline begins.
+
+
+Step 1 – What is a Document Loader?:
+
+Suppose HR gives you
+
+LeavePolicy.pdf
+
+Question
+
+Can LangChain directly create embeddings?
+
+No.
+
+Why?
+
+Because
+
+Embedding models only understand
+
+Text
+
+NOT
+
+PDF
+
+Word
+
+Excel
+
+PowerPoint
+
+Therefore,
+
+the first step is to load the file and extract its content.
+
+This responsibility belongs to the
+
+Document Loader
+
+Think of Java.
+
+Suppose
+
+Oracle returns
+
+Binary Data
+
+JDBC converts it into
+
+ResultSet
+
+Similarly,
+
+LangChain converts
+
+PDF
+
+↓
+
+Document
+
+using a Document Loader.
+
+
+Step 2 – Complete Ingestion Flow:
+
+Let's see where Document Loader fits.
+
+Company Documents
+
+        │
+
+        ▼
+
+Document Loader
+
+        │
+
+        ▼
+
+Document Objects
+
+        │
+
+        ▼
+
+Text Splitter
+
+        │
+
+        ▼
+
+Chunks
+
+        │
+
+        ▼
+
+Embedding
+
+        │
+
+        ▼
+
+Vector Store
+
+Notice:
+
+Everything starts here.
+
+Step 3 – Available Document Loaders:
+
+LangChain supports dozens of loaders.
+
+Common ones are
+PyPDFLoader
+
+TextLoader
+
+CSVLoader
+
+JSONLoader
+
+DirectoryLoader
+
+WebBaseLoader
+
+Docx2txtLoader
+
+UnstructuredPDFLoader
+
+UnstructuredWordLoader
+
+UnstructuredExcelLoader
+
+NotebookLoader
+
+SharePointLoader
+
+ConfluenceLoader
+
+GitLoader
+
+S3Loader
+
+Each loader reads a different source.
+
+Step 4 – Which Loader Should I Use?:
+
+Suppose your source is
+| Source         | Loader           |
+| -------------- | ---------------- |
+| PDF            | PyPDFLoader      |
+| Word           | Docx2txtLoader   |
+| CSV            | CSVLoader        |
+| JSON           | JSONLoader       |
+| Folder         | DirectoryLoader  |
+| Website        | WebBaseLoader    |
+| SharePoint     | SharePointLoader |
+| Confluence     | ConfluenceLoader |
+| Git Repository | GitLoader        |
+| Amazon S3      | S3Loader         |
+
+Think of them like JDBC Drivers
+Oracle
+
+↓
+
+Oracle Driver
+
+-------------------
+
+SQL Server
+
+↓
+
+SQL Driver
+
+-------------------
+
+MongoDB
+
+↓
+
+Mongo Driver
+
+Exactly the same.
+
+Different sources
+
+Different Loaders.
+
+
+Step 5 – Installing Required Packages:
+
+Let's install
+
+uv add langchain-community
+
+uv add pypdf
+
+uv add unstructured
+
+uv add beautifulsoup4
+
+
+Question:
+
+Why?
+
+Because
+
+Document Loaders belong to
+
+langchain_community.document_loaders
+
+NOT
+
+langchain
+
+
+Step 6 – Our First Loader:
+
+Suppose
+
+HRPolicy.pdf
+
+Import
+
+from langchain_community.document_loaders import PyPDFLoader
+
+Create
+
+loader = PyPDFLoader("HRPolicy.pdf")
+
+Question
+
+Did it read the PDF?
+
+No.
+
+It only created
+
+a Loader object.
+
+Exactly like
+
+connection = DriverManager.getConnection(...)
+
+Connection exists.
+
+Query not executed.
+
+
+Step 7 – Constructor Parameters:
+
+Let's understand every parameter.
+
+PyPDFLoader(
+    file_path,
+    password=None,
+    extract_images=False
+)
+
+(Some versions may include additional optional parameters.)
+
+
+Parameter 1:
+file_path
+loader = PyPDFLoader(
+    "HRPolicy.pdf"
+)
+
+Mandatory.
+
+Specifies
+
+which PDF
+
+to load.
+
+Internally
+
+Loader
+
+↓
+
+Stores File Path
+
+↓
+
+Waits
+
+Notice
+
+File
+
+is NOT read yet.
+
+
+Parameter 2:
+
+password
+
+Suppose
+
+PDF is protected.
+
+loader = PyPDFLoader(
+    "Salary.pdf",
+    password="admin123"
+)
+
+Internally
+
+Loader
+
+opens
+
+encrypted PDF.
+
+
+Parameter 3:
+
+extract_images
+
+Some PDFs contain
+
+Images
+
+Charts
+
+Diagrams
+
+Normally
+
+only text
+
+is extracted.
+
+If
+
+extract_images=True
+
+loader also extracts
+
+image objects
+
+(if supported by the parser).
+
+
+
+Step 8 – Loading Documents:
+
+Now
+
+documents = loader.load()
+
+Question
+
+What happens?
+
+Let's go step by step.
+
+
+Phase 1:
+
+Python
+
+calls
+
+load()
+Phase 2:
+
+Loader
+
+opens
+
+HRPolicy.pdf
+Phase 3:
+
+Reads
+
+Page 1
+
+↓
+
+Page 2
+
+↓
+
+Page 3
+
+Phase 4
+
+Extracts:
+
+text
+
+from each page.
+
+Phase 5:
+
+Creates
+
+Document(...)
+
+for every page.
+
+Phase 6:
+
+Returns
+
+List[Document]
+
+Complete lifecycle:
+load()
+
+↓
+
+Open PDF
+
+↓
+
+Read Pages
+
+↓
+
+Extract Text
+
+↓
+
+Create Document
+
+↓
+
+Create Document
+
+↓
+
+Create Document
+
+↓
+
+Return List<Document>
+
+Step 9 – What Does load() Return?:
+
+Suppose
+
+PDF contains
+
+5 pages.
+
+Output
+
+documents
+
+Internally
+
+List
+
+↓
+
+Document(Page 1)
+
+
+
+Step 10 – Access the Documents:
+print(documents[0].page_content)
+
+Output
+
+Leave Policy
+
+Employees are entitled...
+
+Metadata
+
+print(documents[0].metadata)
+
+Example
+
+{
+    "source":"HRPolicy.pdf",
+    "page":0
+}
+
+↓
+
+Document(Page 2)
+
+↓
+
+Document(Page 3)
+
+↓
+
+Document(Page 4)
+
+↓
+
+Document(Page 5)
+
+Notice
+
+One Document
+
+per page.
+
+
+Step 11 – Other Important Methods:
+
+Most loaders provide
+
+load()
+
+lazy_load()
+
+aload()
+
+alazy_load()
+
+Let's understand each one.
+
+
+load():
+
+Reads
+
+everything.
+
+PDF
+
+↓
+
+Memory
+
+↓
+
+List<Document>
+
+Simple.
+
+Good
+
+for
+
+small PDFs.
+
+
+lazy_load():
+
+Question
+
+Suppose
+
+PDF has
+
+5000 pages.
+
+Should we read
+
+all pages
+
+into memory?
+
+No.
+
+Instead
+
+for doc in loader.lazy_load():
+    print(doc.page_content)
+
+Internally
+
+Read Page 1
+
+↓
+
+Return Document
+
+↓
+
+Read Page 2
+
+↓
+
+Return Document
+
+↓
+
+Read Page 3
+
+↓
+
+Return Document
+
+Only one page
+
+is in memory
+
+at a time.
+
+
+
+aload():
+
+Asynchronous version
+
+of
+
+load()
+
+Used in
+
+FastAPI
+
+LangGraph
+
+Agent workflows.
+
+documents = await loader.aload()
+
+
+alazy_load():
+
+Combines
+
+Async
+
++
+
+Lazy Loading
+
+Best
+
+for
+
+large enterprise repositories.
+
+
+Step 12 – Enterprise Example:
+
+Suppose
+
+Company has
+
+10000 PDFs
+
+Question
+
+Should we call
+
+loader.load()
+
+No.
+
+Memory
+
+will explode.
+
+Instead
+
+for document in loader.lazy_load():
+    # Split
+    # Embed
+    # Store
+
+Memory stays constant.
+
+This is the preferred pattern for large ingestion jobs.
+
+
+Step 13 – Complete Lifecycle:
+HRPolicy.pdf
+
+        │
+
+        ▼
+
+PyPDFLoader
+
+        │
+
+        ▼
+
+load()
+
+        │
+
+        ▼
+
+Read Page 1
+
+        │
+
+        ▼
+
+Extract Text
+
+        │
+
+        ▼
+
+Create Document
+
+        │
+
+        ▼
+
+Read Page 2
+
+        │
+
+        ▼
+
+Create Document
+
+        │
+
+        ▼
+
+Return List<Document>
+
+
+Step 14 – Interview Questions:
+Q1. Why do we need a Document Loader?:
+
+Answer:
+
+A Document Loader converts data from different sources (PDF, Word, HTML, CSV, SharePoint, Confluence, databases, etc.) into a common Document representation. This allows the rest of the RAG pipeline (splitters, embeddings, retrievers) to work independently of the original data source.
+
+
+Q2. Does PyPDFLoader create embeddings?:
+
+No.
+
+Its responsibility ends here:
+
+PDF
+
+↓
+
+Document Objects
+
+Embedding happens later.
+
+
+Q3. What is the difference between load() and lazy_load()?:
+| load()                            | lazy_load()                       |
+| --------------------------------- | --------------------------------- |
+| Reads entire document into memory | Reads one document/page at a time |
+| Faster for small files            | Better for large files            |
+| Higher memory usage               | Lower memory usage                |
+
+
+Q4. When should we use aload()?:
+
+When working with asynchronous frameworks such as FastAPI, LangGraph, or other async ingestion pipelines, so document loading doesn't block other concurrent tasks.
+
