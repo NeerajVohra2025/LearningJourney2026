@@ -1,0 +1,2231 @@
+Chapter 1 – FastMCP Fundamentals:
+
+Step 1 – What is FastMCP?:
+FastMCP is a high-level Python framework for building MCP Servers.
+
+Think of it like
+
+REST World
+
+FastAPI
+
+MCP World
+
+FastMCP
+
+It hides all the protocol details.
+
+Instead of implementing JSON-RPC yourself, you simply write
+@mcp.tool
+def search_customer():
+    ...
+    
+FastMCP handles everything else.    
+
+
+
+Chapter 2 – FastMCP Constructor:
+The first line of every MCP Server is usually:
+
+from mcp.server.fastmcp import FastMCP
+  mcp=      FastMCP(
+            name,
+            instructions,
+            version,
+            lifespan,
+            dependencies,
+            auth,
+            settings,
+            stateless_http,
+            json_response,
+            middleware
+        )
+        
+internally FastMCP creates something like:
+                FastMCP
+
+        ┌───────────────────────┐
+        │ Server Metadata        │
+        ├───────────────────────┤
+        │ Tool Registry          │
+        ├───────────────────────┤
+        │ Resource Registry      │
+        ├───────────────────────┤
+        │ Prompt Registry        │
+        ├───────────────────────┤
+        │ Session Manager        │
+        ├───────────────────────┤
+        │ Transport Config       │
+        ├───────────────────────┤
+        │ Authentication         │
+        ├───────────────────────┤
+        │ Middleware             │
+        └───────────────────────┘        
+        
+Initially,
+
+all registries are empty.
+
+Later,
+
+decorators like
+@mcp.tool
+will populate these registries.
+
+Parameter 1 — name ⭐⭐⭐⭐⭐
+Example
+mcp = FastMCP(
+    name="Customer Service Server"
+)
+
+What is it?
+
+This is simply the human-readable name of your MCP Server.   
+
+Why is it needed?
+
+Suppose Claude Desktop connects.
+
+During initialization,
+
+it may display
+Connected To
+
+Customer Service Server    
+Instead of
+
+Unknown Server
+
+Internal Usage:
+
+During
+
+initialize
+
+the server sends metadata.  
+Example
+
+Server Name
+
+↓
+
+Customer Service Server
+
+Clients can display this information.
+ 
+
+Parameter 2 — instructions ⭐⭐⭐⭐⭐:
+Example
+FastMCP(
+    instructions="""
+You provide customer information.
+
+Never modify records.
+
+Always verify customer id.
+"""
+)
+
+What is it?
+
+Think of this as the System Prompt for the MCP Server.
+
+It tells the AI Host
+
+how the server should be used.
+
+Important
+
+These instructions are not for your Python code.
+
+They are for the AI application.
+
+Example
+Claude Desktop
+
+↓
+
+Connects
+
+↓
+
+Reads Instructions
+
+↓
+
+Learns Server Usage
+
+Why?
+
+Imagine your server contains 
+
+Delete Customer
+
+Update Salary
+
+Terminate Employee
+
+Without instructions,:
+
+the AI might use them carelessly.
+
+With instructions:
+Never delete employee records without confirmation.
+
+the Host behaves more safely.
+
+Real Enterprise Example
+This server accesses production SAP.
+
+Never execute write operations unless
+the user explicitly confirms.
+
+Very useful.
+
+
+Parameter 3 — version ⭐⭐⭐:
+
+Example
+
+FastMCP(
+    version="2.1.0"
+)
+
+Purpose
+
+Tracks your server version.
+
+Exactly like
+
+REST API
+
+v1
+
+v2
+
+v3
+
+Why?
+
+Suppose
+
+100 clients connect.
+
+Some support
+
+v1
+
+Others
+
+v2
+
+Version helps compatibility.
+
+Enterprise Example
+GitHub MCP
+
+Version
+
+3.5.1
+
+Useful for troubleshooting.
+
+
+Parameter 4 — lifespan ⭐⭐⭐⭐⭐:
+
+This is probably
+
+the most important parameter.
+
+Example
+
+FastMCP(
+    lifespan=my_lifespan
+)
+
+What is Lifespan?
+
+Think about a restaurant.
+
+Morning:
+
+Open Door
+
+↓
+
+Turn On Lights
+
+↓
+
+Prepare Kitchen
+
+↓
+
+Start Work
+
+Night:
+
+Close Kitchen
+
+↓
+
+Turn Off Lights
+
+↓
+
+Lock Door
+
+Exactly the same.
+
+Lifecycle
+Server Starts
+
+↓
+
+Open Database
+
+↓
+
+Connect Redis
+
+↓
+
+Load Models
+
+↓
+
+Serve Requests
+
+↓
+
+Shutdown
+
+↓
+
+Close Connections
+
+
+Without Lifespan:
+
+Every request
+
+would create
+
+Database Connection
+
+↓
+
+Close
+
+↓
+
+Open
+
+↓
+
+Close
+
+With Lifespan:
+Server Starts
+
+↓
+
+One Database Connection
+
+↓
+
+Reuse For All Requests
+
+↓
+
+Close At Shutdown
+
+Much faster.
+
+
+Typical Uses:
+PostgreSQL Pool
+
+Redis
+
+Vector Database
+
+AWS Client
+
+OpenAI Client
+
+Thread Pool
+
+
+Parameter 5 — dependencies ⭐⭐⭐:
+
+Example
+
+FastMCP(
+    dependencies=[
+        "psycopg",
+        "sqlalchemy",
+        "requests"
+    ]
+)
+
+Why?
+
+Imagine you publish your MCP Server.
+
+Someone installs it.
+
+FastMCP can understand
+
+Required Packages
+
+↓
+
+Install Automatically
+
+Similar To
+requirements.txt
+
+or
+
+pyproject.toml
+
+
+Parameter 6 — auth ⭐⭐⭐⭐⭐:
+
+One of the most important in production.
+Example
+
+FastMCP(
+    auth=my_auth_provider
+)
+
+Purpose
+
+Controls
+
+Who can use the server.
+
+Without Auth:
+
+Anyone
+
+↓
+
+Connect
+
+↓
+
+Execute Tools
+
+Dangerous.
+
+
+With Auth:
+
+Client
+
+↓
+
+JWT
+
+↓
+
+OAuth
+
+↓
+
+API Key
+
+↓
+
+Verified
+
+↓
+
+Allow
+
+Enterprise Example
+
+Suppose
+
+Payroll Server.
+
+Without auth
+
+someone calls
+
+Get Salary
+
+Impossible.
+
+Authentication protects it.
+
+Parameter 7 — settings ⭐⭐⭐:
+
+Think of this as
+
+Application Configuration.
+
+Example
+
+Max Requests
+
+Timeout
+
+Logging
+
+Rate Limits
+
+Instead of
+
+hardcoding,
+
+you configure
+
+Settings.
+
+Similar To
+application.yml
+
+config.json
+
+.env
+
+
+
+Parameter 8 — stateless_http ⭐⭐⭐⭐⭐:
+
+One of the most misunderstood.
+
+We'll later dedicate an entire chapter.
+
+For now
+
+Example
+
+stateless_http=True
+
+Meaning
+
+Every HTTP request
+
+is independent.
+Request
+
+↓
+
+Process
+
+↓
+
+Forget
+
+No server-side session.
+
+Example
+GET Customer
+
+↓
+
+Done
+
+↓
+
+Forget
+
+
+Now:
+stateless_http=False
+
+Server keeps
+
+Session.
+
+Session
+
+↓
+
+Request1
+
+↓
+
+Request2
+
+↓
+
+Request3
+
+Useful for
+
+Sampling
+
+Progress
+
+Streaming
+
+Long-running workflows.
+
+
+Parameter 9 — json_response ⭐⭐⭐⭐:
+
+This affects
+
+how HTTP responses are returned.
+When
+
+json_response=True
+
+Server replies
+
+{
+  "result":"Customer Found"
+}
+
+Connection closes.
+
+Simple.
+
+When
+
+json_response=False
+Server can
+
+stream
+Searching...
+
+↓
+
+Reading Database...
+
+↓
+
+Generating Report...
+
+↓
+
+Completed
+
+This is required
+
+for progress updates and long-running operations.
+
+
+Parameter 10 — middleware ⭐⭐⭐⭐:
+
+Think of middleware as
+
+Security Checkpoints.
+
+Client
+
+↓
+
+Logging
+
+↓
+
+Authentication
+
+↓
+
+Rate Limit
+
+↓
+
+Tool
+
+↓
+
+Response
+
+Every request passes through middleware.
+
+
+Example:
+Incoming Request
+
+↓
+
+Log User
+
+↓
+
+Validate Token
+
+↓
+
+Check Rate Limit
+
+↓
+
+Execute Tool
+
+Enterprise Uses
+Logging
+Metrics
+Auditing
+Tracing
+Rate limiting
+Header injection
+Request validation
+Correlation IDs
+
+Complete Lifecycle:
+
+Now let's see what happens internally.
+
+mcp = FastMCP(...)
+          │
+          ▼
+Read Constructor Parameters
+          │
+          ▼
+Create Empty Tool Registry
+          │
+          ▼
+Create Resource Registry
+          │
+          ▼
+Create Prompt Registry
+          │
+          ▼
+Initialize Authentication
+          │
+          ▼
+Initialize Middleware
+          │
+          ▼
+Configure Lifespan
+          │
+          ▼
+Configure Transport Settings
+          │
+          ▼
+FastMCP Object Ready
+
+
+Notice something important.
+
+No server is running yet.
+
+At this point:
+
+No HTTP port is open.
+No STDIO transport is active.
+No client can connect.
+
+You've only created and configured the application object.
+
+Summary Table:
+| Parameter        | Purpose                                               | Typical Usage                                    |
+| ---------------- | ----------------------------------------------------- | ------------------------------------------------ |
+| `name`           | Human-readable server name                            | Displayed to clients, logging                    |
+| `instructions`   | Guidance for AI hosts                                 | Safe tool usage, operational guidance            |
+| `version`        | Server version metadata                               | Compatibility, troubleshooting                   |
+| `lifespan`       | Startup and shutdown lifecycle                        | Database pools, Redis, model loading             |
+| `dependencies`   | Required packages                                     | Packaging and deployment metadata                |
+| `auth`           | Authentication/authorization                          | OAuth, JWT, API keys                             |
+| `settings`       | General server configuration                          | Timeouts, limits, feature flags                  |
+| `stateless_http` | Whether HTTP requests share server-side session state | Short REST-like calls vs session-based workflows |
+| `json_response`  | One-shot JSON response vs streaming response behavior | Simple APIs vs progress updates/streaming        |
+| `middleware`     | Cross-cutting request processing                      | Logging, tracing, rate limiting, auditing        |
+
+
+Before We Move to Methods
+
+One important point for accuracy:
+
+The concepts above are fundamental to FastMCP server configuration, but the exact place where they're configured depends on the FastMCP SDK version. In newer releases, options such as stateless_http and json_response are commonly provided to transport methods like streamable_http_app() rather than directly to the FastMCP constructor.
+
+For the rest of this guide, I recommend we follow the latest FastMCP SDK (2025/2026) so that every example matches the actual APIs you'll use in production. After this, the natural next chapter is:
+
+FastMCP Object Methods — tool(), resource(), prompt(), run(), run_stdio(), and especially streamable_http_app(), with internal diagrams showing exactly what each method creates and how requests flow through the framework.
+
+
+FastMCP Constructor Defaults
+| Parameter      | Required | Default                                                  | Should You Set It?                      |
+| -------------- | -------- | -------------------------------------------------------- | --------------------------------------- |
+| name           | ✅ Yes    | No default                                               | Yes                                     |
+| instructions   | No       | None / Empty                                             | Recommended                             |
+| version        | No       | SDK/Application default (often `"1.0.0"` or unspecified) | Recommended                             |
+| lifespan       | No       | None                                                     | Only if resources need startup/shutdown |
+| dependencies   | No       | Empty list                                               | Optional                                |
+| auth           | No       | No authentication                                        | Production: Yes                         |
+| settings       | No       | Default settings object                                  | Usually No                              |
+| stateless_http | No       | False (session enabled for Streamable HTTP)              | Depends                                 |
+| json_response  | No       | False (streaming behavior)                               | Depends                                 |
+| middleware     | No       | Empty list                                               | Optional                                |
+
+
+########################################################################################################################
+FastMCP Methods:
+
+Think of FastMCP as a container.
+
+Initially
+
+mcp = FastMCP(...)
+
+Internally
+               FastMCP
+
+        ┌────────────────────┐
+        │ Empty Tool Registry│
+        ├────────────────────┤
+        │ Empty Resources    │
+        ├────────────────────┤
+        │ Empty Prompts      │
+        ├────────────────────┤
+        │ Transport = None   │
+        └────────────────────┘
+        
+Notice:
+
+Nothing is running.
+
+The methods gradually build the server.        
+
+Chapter 1:
+streamable_http_app()
+
+This is probably the most misunderstood method.
+
+Step 1 — Why does it exist?:
+
+Suppose you built
+
+mcp = FastMCP(...)
+
+Question:
+
+Can clients connect?
+
+Answer
+
+NO
+
+Because FastMCP currently exists only as a Python object.
+Python Memory
+
+↓
+
+FastMCP Object
+
+No HTTP Server exists.
+
+No Port exists.
+
+Step 2 — What does streamable_http_app() do?:
+
+It converts
+FastMCP Object
+
+↓
+
+ASGI Application
+
+Notice
+
+It does NOT
+
+start a server.
+
+This is the biggest misconception.
+
+
+Think about FastAPI.
+app = FastAPI()
+
+Can Chrome connect?
+
+No.
+
+Because
+
+FastAPI only created
+
+ASGI App
+
+Exactly the same.
+
+
+Step 3 — Internal Architecture:
+
+Before:
+FastMCP
+
+↓
+
+Python Object
+
+After:
+FastMCP
+
+↓
+
+ASGI Adapter
+
+↓
+
+ASGI Application
+
+Now
+
+Uvicorn understands it.
+
+
+Step 4 — Why ASGI?:
+
+Because modern Python servers use
+
+ASGI
+
+Examples
+
+FastAPI
+
+Starlette
+
+Quart
+
+FastMCP
+
+All expose
+
+ASGI Application
+
+
+
+Step 5 — Internal Conversion:
+
+Suppose
+
+app = mcp.streamable_http_app()
+
+Internally
+
+FastMCP builds
+
+HTTP Router
+
+↓
+
+JSON-RPC Handler
+
+↓
+
+Session Manager
+
+↓
+
+SSE Manager
+
+↓
+
+Tool Dispatcher
+
+↓
+
+Sampling Handler
+
+↓
+
+Error Handler
+
+↓
+
+ASGI App
+
+Notice:
+
+Everything is wired together.
+
+
+Step 6 — After Conversion:
+
+Now
+app
+
+↓
+
+ASGI App
+
+Can still nobody connect.
+
+Because
+
+No HTTP server exists.
+
+
+Step 7 — Uvicorn Starts:
+
+Now
+uvicorn.run(app)
+
+Internally:
+Uvicorn
+
+↓
+
+TCP Socket
+
+↓
+
+Port 8000
+
+↓
+
+HTTP Listener
+
+↓
+
+ASGI App
+
+Now
+
+client can connect.
+
+Complete Lifecycle:
+Create FastMCP
+
+↓
+
+Register Tools
+
+↓
+
+Register Resources
+
+↓
+
+Register Prompts
+
+↓
+
+streamable_http_app()
+
+↓
+
+Create ASGI App
+
+↓
+
+Uvicorn
+
+↓
+
+Listen Port 8000
+
+↓
+
+Ready
+
+
+Step 8 — Client Connection:
+
+Suppose
+
+Claude Desktop
+
+connects.
+
+Claude
+
+↓
+
+HTTP POST
+
+↓
+
+Uvicorn
+
+↓
+
+ASGI
+
+↓
+
+FastMCP
+
+↓
+
+JSON-RPC
+
+↓
+
+Tool Registry
+
+↓
+
+Python Function
+
+
+Step 9 — What Happens During Tool Call?:
+
+Suppose
+
+Client sends
+
+tools/call
+
+Internally
+HTTP Request
+
+↓
+
+Uvicorn
+
+↓
+
+ASGI
+
+↓
+
+FastMCP
+
+↓
+
+Transport Layer
+
+↓
+
+JSON-RPC Dispatcher
+
+↓
+
+Session Manager
+
+↓
+
+Find Tool
+
+↓
+
+Execute Function
+
+↓
+
+Serialize
+
+↓
+
+HTTP Response
+
+All this happens because
+
+streamable_http_app()
+
+created
+
+the ASGI pipeline.
+
+
+
+Step 10 — Parameters:
+
+Current versions expose parameters similar to
+
+app = mcp.streamable_http_app(
+    stateless_http=False,
+    json_response=False
+)
+
+Let's explain.
+
+stateless_http:
+
+Default
+
+False
+
+Meaning
+
+Maintain MCP Session.
+
+
+Request1
+
+↓
+
+Session
+
+↓
+
+Request2
+
+↓
+
+Sampling
+
+↓
+
+Request3
+
+When
+
+True
+
+Every request
+
+is independent.
+
+When
+
+True
+
+Every request
+
+is independent.
+
+Request
+
+↓
+
+Response
+
+↓
+
+Forget
+No Session.
+
+Enterprise Recommendation
+False
+
+Almost always.
+
+json_response:
+
+Default
+
+False
+
+Meaning
+
+Streaming supported.
+Searching
+
+↓
+
+10%
+
+↓
+
+40%
+
+↓
+
+Completed
+
+
+When
+
+True
+
+Server behaves like REST.
+Request
+
+↓
+
+One JSON
+
+↓
+
+Done
+
+Recommendation
+
+Use
+
+False
+
+for AI applications.
+
+
+Step 11 — Why Not Call run() Directly?:
+
+Excellent interview question.
+
+Suppose
+
+mcp.run()
+
+FastMCP internally
+
+creates
+
+ASGI App
+
+↓
+
+Starts Server
+
+↓
+
+Listen
+Everything automatic.
+
+
+But
+
+Suppose
+
+your company already has
+
+FastAPI.
+
+FastAPI
+
+↓
+
+REST APIs
+
+you want
+REST
+
++
+
+MCP
+
+Same application.
+
+You don't want
+
+another server.
+
+Instead
+
+FastAPI
+
+↓
+
+Mount
+
+↓
+
+streamable_http_app()
+
+Exactly why this method exists.
+
+Enterprise Example
+
+                    FastAPI
+
+        ┌───────────────────────────┐
+
+        │ REST APIs                 │
+
+        │ /customers                │
+
+        │ /orders                   │
+
+        │ /login                    │
+
+        │                           │
+
+        │ Mount MCP                 │
+
+        │ /mcp                      │
+
+        └───────────────────────────┘
+
+                    │
+
+            streamable_http_app()
+
+                    │
+
+                 FastMCP
+
+Very common architecture.
+
+Step 12 — Internal Objects Created:
+
+When you call
+
+streamable_http_app()
+
+FastMCP creates approximately
+
+ASGI Router
+
+↓
+
+Transport Adapter
+
+↓
+
+HTTP Handler
+
+↓
+
+JSON-RPC Handler
+
+↓
+
+Session Store
+
+↓
+
+SSE Stream Manager
+
+↓
+
+Sampling Manager
+
+↓
+
+Middleware Chain
+
+These objects didn't exist before.
+
+
+Step 13 — Complete Enterprise Flow:
+User
+
+↓
+
+Claude Desktop
+
+↓
+
+HTTP POST
+
+↓
+
+Uvicorn
+
+↓
+
+ASGI
+
+↓
+
+FastMCP
+
+↓
+
+Session Lookup
+
+↓
+
+JSON-RPC Parse
+
+↓
+
+Find Tool
+
+↓
+
+Python Function
+
+↓
+
+Sampling (Optional)
+
+↓
+
+Serialize Result
+
+↓
+
+SSE / JSON
+
+↓
+
+Client
+
+
+Mental Model:
+
+Think of it this way:
+
+
+FastMCP
+      │
+      ▼
+Application Definition
+
+streamable_http_app()
+      │
+      ▼
+Converts the application into an ASGI application
+
+Uvicorn
+      │
+      ▼
+Makes it accessible over HTTP
+
+So the responsibilities are clearly separated:
+| Component               | Responsibility                                                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `FastMCP()`             | Defines the MCP application (tools, resources, prompts, configuration).                                           |
+| `streamable_http_app()` | Builds an ASGI application that exposes the MCP protocol over Streamable HTTP.                                    |
+| `uvicorn.run()`         | Starts the web server, opens a TCP port, accepts HTTP connections, and forwards requests to the ASGI application. |
+
+
+My Suggested Learning Sequence:
+
+Rather than jumping between methods, I recommend covering them in the order that FastMCP itself uses them during server startup:
+
+✅ streamable_http_app() (transport creation)
+run() and run_stdio() (how servers actually start)
+tool() / @mcp.tool
+resource() / @mcp.resource
+prompt() / @mcp.prompt
+Context object
+SamplingMessages and sampling APIs
+Request lifecycle from initialize → tools/list → tools/call
+
+This mirrors the actual lifecycle of an MCP server and makes each subsequent concept much easier to understand.
+
+
+#########################
+
+Chapter 3 – run() and run_stdio():
+
+Before explaining these methods, let's answer the first question.
+
+Question 1
+
+run() is a method of Uvicorn or FastMCP?
+
+The answer is:
+
+There are two different run() methods.
+
+1. FastMCP.run()
+mcp.run()
+
+This is a FastMCP method.
+
+It belongs to the FastMCP object.
+
+
+2. uvicorn.run()
+uvicorn.run(app)
+
+This belongs to the Uvicorn package.
+
+Completely different method.
+
+Think of Java.
+SpringApplication.run()
+
+vs
+
+Thread.run()
+
+Same method name.
+
+Different classes.
+
+Exactly the same here.
+
+
+Chapter 1 – Where do these methods belong?:
+
+Let's draw the architecture.
+                Python Application
+
+                       │
+
+                mcp = FastMCP()
+
+                       │
+
+              FastMCP Object
+
+────────────────────────────────────
+
+Methods
+
+tool()
+
+resource()
+
+prompt()
+
+streamable_http_app()
+
+run()
+
+run_stdio()
+
+────────────────────────────────────
+
+Separate Package
+
+uvicorn.run()
+
+Notice
+
+uvicorn.run() is NOT inside FastMCP.
+
+Chapter 2 – Why does FastMCP provide run()?:
+
+Imagine you create
+
+mcp = FastMCP(...)
+
+Then register tools.
+
+Tool 1
+
+Tool 2
+
+Tool 3
+
+Question
+
+Can a client connect?
+
+No.
+
+Because nothing is listening on a TCP port.
+
+FastMCP therefore provides a convenience method
+
+mcp.run()
+
+that hides
+
+ASGI
+Uvicorn
+Server Configuration
+
+from beginners.
+
+
+
+Chapter 3 – Internal Flow of mcp.run()
+
+Suppose you write
+
+mcp.run()
+
+What happens?
+
+Internally (conceptually)
+
+FastMCP.run()
+
+↓
+
+Create ASGI App
+
+↓
+
+Configure Transport
+
+↓
+
+Start Uvicorn
+
+↓
+
+Listen Port
+
+↓
+
+Accept Requests
+
+Notice
+
+You never call
+
+uvicorn.run()
+
+Yourself.
+
+FastMCP does it internally.
+
+
+Step-by-Step Lifecycle:
+
+Python
+
+↓
+
+mcp.run()
+
+↓
+
+FastMCP
+
+↓
+
+streamable_http_app()
+
+↓
+
+ASGI App
+
+↓
+
+uvicorn.run()
+
+↓
+
+TCP Socket
+
+↓
+
+HTTP Listener
+
+↓
+
+Ready
+
+This is why
+
+mcp.run()
+
+is called a high-level convenience method.
+
+
+Chapter 4 – What does Uvicorn do?:
+
+Many people think
+
+FastMCP
+
+↓
+
+Handles HTTP
+
+Wrong.
+
+FastMCP never opens a socket.
+
+Uvicorn does.
+
+Imagine
+
+Client
+
+↓
+
+TCP SYN
+
+↓
+
+Port 8000
+
+Who accepts this?
+
+Not FastMCP.
+
+Uvicorn.
+
+
+Think of a hotel.
+Guest
+
+↓
+
+Reception
+
+↓
+
+Room
+
+Reception = Uvicorn
+
+Room = FastMCP
+
+The guest never enters the room directly.
+
+Reception first receives the guest.
+
+
+Chapter 5 – Complete Flow:
+
+Suppose Claude connects.
+
+Claude
+
+↓
+
+TCP
+
+↓
+
+Port 8000
+
+↓
+
+Uvicorn
+
+↓
+
+HTTP
+
+↓
+
+ASGI
+
+↓
+
+FastMCP
+
+↓
+
+JSON RPC
+
+↓
+
+Tool
+
+Notice:
+
+FastMCP never deals with
+
+TCP
+Socket
+Port
+HTTP parsing
+
+Uvicorn handles those.
+
+
+Chapter 6 – Why streamable_http_app() Exists Then?:
+
+If
+
+mcp.run()
+
+already starts everything,
+
+why does
+
+streamable_http_app()
+
+exist?
+
+Because
+
+sometimes
+
+you already have a web server.
+
+Suppose
+FastAPI
+
+↓
+
+REST APIs
+
+Suppose
+
+FastAPI
+
+↓
+
+REST APIs
+
+You don't want another server.
+
+Instead
+FastAPI
+
+↓
+
+Mount
+
+↓
+
+FastMCP
+
+Exactly why
+
+streamable_http_app()
+
+exists.
+
+
+Enterprise Example:
+                FastAPI
+
+      /login
+
+      /orders
+
+      /customers
+
+      /mcp
+
+            │
+
+     streamable_http_app()
+
+            │
+
+         FastMCP
+
+One server.
+
+One port.
+
+Both REST and MCP.
+
+
+
+Chapter 7 – run_stdio():
+
+Now let's discuss
+
+run_stdio()
+
+This is another FastMCP method.
+
+
+Question
+
+Why STDIO?
+
+Suppose you're building an MCP Server
+
+for
+Claude Desktop
+
+Claude Desktop starts
+
+your Python process.
+
+Claude
+
+↓
+
+python server.py
+
+How should they communicate?:
+
+Not HTTP.
+
+Instead
+
+stdin
+
+↓
+
+stdout
+
+Exactly like a Linux command.
+
+
+Chapter 8 – STDIO Architecture:
+Claude Desktop
+
+↓
+
+stdin
+
+↓
+
+FastMCP
+
+↓
+
+stdout
+
+↓
+
+Claude Desktop
+
+
+No
+
+HTTP
+TCP
+Uvicorn
+Port
+
+Nothing.
+
+Chapter 9 – Internal Flow:
+
+Suppose
+
+mcp.run_stdio()
+
+Internally:
+Read stdin
+
+↓
+
+Parse JSON RPC
+
+↓
+
+Execute Tool
+
+↓
+
+Serialize Result
+
+↓
+
+Write stdout
+
+↓
+
+Wait Next Message
+
+Notice
+
+No network.
+
+Example:
+
+Claude writes
+
+stdin
+
+↓
+
+initialize
+
+FastMCP reads
+stdin
+
+Parses JSON
+
+Calls
+
+initialize
+Returns
+
+stdout
+
+↓
+
+Initialize Response
+
+
+Chapter 10 – Complete Lifecycle:
+Claude
+
+↓
+
+stdin
+
+↓
+
+FastMCP
+
+↓
+
+Tool Registry
+
+↓
+
+Python Function
+
+↓
+
+stdout
+
+↓
+
+Claude
+
+
+
+Chapter 11 – Difference Between run() and run_stdio():
+mcp.run()
+FastMCP
+
+↓
+
+Create ASGI
+
+↓
+
+Uvicorn
+
+↓
+
+HTTP
+
+↓
+
+Network
+
+↓
+
+Remote Client
+
+Used when
+
+your server
+
+is accessible over network.
+
+
+mcp.run_stdio():
+FastMCP
+
+↓
+
+stdin
+
+↓
+
+stdout
+
+↓
+
+Same Machine
+
+Used for
+
+Claude Desktop
+Cursor
+VS Code
+Local CLI
+
+
+
+Chapter 12 – Which One Should I Use?:
+
+Suppose
+
+Claude Desktop launches
+
+your server.
+
+Use
+
+mcp.run_stdio()
+
+No HTTP needed.
+
+Suppose
+
+you want
+
+https://company.com/mcp
+
+Use
+
+mcp.run()
+
+or
+
+streamable_http_app()
+
++
+
+uvicorn.run()
+
+Chapter 13 – What Happens Internally in mcp.run():
+
+Let's go one level deeper.
+mcp.run()
+
+↓
+
+Detect Transport
+
+↓
+
+Create ASGI App
+
+↓
+
+Configure Sessions
+
+↓
+
+Configure Streaming
+
+↓
+
+Configure Middleware
+
+↓
+
+Create HTTP Routes
+
+↓
+
+Call uvicorn.run()
+
+↓
+
+Create TCP Socket
+
+↓
+
+Bind Port
+
+↓
+
+Listen
+
+↓
+
+Ready
+
+Notice
+
+FastMCP never creates sockets itself.
+
+It delegates that responsibility to Uvicorn.
+
+
+Chapter 14 – What Happens Internally in mcp.run_stdio():
+mcp.run_stdio()
+
+↓
+
+Initialize Registries
+
+↓
+
+Initialize Session Manager
+
+↓
+
+Read stdin Loop
+
+↓
+
+Receive JSON RPC
+
+↓
+
+Dispatch Request
+
+↓
+
+Execute Tool
+
+↓
+
+Write stdout
+
+↓
+
+Wait Forever
+
+Instead of
+
+TCP Socket
+
+it creates
+
+stdin Reader
++
+stdout Writer
+
+
+One Important Version Note
+
+Depending on the FastMCP SDK version, you may find that mcp.run() supports different transports (for example, transport="stdio" or transport="streamable-http") instead of having a separate run_stdio() method. The underlying concepts remain the same:
+
+STDIO transport → Reads from stdin, writes to stdout.
+Streamable HTTP transport → Creates an ASGI application and uses an ASGI server (typically Uvicorn) to listen for HTTP requests.
+
+

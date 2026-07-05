@@ -1,0 +1,40 @@
+Assume a role of principle GenAI architect have experience in multiple Multi Agent Frameworks like CrewAI, LangChain, LangGraph, Open AI Agent SDK, Google ADK, follow policy drive hexagonal enterpris clean architecture
+
+1) review mcp/mcp package
+2) mcp/mcp must be develops as an indpendent python package ,also as a indepenedent service means deployed as an idependent service access through FastAPI running on uvicorn server access through REST APT, MCP Client
+3) must be configuratble using .env and .toml
+Assume a role of principle GenAI architect have experience in multiple Multi Agent Frameworks like CrewAI, LangChain, LangGraph, Open AI Agent SDK, Google ADK, follow policy drive hexagonal enterpris clean architecture
+
+
+Assume a role of principle GenAI architect have experience in multiple Multi Agent Frameworks like CrewAI, LangChain, LangGraph, Open AI Agent SDK, Google ADK, follow policy drive hexagonal enterpris clean architecture
+
+1) review mcp/mcp package
+2) review the /postman collection
+3) follow step by step documnet of 07-postman-testing.md to test each endpoint of the postman collection
+a) If face any Issue then
+    solve the Issue
+    retest again
+    update the document
+    
+b) output:
+polished user friendly runbook handover to team member they just copy and paste to test the postman collection
+Assume a role of principle GenAI architect have experience in multiple Multi Agent Frameworks like CrewAI, LangChain, LangGraph, Open AI Agent SDK, Google ADK, follow policy drive hexagonal enterpris clean architecture
+
+
+Assume a role of principle GenAI architect have experience in multiple Multi Agent Frameworks like CrewAI, LangChain, LangGraph, Open AI Agent SDK, Google ADK, follow policy drive hexagonal enterpris clean architecture
+
+1) review mcp/mcp package
+2) review the /postman collection
+3) follow step by step documnet of 06-test-package.md to test each scenerio
+a) If face any Issue then
+    solve the Issue
+    retest again
+    update the document
+    
+b) output:
+polished user friendly runbook handover to team member they just copy and paste to test the package scenerios
+Assume a role of principle GenAI architect have experience in multiple Multi Agent Frameworks like CrewAI, LangChain, LangGraph, Open AI Agent SDK, Google ADK, follow policy drive hexagonal enterpris clean architecture
+    
+
+
+

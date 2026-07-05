@@ -1,0 +1,1181 @@
+Chapter 1 – First Forget MCP:
+
+Let's start with a normal FastAPI application.
+from fastapi import FastAPI
+
+app = FastAPI()
+
+What is
+
+app
+
+?
+
+Answer
+
+It is an ASGI Application.
+
+It doesn't have
+
+Port
+Host
+TCP Socket
+
+It is simply
+
+Python Object
+
+
+Now you write
+@app.get("/employees")
+def get_employees():
+    return {}
+    
+Internally
+
+FastAPI builds
+
+FastAPI ASGI App
+
+↓
+
+Route Table
+
+---------------------
+
+/employees
+
+↓
+
+get_employees()
+
+Still
+
+No Uvicorn.
+
+
+Chapter 2 – Start Uvicorn:
+
+Now    
+import uvicorn
+
+uvicorn.run(app,
+            host="0.0.0.0",
+            port=8000)
+            
+Now
+TCP Socket
+
+↓
+
+Port 8000
+
+↓
+
+HTTP Server
+
+↓
+
+FastAPI
+
+Finally
+
+Server starts.
+
+Notice
+
+The port belongs to
+Uvicorn
+
+NOT
+
+FastAPI
+
+
+Chapter 3 – HR MCP:
+
+Now            
+hr_mcp = FastMCP("HR")
+Still
+
+Python Object
+
+Nothing running.
+Then
+
+hr_app = hr_mcp.streamable_http_app()
+
+Now
+
+HR ASGI Application
+Again
+
+No port.
+
+No TCP.
+
+No HTTP.
+
+Only
+
+ASGI App
+
+
+Chapter 4 – Finance MCP:
+finance_mcp = FastMCP("Finance")
+
+finance_app = finance_mcp.streamable_http_app()
+Now
+
+Finance ASGI App
+
+Again
+
+No port.
+
+
+Chapter 4 – Who Decides the URL?:
+
+This is your biggest doubt.
+
+The answer is
+
+FastAPI decides.
+    
+NOT
+
+FastMCP.
+
+NOT
+
+Uvicorn.
+
+Look
+
+main_app = FastAPI()
+
+main_app.mount(
+    "/mcp/hr",
+    hr_app
+)
+
+main_app.mount(
+    "/mcp/finance",
+    finance_app
+)
+
+
+Question:
+
+Where did
+
+/mcp/hr
+
+come from?
+
+Answer
+
+You wrote it.
+
+Exactly here.
+
+Exactly here.
+
+main_app.mount("/mcp/hr", hr_app)
+
+Similarly
+
+main_app.mount("/mcp/finance", finance_app)
+
+FastAPI stores:
+Route Table
+
+---------------------------------
+
+/mcp/hr
+
+↓
+
+HR ASGI App
+
+---------------------------------
+
+/mcp/finance
+
+↓
+
+Finance ASGI App
+
+
+
+Chapter 5 – Complete Route Table:
+
+Imagine
+main_app = FastAPI()
+
+contains:
+@app.get("/login")
+@app.get("/employees")
+plus
+.mount("/mcp/hr", hr_app)
+Internally
+
+FastAPI builds
+/login
+
+↓
+
+login()
+
+---------------------
+
+/employees
+
+↓
+
+employees()
+
+---------------------
+
+/mcp/hr
+
+↓
+
+HR MCP App
+
+---------------------
+
+/mcp/finance
+
+↓
+
+Finance MCP App
+
+Exactly like Spring Boot DispatcherServlet.
+
+
+Chapter 6 – Which Uvicorn?:
+
+Only ONE.
+
+uvicorn.run(
+    main_app,
+    host="0.0.0.0",
+    port=8000
+)
+
+
+Architecture:
+               Uvicorn
+
+           Port 8000
+
+                │
+
+            FastAPI
+
+     ┌──────────┴──────────┐
+
+     ▼                     ▼
+
+HR MCP ASGI         Finance MCP ASGI
+
+
+
+Chapter 7 – Client Calls HR:
+
+Browser
+
+(or Claude)
+
+calls
+
+POST
+
+http://company.com:8000/mcp/hr
+
+Flow
+TCP
+
+↓
+
+Port 8000
+
+↓
+
+Uvicorn
+
+↓
+
+FastAPI
+
+↓
+
+Route Lookup
+
+↓
+
+Found
+
+↓
+
+/mcp/hr
+
+↓
+
+HR MCP App
+
+↓
+
+Tool
+
+↓
+
+Response
+
+
+
+Chapter 8 – Finance Call:
+
+Now
+
+POST
+
+http://company.com:8000/mcp/finance
+
+Flow
+TCP
+
+↓
+
+Same Port 8000
+
+↓
+
+Same Uvicorn
+
+↓
+
+Same FastAPI
+
+↓
+
+Route Lookup
+
+↓
+
+/mcp/finance
+
+↓
+
+Finance MCP App
+
+↓
+
+Tool
+
+↓
+
+Response
+
+Notice
+
+Only
+
+Route changes.
+
+
+
+Chapter 9 – Think of a Shopping Mall:
+
+Imagine
+
+one building.
+
+Shopping Mall
+
+↓
+
+Entrance
+
+↓
+
+Nike
+
+↓
+
+Apple
+
+↓
+
+Food Court
+
+
+Question
+
+Does Nike have
+
+its own entrance?
+
+No.
+
+Everyone enters
+
+through
+
+Main Entrance.
+
+Exactly
+
+Main Entrance
+
+↓
+
+Uvicorn
+
+Mall Manager
+↓
+
+FastAPI
+
+Nike
+↓
+
+HR MCP
+
+Apple
+↓
+
+Finance MCP
+
+
+Chapter 10 – Complete Python Code:
+HR MCP
+
+Chapter 10 – Complete Python Code
+HR MCP:
+
+from mcp.server.fastmcp import FastMCP
+hr = FastMCP("HR")
+
+@hr.tool
+def get_employee():
+    return "Employee Found"
+
+hr_app = hr.streamable_http_app()
+
+
+Finance MCP:
+from mcp.server.fastmcp import FastMCP
+
+finance = FastMCP("Finance")
+
+@finance.tool
+def get_salary():
+    return "Salary Found"
+
+finance_app = finance.streamable_http_app()
+
+Main FastAPI:
+from fastapi import FastAPI
+
+main_app = FastAPI()
+
+main_app.mount("/mcp/hr", hr_app)
+
+main_app.mount("/mcp/finance", finance_app)
+
+
+Start Server:
+import uvicorn
+
+uvicorn.run(
+    main_app,
+    host="0.0.0.0",
+    port=8000
+)
+
+Done.
+
+Final Architecture:
+                    Browser / Claude
+
+                          │
+
+              http://server:8000
+
+                          │
+
+                     TCP Socket
+
+                          │
+
+                     Uvicorn
+
+                          │
+
+                    FastAPI Router
+
+      ┌───────────────────┼─────────────────────┐
+
+      ▼                   ▼                     ▼
+
+   /login            /mcp/hr             /mcp/finance
+
+      │                   │                     │
+
+ REST API            HR MCP App          Finance MCP App
+
+      │                   │                     │
+
+ HR Tools           Employee Tools      Salary Tools
+
+
+Now Compare with mcp.run()
+
+Suppose HR uses
+hr.run(
+    transport="streamable-http",
+    port=8000
+)
+
+Internally
+Uvicorn
+
+↓
+
+HR MCP
+
+↓
+
+Only HR
+
+
+Now Finance wants another server.:
+finance.run(
+    transport="streamable-http",
+    port=9000
+)
+
+Now architecture becomes
+Port 8000
+
+↓
+
+HR MCP
+
+----------------------
+
+Port 9000
+
+↓
+
+Finance MCP
+
+Two completely independent servers.
+
+
+Architect Recommendation
+
+As a Principal Architect, I recommend:
+
+For development or a single MCP service
+mcp.run(transport="streamable-http")
+
+This is the simplest approach.
+
+For an enterprise platform hosting multiple MCP services
+
+                    One Uvicorn
+                         │
+                    One FastAPI
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                ▼                ▼
+     HR MCP          Finance MCP      GitHub MCP
+     HR MCP          Finance MCP      GitHub MCP
+
+This gives you:
+
+One TCP port
+One HTTPS certificate
+One authentication layer
+One logging pipeline
+One monitoring endpoint
+Multiple independent MCP applications mounted at different paths
+
+This is the pattern you'll commonly see in enterprise API gateways and AI platform service
+#####################################################################################################################
+
+Enterprise Project Structure
+
+enterprise-ai-platform/
+
+│
+├── main.py                ← Main FastAPI Application
+│
+├── hr/
+│   ├── __init__.py
+│   ├── server.py          ← HR FastMCP Server
+│   └── tools.py
+│
+├── finance/
+│   ├── __init__.py
+│   ├── server.py          ← Finance FastMCP Server
+│   └── tools.py
+│
+└── requirements.txt
+
+Notice
+
+Each department owns its own MCP Server.
+
+Step 1 — HR Team:
+
+hr/server.py
+from mcp.server.fastmcp import FastMCP
+
+hr = FastMCP("HR MCP Server")
+
+@hr.tool
+def get_employee(emp_id: str):
+    return f"Employee : {emp_id}"
+
+# Create ASGI Application
+hr_app = hr.streamable_http_app()
+
+
+Question
+
+What does this file export?
+
+Answer
+
+hr_app
+
+which is an ASGI Application.
+
+
+
+Step 2 — Finance Team:
+
+finance/server.py
+
+from mcp.server.fastmcp import FastMCP
+
+finance = FastMCP("Finance MCP Server")
+
+@finance.tool
+def get_salary(emp_id: str):
+    return f"Salary : {emp_id}"
+
+finance_app = finance.streamable_http_app()
+
+Again,
+
+this file exports
+
+finance_app
+
+
+Step 3 — Main Application:
+
+Now comes the important part.
+
+main.py:
+
+from fastapi import FastAPI
+
+from hr.server import hr_app
+from finance.server import finance_app
+
+main_app = FastAPI()
+
+main_app.mount("/mcp/hr", hr_app)
+
+main_app.mount("/mcp/finance", finance_app)
+
+You're importing
+
+the ASGI Application object
+
+Step 4 — Start Uvicorn:
+import uvicorn
+
+uvicorn.run(
+    main_app,
+    host="0.0.0.0",
+    port=8000
+)
+
+
+Now the complete architecture becomes
+                 Uvicorn
+
+              Port 8000
+
+                  │
+
+             main_app
+
+        (FastAPI ASGI App)
+
+                  │
+
+       ┌──────────┴───────────┐
+
+       ▼                      ▼
+
+ /mcp/hr                 /mcp/finance
+
+       │                      │
+
+   hr_app               finance_app
+
+       │                      │
+
+ HR FastMCP             Finance FastMCP
+ 
+ Notice
+
+Only one
+
+uvicorn.run()
+
+What happens during import?:
+
+Many developers miss this.
+
+Suppose
+
+from hr.server import hr_app
+
+Python executes
+
+hr/server.py
+
+from top to bottom.
+
+Internally
+Import hr.server
+
+↓
+
+Create FastMCP Object
+
+↓
+
+Register Tools
+
+↓
+
+Create ASGI Application
+
+↓
+
+Store hr_app Variable
+
+↓
+
+Return hr_app
+
+
+How does mount() know the path?:
+
+This was your earlier doubt.
+
+Look carefully.
+
+main_app.mount(
+    "/mcp/hr",
+    hr_app
+)
+
+There are two things.
+
+First parameter
+"/mcp/hr"
+
+You decide it.
+
+Second parameter
+hr_app
+
+The imported ASGI Application.
+
+FastAPI stores internally
+
+Route Table
+
+--------------------------------
+
+Path
+
+↓
+
+/mcp/hr
+
+↓
+
+ASGI App Reference
+
+↓
+
+hr_app
+
+--------------------------------
+
+Path
+
+↓
+
+/mcp/finance
+
+↓
+
+finance_app
+
+
+Client Request
+
+Suppose
+
+Claude sends
+
+POST
+
+http://company.com:8000/mcp/hr
+
+Flow
+
+Client
+
+↓
+
+Port 8000
+
+↓
+
+Uvicorn
+
+↓
+
+main_app
+
+↓
+
+Route Table
+
+↓
+
+Found "/mcp/hr"
+
+↓
+
+hr_app
+
+↓
+
+FastMCP
+
+↓
+
+Tool Registry
+
+↓
+
+get_employee()
+
+Finance
+
+POST
+
+http://company.com:8000/mcp/finance
+
+Flow
+
+Client
+
+↓
+
+Port 8000
+
+↓
+
+Same Uvicorn
+
+↓
+
+Same FastAPI
+
+↓
+
+Found "/mcp/finance"
+
+↓
+
+finance_app
+
+↓
+
+Tool Registry
+
+↓
+
+get_salary()
+
+Notice
+
+The same Uvicorn
+
+serves both.
+
+
+Important Observation
+
+You asked
+
+How does it know which Uvicorn server to use?
+
+Actually,
+
+the MCP apps know nothing about Uvicorn.
+
+Think of it like this.
+
+hr_app
+
+↓
+
+ASGI Object
+
+It has
+
+no port
+no host
+no socket
+
+Similarly
+
+finance_app
+
+↓
+
+ASGI Object
+
+Also
+
+no port
+no socket
+
+Only
+
+uvicorn.run(main_app)
+
+creates
+
+TCP Socket
+
+↓
+
+Port 8000
+
+Both MCP apps live inside
+
+that one ASGI application.
+
+
+Why does not hr_app need port information?:
+
+Because
+
+hr_app is not a server.
+
+This is probably the biggest misconception.
+
+People think
+
+hr_app = hr.streamable_http_app()
+
+creates
+
+an HTTP server.
+
+It doesn't.
+
+It creates
+
+an ASGI Application.
+
+Think of it like a Spring Boot DispatcherServlet.
+
+It knows
+
+how to process requests.
+
+It doesn't know
+
+how requests arrive.
+
+
+Just because an MCP Server is accessible through HTTP/browser doesn't mean you should call it like a normal REST APi
+This is one of the biggest misunderstandings people have about Streamable HTTP.
+
+
+#########################################################################################
+INDEPENDENT PROJECT:
+Project Structure
+HR Project
+hr-mcp/
+
+server.py
+
+tools.py
+
+
+Finance Project
+finance-mcp/
+
+server.py
+
+tools.py
+
+Completely independent projects.
+
+HR Server:
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("HR MCP")
+
+@mcp.tool
+def get_employee(empid: str):
+    return {
+        "employee": empid
+    }
+
+if __name__ == "__main__":
+    mcp.run(
+        transport="streamable-http",
+        host="0.0.0.0",
+        port=8001
+    )
+    
+    
+Notice
+
+Only
+
+mcp.run(...)
+
+No FastAPI.
+
+No mount.  
+
+Internally:
+mcp.run()
+
+↓
+
+Create ASGI App
+
+↓
+
+Create Uvicorn
+
+↓
+
+Port 8001
+
+↓
+
+Ready
+
+
+Finance Server:
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("Finance MCP")
+
+@mcp.tool
+def get_salary(empid: str):
+    return {
+        "salary":10000
+    }
+
+if __name__ == "__main__":
+    mcp.run(
+        transport="streamable-http",
+        host="0.0.0.0",
+        port=8002
+    )  
+Again
+
+Independent.
+
+Architecture:
+          HR Server
+
+       Port 8001
+
+          │
+
+      Uvicorn
+
+          │
+
+      HR FastMCP
+
+
+
+          Finance
+
+       Port 8002
+
+          │
+
+      Uvicorn
+
+          │
+
+    Finance FastMCP
+    
+Notice:
+
+Each department owns
+
+its own
+
+Project
+Uvicorn
+Port
+Deployment
+
+Exactly like microservices.
+
+Kubernetes:
+
+Usually
+
+HR Deployment
+
+↓
+
+Pod
+
+↓
+
+Port 8001
+
+------------------
+
+Finance Deployment
+
+↓
+
+Pod
+
+↓
+
+Port 8002
+
+Very common.    

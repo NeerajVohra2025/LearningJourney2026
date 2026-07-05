@@ -1,0 +1,460 @@
+Since it is HTTP, why do we need MCP Client?:
+Normal REST:
+
+Suppose HR exposes
+GET
+
+/employees/101
+
+Browser
+GET
+
+/employees/101
+
+Server
+
+JSON
+
+Simple.
+
+
+MCP:
+
+HR exposes
+
+POST
+
+/mcp
+Question
+
+Can browser call it?
+
+Technically
+
+YES.
+
+
+Suppose:
+
+Chrome sends
+
+POST
+
+/mcp
+
+Body
+
+{
+    "jsonrpc":"2.0",
+    "id":1,
+    "method":"tools/list"
+}
+
+Server replies
+{
+   ...
+}
+
+
+Browser can absolutely do this.
+
+
+Because MCP is NOT REST:
+Browser understands
+HTTP
+MCP Server understands:
+HTTP
+
++
+
+JSON-RPC
+
++
+
+MCP Protocol
+
+Someone must generate
+
+correct
+
+MCP Messages.
+
+Suppose
+
+you want
+
+Initialize
+
+↓
+
+Session
+
+↓
+
+tools/list
+
+↓
+
+tools/call
+
+↓
+
+Sampling
+
+↓
+
+Progress
+
+↓
+
+Resources
+
+
+Will you manually create
+
+all JSON-RPC?:
+
+No.
+
+That is exactly
+
+why
+
+MCP Client exists.
+
+
+Think of JDBC
+
+Suppose Oracle Database.
+
+Can Java
+
+directly send TCP packets?
+
+Yes.
+
+Should it?
+
+No.
+
+Instead
+
+Java
+
+↓
+
+JDBC Driver
+
+↓
+
+Oracle
+
+Exactly same.
+
+MCP:
+Application
+
+↓
+
+MCP Client
+
+↓
+
+MCP Server
+
+
+Can Browser Become MCP Client?:
+
+Absolutely.
+
+If
+
+your JavaScript
+
+implements
+Initialize
+
+Session
+
+JSON RPC
+
+SSE
+
+Sampling
+
+Notifications
+
+
+then
+
+browser itself
+
+becomes
+
+MCP Client.
+
+
+Example:
+
+Without MCP Client
+fetch("/mcp",{
+ body:
+ {
+   jsonrpc:"2.0",
+   method:"tools/call",
+   ...
+ }
+})
+
+Now imagine:
+
+you must write
+
+Initialize
+
+Session
+
+Reconnect
+
+Sampling
+
+Progress
+
+Error Handling
+
+Capabilities
+
+Notifications
+
+Yourself.
+
+Painful.
+
+Instead
+
+MCP Client
+
+already provides
+
+client.call_tool(...)
+
+Very easy.
+###############################################################################################################################
+Why MCPServerStreamableHttp, MCPServerStreamableHttpParams:
+Those classes belong to
+
+the client SDK.
+
+They help
+
+your application
+
+connect
+
+to
+
+http://hr-server:8001
+
+instead of
+
+manually writing
+
+HTTP.
+
+Architecture:
+Agent
+
+↓
+
+MCPServerStreamableHttp
+
+↓
+
+Initialize
+
+↓
+
+Session
+
+↓
+
+Tools
+
+↓
+
+Sampling
+
+↓
+
+HTTP
+
+↓
+
+HR MCP
+
+Real Enterprise Example:
+
+Suppose
+
+OpenAI Agent SDK.
+
+You configure
+
+server = MCPServerStreamableHttp(
+    params=MCPServerStreamableHttpParams(
+        url="http://hr-server:8001/mcp"
+    )
+)
+
+Question:
+
+Why?
+
+Because
+
+OpenAI Agent SDK
+
+doesn't know
+
+how to speak MCP.
+
+This class teaches it.
+
+Internally
+
+it performs
+
+Initialize
+
+↓
+
+Create Session
+
+↓
+
+Store Session ID
+
+↓
+
+Call tools/list
+
+↓
+
+Call tools/call
+
+↓
+
+Handle Streaming
+
+↓
+
+Handle Sampling
+
+↓
+
+Reconnect
+
+
+Automatically.
+
+
+Can I Skip MCP Client?:
+
+Technically
+
+YES.
+
+You could manually send
+
+every JSON-RPC message.
+
+Like
+
+requests.post(...)
+
+But then
+
+you must implement
+
+the entire protocol.
+
+Nobody does that.
+
+Exactly like
+
+nobody manually
+
+creates TCP packets
+
+to call
+
+REST APIs.
+
+Final Enterprise Picture:
+
+                 OpenAI Agent SDK
+
+                        │
+
+         MCPServerStreamableHttp
+
+                        │
+
+           JSON-RPC + HTTP + Session
+
+                        │
+
+        http://hr-server:8001/mcp
+
+                        │
+
+                  Uvicorn
+
+                        │
+
+                 FastMCP Server
+
+                        │
+
+                   HR Tools
+
+"If the server is already HTTP, then my application can simply use requests.post().":
+Technically, yes.
+
+But HTTP is only the transport.
+
+Think of it this way:
+Transport (HTTP)
+        │
+        ▼
+Message Format (JSON-RPC)
+        │
+        ▼
+MCP Protocol
+        │
+        ▼
+Tools / Resources / Sampling / Sessions
+
+
+requests.post() only helps with the HTTP transport. It knows nothing about:
+
+initialize
+Session IDs
+tools/list
+tools/call
+Progress notifications
+Sampling
+Protocol error handling
+Capability negotiation
+
+The MCP client library implements all of that protocol logic for you.
+
+This is exactly the same relationship as:
+
+requests → HTTP transport
+psycopg → PostgreSQL protocol
+pymongo → MongoDB protocol
+boto3 → AWS API protocol
+MCP Client SDK → MCP protocol over HTTP
+
+So the browser or your application can talk directly to an MCP server, but unless it implements the MCP protocol itself, it's just sending raw HTTP—not acting as a complete MCP client. That's why classes such as MCPServerStreamableHttp exist: they encapsulate the MCP protocol so your agent code can simply say "call this tool" instead of implementing the protocol state machine manually.

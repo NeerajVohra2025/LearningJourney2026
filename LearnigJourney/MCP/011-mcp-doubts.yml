@@ -1,0 +1,873 @@
+Question 1: Which is the latest FastMCP approach?
+
+As of the latest MCP Python SDK/FastMCP (2025–2026), the preferred pattern is:
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("Demo")
+
+mcp.run(
+    transport="streamable-http"
+)
+
+or
+
+mcp.run(
+    transport="stdio"
+)
+
+
+The SDK has moved toward one run() method with a transport parameter instead of separate startup methods.
+Older examples often show:
+
+mcp.run_stdio()
+or
+
+app = mcp.streamable_http_app()
+
+uvicorn.run(app)
+
+So for learning:
+
+Understand streamable_http_app() because it explains how HTTP transport works.
+For writing new code, prefer mcp.run(transport="...") unless you specifically need to embed MCP into another web application.
+
+
+Chapter 1 – First Understand the Layers:
+
+Most people think there are only two layers.
+
+Actually there are four layers.
+
++----------------------------------------+
+|          MCP Application               |
+|        (FastMCP Tools, Resources)      |
++----------------------------------------+
+                  │
+                  ▼
++----------------------------------------+
+|         ASGI Application               |
+| (FastAPI / Starlette / FastMCP ASGI)   |
++----------------------------------------+
+                  │
+                  ▼
++----------------------------------------+
+|           Uvicorn Server               |
+| TCP Socket, HTTP Parsing, Port         |
++----------------------------------------+
+                  │
+                  ▼
+             Network
+             
+             
+             
+ Notice
+
+Uvicorn doesn't know MCP.
+
+FastMCP doesn't know TCP sockets.    
+
+
+Chapter 2 – Think of Uvicorn as Tomcat:
+
+Since you have a Java background.
+
+Think of        
+Spring Boot
+
+↓
+
+Embedded Tomcat
+
+
+Tomcat
+
+Opens Port 8080
+Accepts HTTP Requests
+
+Spring Boot
+
+Handles Controllers
+Handles Business Logic
+
+Exactly the same.
+
+
+Python:
+Uvicorn
+
+↓
+
+FastAPI / FastMCP
+
+
+Chapter 3 – What Happens in mcp.run():
+
+Suppose you write
+mcp = FastMCP("HR Server")
+
+mcp.run(
+    transport="streamable-http"
+)
+
+Internally
+FastMCP
+
+↓
+
+Create ASGI App
+
+↓
+
+Call Uvicorn.run()
+
+↓
+
+Uvicorn Opens Port
+
+↓
+
+Listening
+
+
+Notice:
+
+FastMCP internally creates and starts Uvicorn for you.
+
+You never see it.
+
+
+Chapter 4 – Does FastMCP Create Uvicorn?:
+
+Not exactly.
+
+Conceptually
+
+mcp.run()
+internally does something similar to
+
+app = mcp.streamable_http_app()
+
+uvicorn.run(app)
+
+It is a convenience method.
+
+It hides these two lines.
+
+
+Chapter 5 – Where Does Port Number Come From?:
+
+Excellent question.
+
+Suppose you write
+
+mcp.run()
+
+How does Uvicorn know
+
+Port?
+
+Host?
+
+URL?
+
+The answer is
+
+either
+
+defaults
+
+or
+
+parameters.
+
+Example
+
+mcp.run(
+    transport="streamable-http",
+    host="0.0.0.0",
+    port=8000
+)
+
+Internally
+Host = 0.0.0.0
+
+Port = 8000
+
+↓
+
+Uvicorn.run(...)
+
+Now
+
+clients connect to
+
+http://server:8000
+
+
+Chapter 6 – HR MCP Server:
+
+Suppose HR team creates
+HR MCP Server
+They run
+
+mcp.run(
+    transport="streamable-http",
+    port=8000
+)
+
+Architecture:
+
+               Uvicorn
+
+          Port 8000
+
+               │
+
+        HR FastMCP App
+
+               │
+
+ HR Tools
+
+ HR Resources
+ 
+ 
+ Only HR.
+ 
+ 
+ Chapter 7 – Finance Team:
+
+Now Finance creates
+
+another project.
+
+Question
+
+Should they also write
+mcp.run()
+
+If yes
+
+what happens?
+
+Suppose
+
+they also choose
+
+Port
+
+Impossible.
+Port 8000
+
+Already Used
+
+Operating System rejects it.
+
+They Choose
+Port 9000
+
+Now
+Port 8000
+
+↓
+
+HR MCP
+
+---------------------
+
+Port 9000
+
+↓
+
+Finance MCP
+
+Two independent servers.
+
+Perfectly valid.
+
+
+Chapter 8 – What if Company Wants ONE Server?:
+
+Now suppose architecture team says
+
+We don't want
+8000
+
+9000
+
+10000
+
+12000
+
+We want
+
+One HTTP Server:
+Now
+
+we build
+
+FastAPI
+
+Architecture:
+            FastAPI
+
+               │
+
+   /login
+
+   /employees
+
+   /finance
+
+   /mcp/hr
+
+   /mcp/finance
+Notice
+
+One server.
+
+
+Chapter 9 – Where Does streamable_http_app() Fit?:
+
+Suppose HR has
+hr_mcp = FastMCP(...)
+
+Finance has
+finance_mcp = FastMCP(...)
+
+Neither starts Uvicorn.
+
+Instead
+
+they expose
+
+ASGI Applications.
+
+hr_app = hr_mcp.streamable_http_app()
+
+finance_app = finance_mcp.streamable_http_app()
+
+Then
+
+FastAPI mounts
+
+them.
+
+Conceptually
+main_app.mount("/mcp/hr", hr_app)
+main_app.mount("/mcp/finance", finance_app)
+
+Notice
+No new Uvicorn.
+
+Architecture:
+
+             Uvicorn
+
+                │
+
+             FastAPI
+
+        ┌───────────────┐
+
+        │               │
+
+        ▼               ▼
+
+ HR MCP App       Finance MCP App
+ 
+ 
+ Only
+
+one
+
+HTTP Server.
+
+
+Chapter 10 – What Does Mount Mean?:
+
+Think of a Shopping Mall.
+Mall
+
+↓
+
+Entrance
+
+↓
+
+Nike Store
+
+Apple Store
+
+Food Court
+
+There is
+
+one entrance.
+
+Different shops.
+
+Exactly the same.
+
+FastAPI
+
+↓
+
+/mcp/hr
+
+↓
+
+HR MCP
+
+
+FastAPI
+
+↓
+
+/mcp/finance
+
+↓
+
+Finance MCP
+
+
+One entrance.
+
+Different MCP Applications.
+
+
+Chapter 11 – Do We Pass Existing Uvicorn?:
+
+This was your biggest doubt.
+
+You asked
+
+Do we pass existing Uvicorn credentials?
+
+Answer
+
+No.
+
+Because
+
+Uvicorn doesn't need to know.
+
+It already serves
+
+FastAPI.
+
+FastAPI simply forwards
+
+certain URLs
+
+to another ASGI Application.
+
+Think like this
+
+
+Client
+
+↓
+
+Uvicorn
+
+↓
+
+FastAPI
+
+↓
+
+Route
+
+↓
+
+HR MCP
+
+
+Uvicorn:
+
+never knows
+
+whether
+
+request goes to
+
+REST
+
+or
+
+MCP.
+
+
+Chapter 12 – Internal Flow:
+
+Suppose
+
+Client requests
+
+POST
+
+/mcp/hr
+
+Flow:
+TCP
+
+↓
+
+Uvicorn
+
+↓
+
+FastAPI
+
+↓
+
+Mounted Route
+
+↓
+
+HR MCP
+
+↓
+
+Tool Registry
+
+↓
+
+Python Function
+
+↓
+
+Response
+
+
+
+Finance:
+POST
+
+/mcp/finance
+Flow:
+TCP
+
+↓
+
+Same Uvicorn
+
+↓
+
+Same FastAPI
+
+↓
+
+Finance MCP
+
+↓
+
+Finance Tools
+
+
+
+Chapter 13 – Enterprise Architecture:
+
+Suppose
+
+Company builds
+
+Enterprise AI Gateway.
+
+                 Uvicorn
+
+                    │
+
+                 FastAPI
+
+       ┌────────────┼────────────┐
+
+       ▼            ▼            ▼
+
+ REST APIs     HR MCP       Finance MCP
+
+                            │
+
+                        SAP MCP
+
+                            │
+
+                       GitHub MCP
+                       
+                       
+Everything
+
+runs
+
+under
+
+one
+
+HTTP Server.
+
+
+Chapter 14 – Which Architecture Should You Choose?:
+Small Project
+
+One HR MCP Server. 
+Use
+
+mcp.run(...)
+
+Architecture
+Uvicorn
+
+↓
+
+HR MCP
+
+Simple.
+
+Enterprise:
+
+Many MCP Servers.
+
+Use     
+
+FastAPI
+
+↓
+
+Mount
+
+↓
+
+HR
+
+↓
+
+Finance
+
+↓
+
+SAP
+
+↓
+
+GitHub
+
+One server.
+
+One port.
+
+Easy operations.
+
+
+A better mental model is:
+                    Uvicorn
+                       │
+                  FastAPI (Parent ASGI App)
+             ┌─────────┴─────────┐
+             ▼                   ▼
+        HR MCP App         Finance MCP App
+
+Both HR and Finance are independent FastMCP applications.
+
+They are siblings, not parent-child.
+
+FastAPI (or another ASGI application) is the parent container that mounts them at different URL paths, and Uvicorn is simply the web server that serves the parent ASGI application.
+
+This is the same pattern used by large enterprise applications to host multiple REST APIs and multiple MCP endpoints behind a single web server and port. 
+
+###################################################################
+
+Question 2:
+
+Now comes the interesting question.
+
+You asked
+
+Since it is HTTP, why do we need MCP Client?:
+
+Excellent.
+
+Let's understand carefully.     Question 2
+
+Now comes the interesting question.
+
+You asked
+
+Since it is HTTP, why do we need MCP Client?
+
+Excellent.
+
+Let's understand carefully. 
+
+Normal REST:
+
+Suppose HR exposes
+
+GET
+
+/employees/101
+
+Browser
+
+GET
+
+/employees/101
+
+Server
+
+JSON
+
+Simple.
+
+
+MCP:
+
+HR exposes
+
+POST
+
+/mcp
+
+Question
+
+Can browser call it?
+
+Technically
+
+YES.
+
+Suppose
+
+Chrome sends
+
+POST
+
+/mcp
+
+Body
+
+{
+    "jsonrpc":"2.0",
+    "id":1,
+    "method":"tools/list"
+}
+
+Server replies
+
+{
+   ...
+}
+
+Browser can absolutely do this.
+
+
+So
+
+why
+
+MCP Client?
+
+
+ Because MCP is NOT REST:
+
+Browser understands
+
+HTTP
+
+
+MCP Server understands
+
+HTTP
+
++
+
+JSON-RPC
+
++
+
+MCP Protocol
+
+Someone must generate
+
+correct
+
+MCP Messages
+
+
+Suppose
+
+you want
+
+Initialize
+
+↓
+
+Session
+
+↓
+
+tools/list
+
+↓
+
+tools/call
+
+↓
+
+Sampling
+
+↓
+
+Progress
+
+↓
+
+Resources
+
+Will you manually create
+
+all JSON-RPC?
+
+No.
+
+That is exactly
+
+why
+
+MCP Client exists.
+
+
+
+Can Browser Become MCP Client?:
+
+Absolutely.
+
+If
+
+your JavaScript
+
+implements
+
+Initialize
+
+Session
+
+JSON RPC
+
+SSE
+
+Sampling
+
+Notifications
+
+then
+
+browser itself
+
+becomes
+
+MCP Client.
+
+Example
+
+Without MCP Client
