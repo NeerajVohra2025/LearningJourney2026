@@ -1,0 +1,1090 @@
+Most developers think
+
+Task executes itself.
+
+No.
+
+Others think
+
+LLM executes the Task.
+
+Also wrong.
+
+Others think
+
+Agent executes the Task.
+
+Partially true.
+
+The actual component responsible for executing a Task is called the Executor.
+
+If you understand this chapter, you'll understand the heart of every A2A implementation.
+Chapter 8 – Executor (The Engine Behind Every Task):
+Step 1 – What Happens After a Task is Created?
+
+Let's continue from the previous chapter.
+
+Travel Agent sends:
+
+Approve Budget
+
+Finance Agent accepts:
+
+TASK-1001
+
+Status = Submitted
+
+Question:
+
+Who starts working?
+
+Travel Agent ?
+
+Finance Agent ?
+
+LLM ?
+
+MCP ?
+
+
+Answer:
+
+None of them directly.
+
+An internal component called the
+
+Executor
+
+starts executing the Task.
+
+
+
+Step 2 – Human Analogy:
+
+Suppose
+
+your manager says
+
+Prepare next year's budget.
+
+Question:
+
+Who actually works?
+
+The
+
+Finance Department.
+
+Inside Finance Department
+
+someone receives
+
+the assignment.
+
+Someone starts working.
+
+That employee
+
+is similar to
+
+the
+
+Executor.
+
+Manager
+
+didn't prepare
+
+the report.
+
+Employee did.
+
+
+
+Step 3 – Complete Architecture:
+                User
+
+                  │
+
+                  ▼
+
+            Travel Agent
+
+                  │
+
+──────────────A2A──────────────
+
+                  ▼
+
+            Finance Agent
+
+                  │
+
+             Create Task
+
+                  │
+
+                  ▼
+
+             Executor
+
+      ┌──────────┼───────────┐
+
+      ▼          ▼           ▼
+
+     LLM       MCP      Other Agents
+
+      ▼          ▼           ▼
+
+    Reason    SAP DB     HR Agent
+
+                  │
+
+                  ▼
+
+           Update Task
+
+                  │
+
+                  ▼
+
+            Return Result
+            
+Notice:
+
+Executor sits
+
+between:
+
+Task
+
+and
+
+LLM.            
+
+
+Step 4 – What is an Executor?:
+
+Definition
+
+An Executor is the runtime component responsible for executing a Task.:
+
+It
+
+reads the Task
+understands the requested Skill
+invokes the required tools
+communicates with other agents
+updates Task status
+produces the final result
+
+Think of it as
+
+the
+
+Execution Engine.
+
+
+Step 5 – Why Not Let the Agent Execute?:
+
+Question
+
+Why introduce
+
+another component?
+
+Why not:
+
+Task
+
+↓
+
+Agent
+
+Answer
+
+Because
+
+Agent
+
+is
+
+a logical concept.
+
+Executor
+
+is
+
+the runtime worker.
+
+Think
+
+Java.
+
+Class
+
+↓
+
+Object
+
+Agent
+
+is
+
+the class.
+
+Executor
+
+is
+
+the running object.
+
+
+Step 6 – Agent vs Executor:
+
+This is one of the most common interview questions.
+
+Agent
+
+represents
+
+Identity
+
+Skills
+
+Capabilities
+
+Agent Card
+
+Executor
+
+represents
+
+Execution
+
+Reasoning
+
+Tool Calls
+
+Workflow
+
+Task Updates
+
+Visual
+
+Agent
+
+↓
+
+Who am I?
+
+----------------------
+
+Executor
+
+↓
+
+What am I doing?
+
+Step 7 – Think Like Kubernetes
+
+Suppose
+
+you create
+
+a Pod.
+
+Question
+
+Does Pod
+
+run itself?
+
+No.
+
+Kubelet
+
+executes
+
+the Pod.
+
+Exactly.
+
+Task
+
+↓
+
+Executor
+
+↓
+
+Running Task
+
+Executor
+
+is like
+
+Kubelet.
+
+Task
+
+is like
+
+Pod.
+
+
+
+Step 8 – Executor Lifecycle:
+
+Let's follow
+
+one Task.
+
+Task
+
+TASK-1001
+
+Approve Budget
+
+Executor starts.:
+
+
+
+Step 1
+
+Reads Task.
+
+↓
+
+Step 2
+
+Reads Skill.
+
+↓
+
+Step 3
+
+Creates Plan.
+
+↓
+
+Step 4
+
+Invokes Tools.
+
+↓
+
+Step 5
+
+Collects Results.
+
+↓
+
+Step 6
+
+Returns Output.
+
+
+Visual:
+Task
+
+↓
+
+Executor
+
+↓
+
+Plan
+
+↓
+
+Execute
+
+↓
+
+Collect
+
+↓
+
+Respond
+
+
+Step 9 – Does Executor Always Call LLM?:
+
+Question
+
+Suppose
+
+Task
+
+is
+
+Current USD Exchange Rate
+
+Does Executor
+
+need
+
+LLM?
+
+Maybe not.
+
+Executor may directly call
+
+Exchange Rate API
+
+Response
+
+↓
+
+Done.
+
+
+Another Task:
+
+Should we approve this
+
+international travel?
+
+Now
+
+Executor
+
+needs
+
+LLM
+
++
+
+Policy
+
++
+
+Budget
+
++
+
+Reasoning
+
+Executor decides.
+
+
+
+Step 10 – Executor Can Use MCP:
+
+Suppose
+
+Finance Agent
+
+needs
+
+SAP.
+
+Executor
+
+calls
+
+Executor
+
+↓
+
+MCP Client
+
+↓
+
+SAP MCP Server
+
+↓
+
+SAP
+
+Notice:
+
+Executor
+
+doesn't know
+
+SQL.
+
+It simply
+
+uses
+
+MCP Tools.
+
+
+Step 11 – Executor Can Use A2A:
+
+Suppose
+
+Finance Agent
+
+needs
+
+HR information.
+
+Executor
+
+may call
+
+another agent.
+
+Executor
+
+↓
+
+A2A Client
+
+↓
+
+HR Agent
+
+↓
+
+Employee Grade
+
+Notice:
+
+Executor
+
+can communicate
+
+with
+
+other Agents.
+
+
+Step 12 – Executor Can Combine Everything:
+
+One Task
+
+may execute
+
+LLM
+
+↓
+
+MCP
+
+↓
+
+REST
+
+↓
+
+Database
+
+↓
+
+Another Agent
+
+↓
+
+LLM Again
+
+↓
+
+Final Answer
+
+Question:
+
+Who coordinates
+
+all this?
+
+Executor.
+
+
+Step 13 – Executor Updates Task State:
+
+Executor
+
+owns
+
+Task execution.
+
+Suppose
+
+Task starts.
+
+Executor updates
+
+Submitted
+
+↓
+
+Working
+
+Needs approval
+
+Working
+
+↓
+
+Input Required
+
+Approval received
+
+Input Required
+
+↓
+
+Working
+
+Finished
+
+Working
+
+↓
+
+Completed
+
+Question
+
+Who changes
+
+Task state?
+
+Executor.
+
+
+Step 14 – Executor Can Stream Progress:
+
+Suppose
+
+Executor
+
+is reviewing
+
+500-page contract.
+
+Instead of waiting
+
+10 minutes,
+
+Executor streams
+
+10%
+
+↓
+
+25%
+
+↓
+
+50%
+
+↓
+
+80%
+
+↓
+
+Completed
+
+Travel Agent
+
+receives
+
+live updates.
+
+Executor
+
+publishes them.
+
+
+Step 15 – Executor vs LLM:
+
+Another favourite interview question.
+
+Question
+
+Can LLM
+
+execute
+
+Task?
+
+No.
+
+LLM
+
+only reasons.
+
+Executor
+
+decides
+
+Call Tool?
+
+Call SAP?
+
+Call HR Agent?
+
+Retry?
+
+Wait?
+
+Update Task?
+
+Generate Artifact?
+
+LLM
+
+cannot do
+
+these things
+
+by itself.
+
+Think
+
+LLM
+
+↓
+
+Brain
+
+--------------------
+
+Executor
+
+↓
+
+Project Manager
+
+
+Step 16 – Executor vs LangGraph:
+Suppose
+
+Finance Agent
+
+is implemented
+
+using LangGraph.
+
+Graph
+
+Planner
+
+↓
+
+Policy
+
+↓
+
+Budget
+
+↓
+
+Reviewer
+
+Question
+
+Is Graph
+
+Executor?
+
+Not exactly.
+
+The Executor
+
+runs
+
+the Graph.
+
+Visual
+
+Executor
+
+↓
+
+Start LangGraph
+
+↓
+
+Run Nodes
+
+↓
+
+Collect Output
+
+↓
+
+Update Task
+
+Graph
+
+is
+
+Workflow.
+
+Executor
+
+runs
+
+the workflow.
+
+
+
+Step 17 – Executor vs OpenAI Agent SDK:
+
+Suppose
+
+Finance Agent
+
+uses
+
+OpenAI Agent SDK.
+
+finance_agent = Agent(...)
+
+Question
+
+Does
+
+Agent SDK
+
+replace
+
+Executor?
+
+No.
+
+Executor
+
+invokes
+
+the Agent SDK.
+
+Executor
+
+↓
+
+OpenAI Agent SDK
+
+↓
+
+LLM
+
+↓
+
+Tool Calls
+
+↓
+
+Return
+
+The SDK helps with orchestration and reasoning, while the Executor is the component responsible for managing the Task lifecycle.
+
+
+Step 18 – Complete Enterprise Lifecycle:
+Travel Agent
+
+       │
+
+Create Task
+
+       │
+
+────────A2A────────
+
+       ▼
+
+Finance Agent
+
+       │
+
+Create TASK-1001
+
+       │
+
+Executor Starts
+
+       │
+
+Read Skill
+
+       │
+
+Plan
+
+       │
+
+LLM
+
+       │
+
+MCP
+
+       │
+
+SAP
+
+       │
+
+HR Agent
+
+       │
+
+Update Progress
+
+       │
+
+Completed
+
+       │
+
+Return Result
+
+
+Notice:
+
+Everything
+
+after
+
+Task Creation
+
+is controlled
+
+by
+
+Executor.
+
+Step 19 – Responsibilities of an Executor:
+
+An Executor is responsible for:
+| Responsibility       | Description                                              |
+| -------------------- | -------------------------------------------------------- |
+| Read Task            | Understand the requested business operation.             |
+| Execute Skill        | Perform the requested business capability.               |
+| Coordinate reasoning | Invoke the LLM when reasoning is needed.                 |
+| Call tools           | Use MCP tools, REST APIs, databases, or local functions. |
+| Collaborate          | Invoke other agents through A2A when appropriate.        |
+| Manage lifecycle     | Update Task states and progress.                         |
+| Produce outputs      | Return messages, artifacts, and final results.           |
+
+Step 20 – Enterprise Example:
+
+Suppose
+
+Legal Agent
+
+receives
+
+Review Contract
+
+Executor
+
+performs
+
+Receive Task
+
+↓
+
+Extract PDF
+
+↓
+
+OCR
+
+↓
+
+Chunk Document
+
+↓
+
+Vector Search
+
+↓
+
+Retrieve Policies
+
+↓
+
+LLM Review
+
+↓
+
+Ask Compliance Agent
+
+↓
+
+Generate Report
+
+↓
+
+Create PDF
+
+↓
+
+Completed
+
+Notice
+
+The client only requested
+
+Review Contract
+
+Everything else
+
+was coordinated
+
+by
+
+Executor.
+
+
+Step 21 – One Important Clarification:
+
+Many people imagine there is a separate "Executor Server".
+
+Usually there isn't.
+
+Think of the Executor as an internal runtime component inside the agent.
+
+Finance Agent Process
+
+├── HTTP Server
+├── Agent Card
+├── Task Manager
+├── Executor
+├── MCP Client
+├── A2A Client
+├── LLM Client
+└── Memory
+
+
+The Executor is part of the agent implementation, not an independent network service.:
+Interview Questions
+Q1. What is an Executor?:
+
+An Executor is the runtime component that performs the actual work for a Task. It orchestrates reasoning, tool invocation, collaboration, lifecycle updates, and result generation.
+
+Q2. Is the Executor the same as the LLM?:
+
+No.
+
+The LLM performs reasoning and language generation. The Executor orchestrates the overall execution, deciding when to call the LLM, tools, or other agents.
+
+
+Q3. Can an Executor invoke MCP tools and A2A agents?:
+
+Yes.
+
+This is a common enterprise pattern:
+Executor
+   │
+   ├── MCP → SAP, ServiceNow, Databases
+   ├── REST → Legacy APIs
+   ├── A2A → HR Agent, Legal Agent
+   └── LLM → Reasoning and response generation
+   
+The Executor coordinates all of these interactions.
+
+Q4. Is the Executor a separate microservice?:
+
+Typically, no.:
+
+It is usually an internal component of the agent process that manages Task execution. The protocol doesn't require a specific implementation; different frameworks may implement the execution engine differently.   

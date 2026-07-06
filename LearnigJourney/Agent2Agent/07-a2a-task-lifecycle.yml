@@ -1,0 +1,1085 @@
+A Task is like a living object. It has a lifecycle just like a Kubernetes Pod or a Jira ticket.
+
+Think of it like this:
+
+Task = Kubernetes Pod
+Task State = Pod Status
+Executor = Kubelet
+Client = kubectl
+
+The client continuously observes the Task until it reaches a terminal state.
+
+Chapter 7 – Task Lifecycle & Task States:
+Step 1 – Why Does a Task Need States?:
+
+Let's revisit our Travel example.
+
+User asks
+
+Book my London trip.
+
+Question
+
+Will the Finance Agent immediately return
+
+Approved
+
+No.
+
+Internally it still has to
+
+Read SAP
+
+↓
+
+Read Budget
+
+↓
+
+Read Policy
+
+↓
+
+Manager Approval
+
+↓
+
+Generate Report
+
+↓
+
+Return Result
+
+Question
+
+How does Travel Agent know
+
+what is happening?
+
+This is exactly why
+
+A2A introduced
+
+Task States.
+
+
+Step 2 – Human Analogy:
+
+Suppose you ordered a laptop from Amazon.
+
+Question
+
+Does Amazon immediately say
+
+Delivered
+
+No.
+
+Instead you see
+
+Order Placed
+
+↓
+
+Packed
+
+↓
+
+Shipped
+
+↓
+
+Out for Delivery
+
+↓
+
+Delivered
+
+Exactly.
+
+A2A Task behaves similarly.
+
+
+Step 3 – Complete Task Lifecycle:
+
+A typical lifecycle looks like
+Submitted
+
+↓
+
+Working
+
+↓
+
+Input Required
+
+↓
+
+Working
+
+↓
+
+Completed
+
+Sometimes:
+Submitted
+
+↓
+
+Working
+
+↓
+
+Failed
+
+Or:
+Submitted
+
+↓
+
+Cancelled
+
+Notice:
+
+every Task
+
+moves through
+
+different states.
+
+
+Step 4 – State Diagram:
+
+Let's visualize it
+
+                  Create Task
+
+                       │
+
+                       ▼
+
+                 Submitted
+
+                       │
+
+                       ▼
+
+                  Working
+
+          ┌─────────┼──────────┐
+
+          ▼         ▼          ▼
+
+Input Required   Failed   Completed
+
+          │
+
+          ▼
+
+       Working
+
+          │
+
+          ▼
+
+      Completed
+      
+      
+This is the lifecycle
+
+implemented by:
+
+almost every A2A server.      
+
+
+
+Step 5 – State 1 : Submitted
+Question
+
+When does
+
+Submitted
+
+occur?
+
+Immediately after
+
+Finance Agent
+
+accepts
+
+the Task.
+
+Example
+
+Travel Agent sends
+
+Approve Budget
+
+Finance Agent replies:
+
+Task Accepted
+
+Task ID
+
+TASK-1001
+
+Status
+
+Submitted
+
+Notice
+
+No work
+
+has started yet.
+
+Think
+
+like
+
+Amazon.
+
+Order Received
+
+
+Step 6 – Who Creates Submitted?:
+
+This is important.
+
+Travel Agent
+
+does NOT
+
+create
+
+Submitted.
+
+Finance Agent:
+
+creates it.
+
+Sequence
+
+Travel Agent
+
+↓
+
+Create Task
+
+↓
+
+Finance Agent
+
+↓
+
+Generate Task ID
+
+↓
+
+Store Task
+
+↓
+
+Status=Submitted
+
+↓
+
+Return Response
+
+The server:
+
+owns
+
+Task state.
+
+
+Step 7 – State 2 : Working
+
+Now
+
+Executor:
+
+starts processing.
+
+Task
+
+↓
+
+Executor
+
+↓
+
+LLM
+
+↓
+
+MCP
+
+↓
+
+Database
+
+Status becomes:
+
+Working
+
+Example
+
+TASK-1001
+
+Status
+
+Working
+
+Think
+
+Amazon
+
+Preparing Package
+
+
+Step 8 – What Happens During Working?:
+
+Internally
+many operations
+
+may execute.
+
+Example:
+Working
+
+↓
+
+Read Employee
+
+↓
+
+Read Budget
+
+↓
+
+Read Policy
+
+↓
+
+Currency Conversion
+
+↓
+
+LLM Reasoning
+
+↓
+
+Travel Rules
+
+↓
+
+Tax Calculation
+
+Question
+
+Does status change
+
+after every step?:
+
+Normally
+
+No.
+
+Still
+
+Working.
+
+
+Step 9 – Progress Updates:
+
+Although state remains
+
+Working,
+
+progress
+
+may change.
+
+Example
+
+Working
+
+10%
+
+↓
+
+25%
+
+↓
+
+60%
+
+↓
+
+90%
+
+Notice
+
+State
+
+is still
+
+Working.
+
+Only
+
+progress changes.
+
+Think
+
+File Download.
+
+
+Step 10 – Working vs Streaming:
+
+Question
+
+If progress becomes
+
+10%
+
+20%
+
+30%
+
+Who receives
+
+these updates?
+
+Travel Agent.
+
+Example
+
+Finance Agent
+
+↓
+
+Streaming
+
+↓
+
+10%
+
+↓
+
+Streaming
+
+↓
+
+40%
+
+↓
+
+Streaming
+
+↓
+
+80%
+
+The Task state remains
+
+Working.
+
+Only
+
+progress events
+
+are streamed.
+
+
+Step 11 – State 3 : Input Required
+
+This is one of the biggest advantages 
+of A2A.
+
+Suppose
+
+Finance Agent
+
+needs
+
+manager approval.
+
+Question
+
+Should it fail?
+
+No.
+
+Should it continue?
+
+No.
+
+Instead
+
+Task pauses.
+
+State becomes
+
+Input Required
+
+Think
+
+like
+
+Amazon.
+
+Payment Failed
+
+Please Update Card
+
+The order
+
+is not cancelled.
+
+It is
+
+waiting.
+
+
+Step 12 – Example:
+
+Travel Agent
+
+asks
+
+Approve Budget.
+
+Finance Agent
+
+checks policy.
+
+Policy says
+
+Manager Approval Required
+
+Task becomes
+
+TASK-1001
+
+↓
+
+Input Required
+
+Response
+
+Waiting
+
+For
+
+Manager Approval
+
+Notice
+
+Task
+
+still exists.
+
+
+
+Step 13 – Resume After Input:
+
+Manager approves.
+
+Question
+
+Do we create
+
+new Task?
+
+No.
+
+Same Task.
+
+Status changes
+
+Input Required
+
+↓
+
+Working
+
+Execution continues.
+
+
+Step 14 – State 4 : Completed
+
+Eventually
+
+everything finishes.
+
+Executor returns
+
+Budget Approved
+
+State becomes
+
+Completed
+
+Terminal State.
+
+No further execution.
+
+Think
+
+Amazon
+
+Delivered
+
+
+Step 15 – State 5 : Failed
+
+Suppose
+
+SAP
+
+is down.
+
+Executor
+
+cannot continue.
+
+State becomes
+
+Failed
+
+Example
+
+TASK-1001
+
+↓
+
+Failed
+
+↓
+
+Reason
+
+SAP Unavailable
+
+Notice:
+
+Task
+
+did execute,
+
+but
+
+didn't succeed.
+
+
+Step 16 – State 6 : Cancelled
+Suppose
+
+User says
+
+Cancel My Trip
+
+Travel Agent
+
+requests cancellation.
+
+Finance Agent
+
+changes
+
+Working
+
+↓
+
+Cancelled
+
+No further execution.
+
+
+Step 17 – Complete Enterprise Lifecycle:
+
+Let's see everything together.
+
+
+Travel Agent
+
+        │
+
+Create Task
+
+        │
+
+──────── A2A ────────
+
+        ▼
+
+Finance Agent
+
+        │
+
+Submitted
+
+        │
+
+Working
+
+        │
+
+Progress
+
+20%
+
+        │
+
+Progress
+
+60%
+
+        │
+
+Input Required
+
+        │
+
+Manager Approves
+
+        │
+
+Working
+
+        │
+
+Completed
+
+        │
+
+Return Result
+
+Notice:
+
+only one
+
+Task ID
+
+throughout.
+
+
+Step 18 – Who Changes State?:
+
+This is an interview favourite.
+
+Question
+
+Can
+
+Travel Agent
+
+change
+
+Task
+
+to Completed?
+
+No.
+
+Only
+
+the Agent
+
+executing
+
+the Task
+
+owns
+
+its lifecycle.
+
+Example
+
+Travel Agent
+
+↓
+
+Creates Request
+
+------------------------
+
+Finance Agent
+
+↓
+
+Creates Task
+
+↓
+
+Updates Status
+
+↓
+
+Completes Task
+
+Ownership
+
+always remains
+
+with
+
+the executing agent.
+
+
+Step 19 – State vs Progress:
+
+This confuses many developers.
+
+Suppose
+
+Task shows
+
+Working
+
+Progress
+
+10%
+
+Later
+
+Working
+
+Progress
+
+70%
+
+Question
+
+Did state change?
+
+No.
+
+State
+
+remains
+
+Working.
+
+Only
+
+Progress
+
+changed.
+
+Visual
+
+Task
+
+State
+
+Working
+
+────────────
+
+Progress
+
+10%
+
+↓
+
+30%
+
+↓
+
+60%
+
+↓
+
+90%
+
+
+Step 20 – State vs Result:
+
+Another common confusion.
+
+Question
+
+Does Completed
+
+contain
+
+Result?:
+
+Not necessarily.
+
+Think
+
+Task
+
+as
+
+Status
+
++
+
+Messages
+
++
+
+Artifacts
+
++
+
+Metadata
+
+Completion indicates execution has finished. The actual outputs (messages, artifacts, structured results) are associated with the completed task.
+
+Step 21 – Complete State Transition Table:
+| Current State  | Next Possible State(s)                       |
+| -------------- | -------------------------------------------- |
+| Submitted      | Working, Failed, Cancelled                   |
+| Working        | Input Required, Completed, Failed, Cancelled |
+| Input Required | Working, Cancelled, Failed                   |
+| Completed      | Terminal (no further transitions)            |
+| Failed         | Terminal                                     |
+| Cancelled      | Terminal                                     |
+
+
+Step 22 – Real Enterprise Example:
+Suppose
+
+User uploads
+
+a
+
+500-page contract.
+
+Legal Agent
+
+receives
+
+Review Contract
+
+Task
+
+Submitted
+
+↓
+
+Working
+
+↓
+
+OCR
+
+↓
+
+Working
+
+↓
+
+Vector Search
+
+↓
+
+Working
+
+↓
+
+LLM Analysis
+
+↓
+
+Input Required
+
+(Lawyer Review)
+
+↓
+
+Working
+
+↓
+
+Generate PDF
+
+↓
+
+Completed
+
+Notice
+
+the task may run
+
+for several minutes,
+
+or even hours,
+
+while keeping
+
+the same Task ID.
+
+
+Step 23 – Relationship with Other A2A Components:
+
+Now we can connect everything we've learned.
+Agent Card
+
+        │
+
+Discover Agent
+
+        │
+
+Choose Skill
+
+        │
+
+Create Task
+
+        │
+
+Task State Changes
+
+        │
+
+Executor Runs
+
+        │
+
+Messages Generated
+
+        │
+
+Artifacts Created
+
+        │
+
+Completed
+
+The lifecycle
+
+ties together
+
+every A2A component.
+
+
+Interview Questions:
+Q1. Why does A2A use Task states instead of simple HTTP responses?:
+
+Answer:
+
+Because AI work is often asynchronous and long-running. Task states let clients monitor progress, handle waiting periods (such as human approval), and react appropriately without keeping one HTTP request open.
+
+Q2. Who owns the Task lifecycle?:
+
+The executing agent (the agent that accepted the Task). It is responsible for creating the Task, updating its state, and marking it as completed, failed, or cancelled.
+
+
+Q3. What is the difference between Working and Input Required?:
+Working means the agent is actively processing the task.
+Input Required means execution is paused until additional information or approval is received.
+
+Q4. Is Completed the same as returning a result?:
+
+Not exactly.
+
+Completed indicates that execution has finished successfully. The task's outputs—such as messages, artifacts, or structured data—are associated with that completed state.
