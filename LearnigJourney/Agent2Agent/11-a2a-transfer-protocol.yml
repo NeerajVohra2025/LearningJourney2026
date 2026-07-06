@@ -1,0 +1,1078 @@
+Up to now we've learned what the A2A objects are:
+Agent Card
+↓
+
+Skills
+↓
+
+Task
+↓
+
+Executor
+↓
+
+Messages
+↓
+
+Artifacts
+
+Now we'll learn
+
+How do all these objects actually travel over the network?
+
+
+
+Chapter 11 – A2A Transport & Communication (End-to-End):
+
+Step 1 – Before Learning Transport:
+
+Let's ask a simple question.
+
+Suppose
+
+Travel Agent
+
+needs
+
+Finance Agent.
+
+Question
+
+How does it communicate?
+
+Like this?
+
+Travel Agent
+
+↓
+
+Finance Agent
+
+No.
+
+There must be
+
+a communication protocol.
+
+Exactly like:
+
+Browser
+
+↓
+
+HTTP
+
+↓
+
+Web Server
+
+A2A also requires
+
+a communication protocol.
+
+
+Step 2 – Complete Architecture:
+
+Let's first see the entire picture.
+               Travel Agent
+
+                     │
+
+             A2A Client SDK
+
+                     │
+
+──────────────────────────────────────────
+
+        HTTP + JSON
+
+──────────────────────────────────────────
+
+                     │
+
+              A2A Server
+
+                     │
+
+               Executor
+
+                     │
+
+                  Task
+
+                     │
+
+                Messages
+
+                     │
+
+                Artifacts
+
+Notice:
+
+There is no direct
+
+Agent-to-Agent communication.
+
+There is always
+
+a network protocol.
+
+
+Step 3 – Is A2A a Protocol or Framework?:
+This is one of the favourite interview questions.
+
+Question
+
+Is A2A like
+
+LangGraph?
+
+No.
+
+Question
+
+Is A2A like
+
+CrewAI?
+
+No.
+
+Question
+
+Is A2A like
+
+OpenAI Agent SDK?
+
+No.
+
+A2A defines
+
+only
+
+communication rules.
+
+Think:
+HTTP
+
+↓
+
+Browser
+
+↓
+
+Server
+
+
+HTTP
+
+doesn't care
+
+whether
+
+Server is Java
+
+Python
+
+NodeJS.
+
+Similarly:
+
+A2A
+
+doesn't care
+
+whether
+
+agent is
+
+LangGraph
+
+CrewAI
+
+Google ADK
+
+OpenAI Agent SDK
+
+Java
+
+Python.
+
+
+
+Step 4 – What Transport Does A2A Use?:
+This is the biggest confusion.
+
+Unlike MCP,:
+
+A2A is designed around
+
+HTTP.
+
+Transport
+
+HTTP
+
++
+
+JSON
+
+Question:
+
+Does A2A use
+
+STDIO?
+
+No.
+
+Question:
+
+Does A2A use
+
+JSON-RPC?
+
+Generally, no. The A2A protocol exchanges JSON over HTTP, but it is not based on JSON-RPC like MCP.
+
+Question:
+
+Does A2A use
+
+HTTP?
+
+Yes.
+
+This makes sense because agents are typically network-accessible services.
+
+
+Step 5 – Why HTTP?:
+Imagine
+
+Finance Agent:
+
+runs in
+
+AWS.
+
+HR Agent
+
+runs in
+
+Azure.
+
+Legal Agent:
+
+runs
+
+On-Premise.
+
+Question
+
+How should they communicate?
+
+HTTP.
+
+Because
+
+every platform
+
+supports
+
+HTTP.
+
+
+Step 6 – Discovery Phase:
+
+Everything begins
+
+with discovery.
+
+Travel Agent
+
+doesn't immediately
+
+create Task.
+
+Instead:
+
+Travel Agent
+
+↓
+
+HTTP GET
+
+↓
+
+Agent Card
+
+
+Sequence:
+Travel Agent
+
+↓
+
+GET /.well-known/agent.json
+
+↓
+
+Finance Agent
+
+↓
+
+Returns Agent Card
+
+
+Notice:
+
+Communication
+
+starts
+
+with HTTP.
+
+
+
+Step 7 – Task Creation:
+
+After reading
+
+Agent Card,
+
+Travel Agent:
+
+creates
+
+Task.
+
+
+Travel Agent:
+
+↓
+
+HTTP POST
+
+↓
+
+Finance Agent
+
+↓
+
+Create Task
+
+↓
+
+Return Task ID
+
+
+Example:
+
+Task ID
+
+TASK-1023
+
+Notice:
+
+HTTP request
+
+finished.
+
+Task
+
+continues.
+
+
+Step 8 – Important Difference:
+
+Question:
+
+Did HTTP
+
+execute
+
+the Task?
+
+No.
+
+HTTP only:
+
+transported
+
+the request.
+
+Executor:
+
+executes
+
+the Task.
+
+Visual:
+HTTP
+
+↓
+
+Transport
+
+-----------------------
+
+Executor
+
+↓
+
+Business Logic
+
+This distinction
+
+is extremely important.
+
+
+Step 9 – Complete Lifecycle:
+
+Let's see
+
+everything.
+
+Travel Agent
+
+       │
+
+HTTP GET
+
+       ▼
+
+Agent Card
+
+       │
+
+HTTP POST
+
+       ▼
+
+Create Task
+
+       │
+
+Task Accepted
+
+       ▼
+
+Executor Starts
+
+       │
+
+Working...
+
+       ▼
+
+Messages
+
+       ▼
+
+Artifacts
+
+       ▼
+
+Completed
+
+
+Notice:
+
+HTTP
+
+only carries
+
+the information.
+
+
+Step 10 – Is the HTTP Connection Kept Open?:
+
+This is a common interview question.
+
+Question
+
+When Travel Agent creates
+
+Task,
+
+does HTTP
+
+remain open
+
+for
+
+20 minutes?
+
+No.:
+
+Example:
+
+HTTP POST
+
+↓
+
+Task Accepted
+
+↓
+
+HTTP Connection Closed
+
+Executor:
+
+continues
+
+working.
+
+Exactly like
+
+we studied
+
+MCP.
+
+
+Step 11 – Then How Does Client Get Updates?:
+
+Question
+
+If HTTP closed,
+
+how does
+
+Travel Agent know
+
+Task
+
+is progressing?
+
+There are several possible patterns depending on the implementation:
+
+Polling – Client periodically asks for task status.
+Streaming – Server streams task updates over a long-lived response.
+Callbacks/Webhooks – Server notifies the client.
+Other implementation-specific mechanisms.
+
+The protocol supports asynchronous interactions, and implementations may choose the most appropriate mechanism.
+
+
+
+Step 12 – Polling Example:
+
+Travel Agent
+
+asks
+
+Task Status?
+
+Finance replies
+
+Working
+
+Five seconds later
+
+Task Status?
+
+Finance replies
+
+60%
+
+Again
+
+Task Status?
+
+Finance replies
+
+Completed
+
+Exactly like
+
+checking
+
+Amazon order status.
+
+
+Step 13 – Streaming Example:
+
+Instead of polling,
+
+server streams
+
+updates.
+
+Travel Agent
+
+↓
+
+Create Task
+
+↓
+
+Server
+
+↓
+
+10%
+
+↓
+
+30%
+
+↓
+
+60%
+
+↓
+
+Completed
+
+Question
+
+Is this
+
+same
+
+as
+
+MCP SSE?
+
+Conceptually
+
+very similar.
+
+Instead of
+
+JSON-RPC Notifications,
+
+A2A streams
+
+Task updates.
+
+The exact streaming mechanism depends on the implementation.
+
+
+Step 14 – Who Sends Messages?:
+
+Question
+
+Travel Agent?
+
+No.
+
+Executor.
+
+Sequence
+
+Executor
+
+↓
+
+Generate Message
+
+↓
+
+HTTP Transport
+
+↓
+
+Travel Agent
+
+Notice
+
+Executor
+
+creates
+
+Messages.
+
+HTTP
+
+transports
+
+them.
+
+
+Step 15 – Who Sends Artifacts?:
+
+Executor
+
+generates
+
+PDF.
+
+Question
+
+Who sends it?:
+
+Again
+
+HTTP.
+
+Executor
+
+↓
+
+Artifact
+
+↓
+
+HTTP
+
+↓
+
+Travel Agent
+
+
+Transport:
+
+never knows
+
+what
+
+PDF contains.
+
+
+
+Step 16 – Authentication:
+
+
+Question:
+
+Should anyone
+
+call
+
+Payroll Agent?
+
+No.
+
+Travel Agent
+
+sends
+
+Authorization
+
+Bearer Token
+
+Finance Agent
+
+verifies
+
+before
+
+creating Task.
+
+Authentication
+
+occurs
+
+before
+
+Task creation.
+
+
+Step 17 – Complete Enterprise Sequence:
+Travel Agent
+
+      │
+
+GET Agent Card
+
+      ▼
+
+Finance Agent
+
+      │
+
+Agent Card
+
+      ▼
+
+Travel Agent
+
+      │
+
+POST Create Task
+
+      ▼
+
+Finance Agent
+
+      │
+
+Executor
+
+      ▼
+
+Working
+
+      │
+
+Messages
+
+      ▼
+
+Progress
+
+      │
+
+Artifacts
+
+      ▼
+
+Completed
+
+
+Step 18 – Comparison with MCP:
+
+This is one of the most important interview questions.
+| MCP                                | A2A                                     |
+| ---------------------------------- | --------------------------------------- |
+| Agent ↔ Tool                       | Agent ↔ Agent                           |
+| JSON-RPC protocol                  | HTTP-based protocol with JSON payloads  |
+| Supports STDIO and Streamable HTTP | Primarily HTTP-based                    |
+| Methods like `tools/call`          | Task-oriented interactions              |
+| Resources, Tools, Prompts          | Agent Cards, Tasks, Messages, Artifacts |
+
+
+Notice:
+
+Different protocol.
+
+Different purpose.
+
+
+Step 19 – Enterprise Architecture:
+                     User
+
+                       │
+
+                       ▼
+
+               Travel Agent
+
+                       │
+
+──────────── HTTP ────────────
+
+                       ▼
+
+              Finance Agent
+
+                       │
+
+                  Executor
+
+            ┌─────────┼──────────┐
+
+            ▼         ▼          ▼
+
+          LLM       MCP      HR Agent
+
+            │         │          │
+
+            ▼         ▼          ▼
+
+        Reason     SAP DB     A2A
+        
+        
+Notice:
+
+Inside
+
+Finance Agent
+
+both:
+
+A2A
+
+and
+
+MCP
+
+can coexist.        
+
+Step 20 – Responsibilities:
+| Component  | Responsibility                   |
+| ---------- | -------------------------------- |
+| HTTP       | Transport requests and responses |
+| Agent Card | Discovery                        |
+| Task       | Business work                    |
+| Executor   | Execute Task                     |
+| Messages   | Communicate progress             |
+| Artifacts  | Deliver output                   |
+
+Step 21 – Common Misunderstandings:
+❌ Wrong:
+
+HTTP executes
+
+Task.
+
+No.
+
+Executor
+
+executes
+
+Task.
+
+❌ Wrong:
+
+Task
+
+equals
+
+HTTP Request.
+
+No.
+
+HTTP Request
+
+creates
+
+Task.
+
+
+❌ Wrong:
+
+Messages
+
+travel
+
+without
+
+transport.
+
+No.
+
+Messages
+
+travel
+
+over
+
+HTTP.
+
+
+❌ Wrong:
+
+Artifact
+
+is
+
+HTTP Response.
+
+No.
+
+Artifact
+
+is
+
+business output.
+
+HTTP
+
+only transports it.
+
+
+Step 22 – End-to-End Lifecycle:
+Travel Agent
+
+      │
+
+GET Agent Card
+
+      │
+
+POST Create Task
+
+      │
+
+HTTP Closed
+
+────────────────────────────────────────
+
+Finance Agent
+
+      │
+
+Executor Starts
+
+      │
+
+Task State
+
+Submitted
+
+↓
+
+Working
+
+↓
+
+Messages
+
+↓
+
+Artifacts
+
+↓
+
+Completed
+
+────────────────────────────────────────
+
+Travel Agent
+
+      │
+
+Receives Updates
+
+↓
+
+Downloads Artifacts
+
+↓
+
+Task Finished
+
+
+Notice something very important:
+
+The Task lifecycle is independent of the lifetime of any single HTTP request.
+
+Interview Questions:
+Q1. Does HTTP execute the Task?:
+
+No.
+
+HTTP is only the transport mechanism. The Executor performs the Task.
+
+
+Q2. Why doesn't A2A keep one HTTP connection open until the Task finishes?
+
+Because Tasks may run for minutes or hours. Keeping a single request open is inefficient and unreliable. Instead, the Task continues independently, and updates are obtained through polling, streaming, callbacks, or other supported mechanisms.
+
+Q3. Does A2A use JSON-RPC like MCP?:
+
+No.
+
+MCP standardizes communication using JSON-RPC 2.0. A2A uses HTTP with JSON-based protocol messages and models work around Tasks, Messages, and Artifacts rather than JSON-RPC methods.
+
+Q4. Can an A2A agent internally use MCP?:
+
+Yes. This is a very common enterprise architecture.
+
+Travel Agent
+      │
+      ▼
+A2A
+      │
+      ▼
+Finance Agent
+      │
+      ▼
+Executor
+      │
+      ├── MCP → SAP
+      ├── MCP → ServiceNow
+      ├── REST → Legacy API
+      └── LLM → Reasoning
+      
+A2A is used for agent collaboration, while MCP is used for tool access within an agent.      

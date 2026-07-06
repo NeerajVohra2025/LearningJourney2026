@@ -1,0 +1,833 @@
+An Artifact is actually the business output produced by executing a Task.
+
+Think of it this way:
+
+Task = The work
+Executor = Performs the work
+Messages = Communication during the work
+Artifacts = The deliverables produced by the work
+
+Chapter 10 – Artifacts (The Business Deliverables):
+Step 1 – Why Do We Need Artifacts?:
+
+Let's start with a real-world example.
+
+Suppose you ask Legal Department
+
+Review this 500-page contract.
+
+Question
+
+After 20 minutes,
+
+what do you expect?
+
+A message?
+
+Contract Reviewed.
+
+Not really.
+
+You actually expect
+
+RiskReport.pdf
+
+The report
+
+is the actual deliverable.
+
+In A2A,
+
+that deliverable is called
+
+Artifact
+
+
+Step 2 – Human Analogy:
+Suppose your manager asks
+
+Prepare Project Budget.
+
+After two days
+
+what do you deliver?
+
+Not
+
+Budget Completed.
+
+Instead
+
+Budget.xlsx
+
+or
+
+Budget.pdf
+
+The Excel sheet
+
+is the Artifact.
+
+The email saying
+
+"Budget Completed"
+
+is only a Message.
+
+
+Step 3 – Complete Architecture:
+             Task
+
+               │
+
+               ▼
+
+          Executor
+
+               │
+
+───────────────┼────────────────
+
+               │
+
+          Messages
+
+               │
+
+      "Working..."
+
+               │
+
+───────────────┼────────────────
+
+               │
+
+          Artifacts
+
+               │
+
+Budget.pdf
+
+Invoice.xlsx
+
+Report.docx
+
+Architecture.png
+
+
+Notice:
+
+Messages
+
+and
+
+Artifacts
+
+are different.
+
+
+Step 4 – What is an Artifact?:
+
+Definition
+
+An Artifact is a structured output produced by an Agent while executing a Task.
+
+Artifacts may be
+PDF
+
+Excel
+
+CSV
+
+JSON
+
+Word Document
+
+Image
+
+Source Code
+
+Presentation
+
+Video
+
+Audio
+
+Think
+
+Deliverables.
+
+
+Step 5 – Artifact vs Message:
+
+Suppose
+
+Finance Agent finishes.
+
+Question
+
+Which is Message?
+
+Budget Approved.
+
+Question
+
+Which is Artifact?
+
+BudgetApproval.pdf
+
+Visual:
+Message
+
+↓
+
+Budget Approved.
+
+-------------------
+
+Artifact
+
+↓
+
+BudgetApproval.pdf
+
+
+Step 6 – Enterprise Example:
+
+User asks
+
+Generate Monthly Sales Report.
+
+Executor performs:
+
+Read Database
+
+↓
+
+Calculate Sales
+
+↓
+
+Generate Charts
+
+↓
+
+Create Excel
+
+↓
+
+Create PDF
+
+Question:
+
+What does client receive?:
+
+Messages:
+
+Reading Database...
+
+Generating Report...
+
+Completed.
+
+Artifacts:
+
+Sales.xlsx
+
+SalesReport.pdf
+
+
+Step 7 – Why Not Put Everything Inside Messages?:
+
+Question
+
+Why not
+
+send PDF
+
+inside Message?
+
+Imagine
+
+100 MB PDF
+
+Question
+
+Should every Message
+
+carry
+
+100 MB?
+
+No.
+
+Instead
+
+Message says
+
+Report Ready.
+
+Artifact
+
+contains
+
+the actual report.
+
+
+Step 8 – One Task Can Produce Multiple Artifacts:
+
+Suppose
+
+Travel Agent
+
+creates
+
+trip approval.
+
+Executor produces
+
+Approval.pdf
+
+Expense.xlsx
+
+TravelPolicy.pdf
+
+Insurance.pdf
+
+Question
+
+One Task?
+
+Yes.
+
+Question
+
+Multiple Artifacts?
+
+Yes.
+
+
+
+Step 9 – Complete Lifecycle:
+
+Suppose
+
+Legal Agent
+
+receives
+
+Review Contract
+
+Executor
+
+performs
+
+OCR
+
+↓
+
+Vector Search
+
+↓
+
+LLM Review
+
+↓
+
+Generate Risk Report
+
+↓
+
+Generate Summary
+
+↓
+
+Generate Excel
+
+Artifacts become
+
+RiskReport.pdf
+
+Summary.docx
+
+Risks.xlsx
+
+
+Step 10 – Artifact Types:
+
+Most enterprise systems produce
+
+Document:
+PDF
+
+Word
+
+Text
+
+
+Spreadsheet
+Excel
+
+CSV
+Image
+PNG
+
+JPEG
+
+SVG
+Structured Data
+{
+  "approved": true,
+  "amount":25000
+}
+Code
+def calculate():
+    ...
+Presentation
+PowerPoint
+
+
+Step 11 – Artifact vs File:
+
+This confuses
+
+many developers.
+
+Question
+
+Is every File
+
+an Artifact?
+
+No.
+
+Suppose
+
+Travel Agent
+
+uploads
+
+Passport.pdf
+
+Question
+
+Artifact?
+
+No.
+
+It's an
+
+Input File.
+
+Now
+
+Executor creates
+
+VisaApproval.pdf
+
+That
+
+is an Artifact.
+
+Think
+
+Input
+
+↓
+
+Passport.pdf
+
+-----------------
+
+Output
+
+↓
+
+VisaApproval.pdf
+
+Only
+
+Output
+
+is Artifact.
+
+
+
+Step 12 – Artifact vs Task:
+
+Another interview favourite.
+
+Task
+
+Generate Invoice
+
+Artifact
+
+Invoice.pdf
+
+Task
+
+is
+
+the work.
+
+Artifact
+
+is
+
+the output.
+
+
+Step 13 – Artifact vs Skill:
+
+Skill
+
+Generate Invoice
+
+Task
+
+Generate Invoice
+
+For Order 1023
+
+Artifact
+
+Invoice1023.pdf
+
+Three completely different concepts.
+
+
+Step 14 – Artifact vs Message:
+
+Let's compare.
+| Message       | Artifact        |
+| ------------- | --------------- |
+| Communication | Deliverable     |
+| Small         | Can be large    |
+| Text/JSON     | Any output type |
+| Progress      | Business Result |
+
+
+Step 15 – Artifact Lifecycle:
+
+Suppose
+
+Executor starts.
+Task
+
+↓
+
+Generate PDF
+
+↓
+
+Store PDF
+
+↓
+
+Register Artifact
+
+↓
+
+Attach To Task
+
+↓
+
+Notify Client
+
+Question
+
+Does Message:
+
+contain
+
+PDF?
+
+No.
+
+Message contains:
+
+reference
+
+to
+
+Artifact.
+
+
+Step 16 – Enterprise Example:
+
+Suppose
+
+Legal Agent
+
+reviews
+
+1000-page contract.
+
+Executor produces
+
+ContractSummary.pdf
+
+RiskMatrix.xlsx
+
+HighlightedClauses.docx
+
+Architecture.png
+
+Question
+
+How many Artifacts?
+
+Four.
+
+Question
+
+One Task?
+
+Yes.
+
+Step 17 – Complete Architecture:
+Travel Agent
+
+       │
+
+Create Task
+
+       │
+
+──────────────A2A──────────────
+
+       ▼
+
+Legal Agent
+
+       │
+
+Executor
+
+       │
+
+LLM
+
+       │
+
+MCP
+
+       │
+
+Generate PDF
+
+       │
+
+Generate Excel
+
+       │
+
+Generate Image
+
+       │
+
+Artifacts
+
+       │
+
+Completed
+
+       │
+
+Return References
+
+
+Notice:
+
+Artifacts
+
+are
+
+created
+
+by
+
+Executor.
+
+
+
+Step 18 – Relationship with Messages:
+
+Suppose
+
+Executor finishes.
+
+Message
+
+Contract review completed.
+
+Please download attached report.
+
+Artifact
+
+ContractReview.pdf
+
+Notice
+
+Message:
+
+describes.
+
+Artifact:
+
+contains.
+
+Step 19 – Complete A2A Flow So Far:
+
+Now everything connects.
+Agent Card
+
+        │
+
+Discover Agent
+
+        │
+
+Choose Skill
+
+        │
+
+Create Task
+
+        │
+
+Executor
+
+        │
+
+Messages
+
+        │
+
+Artifacts
+
+        │
+
+Completed
+
+This is the complete runtime flow.
+
+
+
+Step 20 – Real Enterprise Example:
+
+User asks
+
+Analyze last year's financial performance and prepare board presentation.
+
+Executor performs
+
+Read SAP
+
+↓
+
+Read Oracle
+
+↓
+
+Calculate KPIs
+
+↓
+
+Generate Charts
+
+↓
+
+Generate PowerPoint
+
+↓
+
+Generate Excel
+
+↓
+
+Generate PDF
+
+↓
+
+Completed
+
+Artifacts:
+
+BoardPresentation.pptx
+
+FinancialSummary.pdf
+
+KPIs.xlsx
+
+Messages:
+
+Reading ERP...
+
+Calculating KPIs...
+
+Creating Charts...
+
+Presentation Ready.
+
+
+Step 21 – Responsibilities of an Artifact
+
+An Artifact is responsible for:
+| Responsibility         | Description                                                       |
+| ---------------------- | ----------------------------------------------------------------- |
+| Business output        | Represents the deliverable created by the Task.                   |
+| Rich content           | Can be documents, spreadsheets, images, code, or structured data. |
+| Reusability            | Can be downloaded, shared, or used by other agents.               |
+| Separation of concerns | Keeps large outputs separate from lightweight status messages.    |
+
+
+Interview Questions
+Q1. What is an Artifact in A2A?:
+
+An Artifact is a business output produced while executing a Task. Examples include reports, PDFs, spreadsheets, images, source code, and structured datasets.
+
+Q2. What is the difference between a Message and an Artifact?
+| Message                            | Artifact                                 |
+| ---------------------------------- | ---------------------------------------- |
+| Communicates status or information | Contains the actual business deliverable |
+| Usually text or structured updates | Can be any output format                 |
+| Used during execution              | Produced as the result of execution      |
+
+Q3. Can one Task create multiple Artifacts?:
+
+Yes.
+
+A single Task may generate several deliverables, such as a PDF report, an Excel workbook, and a PowerPoint presentation.
+
+
+Q4. Is every uploaded file an Artifact?:
+
+No.
+
+Files supplied by the user are inputs to the Task. Artifacts are outputs created by the agent while completing the Task.
+
+Where We Are Now
+
+We have completed the core runtime model:
+
+Agent Card
+      │
+      ▼
+Skills
+      │
+      ▼
+Task
+      │
+      ▼
+Task States
+      │
+      ▼
+Executor
+      │
+      ▼
+Messages
+      │
+      ▼
+Artifacts

@@ -1,0 +1,917 @@
+Until now we've learned
+Agent Card
+
+↓
+
+Skills
+
+↓
+
+Task
+
+↓
+
+Executor
+Now comes the question
+
+How do agents actually exchange information?:
+
+Most people think
+
+Task
+
+↓
+
+Response
+
+Actually, A2A never works like that.
+
+The communication happens using Messages.
+
+Think of a Task as a container, and Messages as everything exchanged inside that container.
+
+This chapter will make the remaining A2A concepts (Artifacts, Streaming, Notifications) much easier.
+
+Chapter 9 – Messages (How Agents Actually Communicate):
+Step 1 – Why Do We Need Messages?:
+
+Let's begin with REST.
+
+Client sends
+
+POST /approve
+
+{
+   "employee":"E101"
+}
+
+Server replies
+
+{
+   "approved":true
+}
+
+Simple.
+
+One request.
+
+One response.
+
+Done.
+
+Question
+
+Can A2A always work this way?
+
+No.
+
+
+Step 2 – Enterprise Scenario:
+
+Suppose
+
+Travel Agent asks
+
+Finance Agent
+
+Approve international travel costing $25,000.
+
+Finance Agent may respond
+
+Working...
+
+Later
+
+Budget verified.
+
+Later
+
+Manager approval required.
+
+Later
+
+Manager approved.
+
+Finally
+
+Budget Approved.
+
+Question
+
+Is this
+
+one response?
+
+No.
+
+There are
+
+multiple pieces of communication.
+
+Hence
+
+Messages.
+
+
+
+Step 3 – Human Analogy:
+
+Suppose
+
+your manager asks
+
+Prepare Project Budget.
+
+You don't stay silent
+
+for
+
+three hours.
+
+Instead
+
+you continuously communicate.
+
+Started.
+
+↓
+
+Collecting Data.
+
+↓
+
+Waiting for Finance.
+
+↓
+
+Completed.
+
+Exactly.
+
+Each update
+
+is a
+
+Message.
+
+
+Step 4 – What is a Message?:
+
+Definition
+
+A Message is a communication exchanged between agents during the execution of a Task.
+
+A message may contain
+
+text
+structured JSON
+images
+files
+references
+progress updates
+
+Think
+
+Task
+
+↓
+
+Conversation
+
+Messages:
+
+are
+
+the conversation.
+
+
+Step 5 – Complete Architecture:
+
+Travel Agent
+
+       │
+
+Create Task
+
+       │
+
+──────────── A2A ────────────
+
+       ▼
+
+Finance Agent
+
+       │
+
+Message
+
+↓
+
+Working...
+
+       │
+
+Message
+
+↓
+
+Checking Budget...
+
+       │
+
+Message
+
+↓
+
+Manager Approval Needed
+
+       │
+
+Message
+
+↓
+
+Budget Approved
+
+
+Notice:
+
+Task
+
+contains
+
+multiple Messages.
+
+
+Step 6 – Task vs Message:
+
+This is the biggest confusion.
+
+Task:
+
+Approve Budget
+
+Message:
+
+Checking SAP...
+
+Another Message
+
+Budget Found.
+
+Another Message
+
+Manager Approval Needed.
+
+Task:
+
+is
+
+the work.
+
+Messages:
+
+describe
+
+what is happening.
+
+
+Visual:
+
+Task
+
+↓
+
+Message
+
+↓
+
+Message
+
+↓
+
+Message
+
+↓
+
+Completed
+
+
+Step 7 – Message Lifecycle:
+
+Suppose
+
+Task starts.
+
+Executor generates:
+
+Message 1
+
+Task Accepted.
+
+Later
+
+Message 2
+
+Reading SAP.
+
+Later
+
+Message 3
+
+Budget Available.
+
+Later
+
+Message 4
+
+Manager Approval Required.
+
+Later
+
+Message 5
+
+Budget Approved.
+
+Question:
+
+Did Task change?
+
+No.
+
+Messages changed.
+
+
+Step 8 – Who Creates Messages?:
+
+Question
+
+Does
+
+Travel Agent:
+
+create
+
+Messages?
+
+No.
+
+Finance Agent's
+
+Executor:
+
+creates
+
+Messages.
+
+Sequence
+
+
+Task
+
+↓
+
+Executor
+
+↓
+
+Generate Message
+
+↓
+
+Send Client
+
+
+
+Step 9 – Message Structure:
+
+Conceptually
+
+every Message contains:
+Message
+
+↓
+
+Role
+
+↓
+
+Parts
+
+↓
+
+Metadata
+
+
+Think:
+
+Email
+
+Sender
+
+Subject
+
+Body
+
+Attachments
+
+Same idea.
+
+
+Step 10 – Role:
+
+Question:
+
+Who sent
+
+this Message?
+
+Examples:
+
+User
+
+Assistant
+
+Agent
+
+Role
+
+helps
+
+identify
+
+the sender.
+
+
+Example:
+Travel Agent
+
+↓
+
+Finance Agent
+
+↓
+
+Assistant Message
+
+
+
+Step 11 – Parts:
+
+Question
+
+Can Message
+
+contain
+
+only text?:
+
+No.
+
+Message
+
+contains
+
+Parts.
+
+Example
+
+Text
+
+JSON
+
+Image
+
+File
+
+Audio
+
+Think
+
+Email
+
+with
+
+attachments.
+
+
+Step 12 – Text Part:
+
+Most common.
+
+Example
+
+Budget Approved.
+
+Simple
+
+plain text.
+
+
+Step 13 – Data Part:
+
+Suppose
+
+Finance Agent
+
+returns
+
+structured data.:
+
+{
+  "approved":true,
+  "amount":25000,
+  "currency":"USD"
+}
+
+Instead of plain text,
+
+Message
+
+contains
+
+structured
+
+JSON.
+
+Useful
+
+for
+
+machine processing.
+
+Step 14 – File Part:
+
+Suppose
+
+Finance Agent:
+
+creates
+
+BudgetReport.pdf
+
+Question
+
+Should
+
+PDF
+
+be converted
+
+to text?:
+
+No.
+
+Instead
+
+Message
+
+contains
+
+File Part.
+
+Think
+
+Email Attachment.
+
+
+
+Step 15 – Image Part:
+
+Suppose
+
+Design Agent
+
+generates
+
+Architecture Diagram.
+
+Message
+
+contains
+
+architecture.png
+
+Again
+
+not text.
+
+Image.
+
+
+
+Step 16 – One Message Can Have Multiple Parts:
+
+Example
+Text
+
+↓
+
+Budget Approved.
+
++
+
+PDF Report
+
++
+
+JSON Metadata
+
+All
+
+inside
+
+one Message.
+
+Visual:
+
+Message
+
+──────────────
+
+Text Part
+
+PDF Part
+
+JSON Part
+
+──────────────
+
+
+
+Step 17 – Complete Lifecycle:
+
+Suppose
+
+Travel Agent:
+
+asks
+
+Approve Budget.
+
+Executor
+
+generates
+
+Message 1
+
+Task Accepted.
+
+↓
+
+Message 2
+
+Budget Found.
+
+↓
+
+Message 3
+
+Approval Needed.
+
+↓
+
+Message 4
+
+Budget Approved.
+
+↓
+
+Message 5
+
+PDF Attached.
+
+Notice
+
+Task
+
+remains
+
+the same.
+
+Messages
+
+grow.
+
+
+
+Step 18 – Message vs Task:
+
+Interview favourite.
+| Task            | Message                     |
+| --------------- | --------------------------- |
+| Represents work | Represents communication    |
+| Has lifecycle   | Has content                 |
+| Long-lived      | Usually immutable once sent |
+| Owns status     | Carries updates or results  |
+
+Think:
+Project
+
+↓
+
+Emails
+
+Project
+
+=
+
+Task.
+
+Emails
+
+=
+
+Messages.
+
+
+Step 19 – Message vs Artifact:
+Another common confusion.
+
+Suppose
+
+Legal Agent
+
+creates
+
+ContractReview.pdf
+
+Question
+
+Is PDF
+
+Message?
+
+No.
+
+PDF
+
+is
+
+Artifact.
+
+Message
+
+contains
+
+reference
+
+to
+
+Artifact.
+
+Visual:
+Message
+
+↓
+
+See attached report.
+
+↓
+
+Artifact
+
+↓
+
+ContractReview.pdf
+
+We'll study
+
+Artifacts
+
+
+Step 20 – Enterprise Example:
+
+Legal Agent
+
+receives
+
+Review Contract
+
+Conversation:
+Message 1
+
+Contract received.
+
+↓
+
+Message 2
+
+OCR Completed.
+
+↓
+
+Message 3
+
+Searching Policies.
+
+↓
+
+Message 4
+
+Potential Risks Found.
+
+↓
+
+Message 5
+
+Review Complete.
+
+↓
+
+Artifact
+
+RiskReport.pdf
+
+
+Notice:
+
+Messages
+
+describe
+
+execution.
+
+Artifact
+
+contains
+
+the deliverable.
+
+
+Step 21 – Relationship with Previous Chapters:
+
+Everything now connects.
+Agent Card
+
+↓
+
+Skills
+
+↓
+
+Task
+
+↓
+
+Executor
+
+↓
+
+Messages
+
+↓
+
+Artifacts
+
+↓
+
+Completed
+
+
+
+Step 22 – Responsibilities of a Message:
+
+A Message is responsible for:
+| Responsibility      | Description                          |
+| ------------------- | ------------------------------------ |
+| Communication       | Exchange information between agents. |
+| Progress updates    | Inform clients about execution.      |
+| Human-readable text | Explain what is happening.           |
+| Structured data     | Carry machine-readable content.      |
+| References          | Point to generated artifacts.        |
+
+
+Interview Questions:
+Q1. Why doesn't A2A simply return one response?:
+
+Because many AI tasks are long-running and interactive. Messages allow agents to communicate progress, request input, and deliver intermediate and final information during the lifetime of a Task.
+
+
+Q2. Can one Task contain multiple Messages?:
+
+Yes.
+
+A Task represents the work, while Messages represent the conversation about that work. A single Task can generate many Messages over its lifetime.
+
+
+Q3. What is the difference between a Message and an Artifact?
+| Message                    | Artifact                      |
+| -------------------------- | ----------------------------- |
+| Communication              | Output produced by the task   |
+| Text or structured updates | PDF, CSV, image, report, etc. |
+| Explains what happened     | Contains the deliverable      |
+
+
+Example:
+
+Message:
+"Budget approval completed. Please review the attached report."
+
+Artifact:
+BudgetApprovalReport.pdf
+
+
+Q4. Who creates Messages?:
+
+The Executor inside the executing agent. As the Task progresses, the Executor generates Messages that are sent back to the requesting agent.

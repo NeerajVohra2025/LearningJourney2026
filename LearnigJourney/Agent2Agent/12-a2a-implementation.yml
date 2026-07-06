@@ -1,0 +1,1496 @@
+Chapter 1 – Project Setup (Windows + uv):
+Step 1 – Install Python:
+python --version
+
+Step 2 – Install uv:
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+uv --version
+
+Step 3 – Install ollama:
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+ollama --version
+
+Step 3 – Create Workspace:
+D:\AI
+create
+
+a2a-demo
+
+Step 4 – Initialize Project:
+
+Unlike older tutorials that use requirements.txt, we'll use modern Python packaging.
+uv init --package a2a-demo
+
+Step 5 – Create Virtual Environment:
+uv venv
+
+Step 6 – Install Core Packages:
+uv add a2a-sdk
+uv add fastapi
+uv add uvicorn
+uv add httpx
+uv add pydantic
+
+uv add langgraph
+uv add openai-agents
+uv add langchain
+uv add ollama
+
+
+Step 7 – Project Structure:
+
+Now create folders.
+a2a-demo/
+
+│
+
+├── pyproject.toml
+
+├── README.md
+
+│
+
+└── src
+
+      │
+
+      └── a2a_demo
+
+            │
+
+            ├── common
+
+            │
+
+            ├── finance_agent
+
+            │
+
+            ├── travel_agent
+
+            │
+
+            ├── models
+
+            │
+
+            ├── executors
+
+            │
+
+            ├── artifacts
+
+            │
+
+            ├── messages
+
+            │
+
+            ├── skills
+
+            │
+
+            ├── client
+
+            │
+
+            └── server
+            
+            
+Step 8 – Why This Structure?:
+
+Question
+
+Why not
+
+put everything
+
+inside one file?
+
+Because
+
+enterprise agents contain
+
+Agent Card
+
+Executor
+
+Tasks
+
+Messages
+
+Artifacts
+
+Skills
+
+HTTP Server
+
+LLM
+
+MCP Client
+
+A2A Client
+
+Each deserves
+
+its own package.  
+
+
+Step 9 – What Will We Build?:
+
+Final Architecture          
+
+                Travel Agent
+
+                     │
+
+               HTTP / A2A
+
+                     │
+
+               Finance Agent
+
+                     │
+
+                Executor
+
+          ┌──────────┼───────────┐
+
+          ▼          ▼           ▼
+
+      Ollama      MCP Tool     Artifact
+
+                     │
+
+                Budget.pdf
+
+                     │
+
+              Return Result
+              
+Later
+
+we'll replace
+
+Finance Agent
+
+with
+
+LangGraph
+
+without changing
+
+Travel Agent.
+
+That's the beauty
+
+of A2A.     
+
+
+Step 10 – Verify Installation:
+uv pip list         
+
+###########################################################################################
+Chapter 2 – Creating Your First A2A Agent (Architecture First):
+                    Travel Agent
+
+                          │
+
+                    A2A Client
+
+                          │
+
+────────────────── HTTP ──────────────────
+
+                          │
+
+                  Finance Agent
+
+      ┌────────────────────────────────────┐
+
+      │ Agent Card                         │
+
+      │ Skills                             │
+
+      │ Task Manager                       │
+
+      │ Executor                           │
+
+      │ Messages                           │
+
+      │ Artifacts                          │
+
+      └────────────────────────────────────┘
+
+                          │
+
+                  MCP Client
+
+                          │
+
+             SAP / Database / REST APIs
+             
+Mapping to A2A Concepts:
+| A2A Concept   | Python File       |
+| ------------- | ----------------- |
+| Agent         | `main.py`         |
+| Agent Card    | `agent_card.py`   |
+| Skills        | `skills.py`       |
+| Executor      | `executor.py`     |
+| Task          | `task_manager.py` |
+| Messages      | `messages.py`     |
+| Artifacts     | `artifacts.py`    |
+| Models        | `models.py`       |
+| Configuration | `config.py`       |
+             
+             
+Interview Questions:
+Q1. Why separate the Agent Card from the Executor?:
+
+Because they have different responsibilities.
+
+The Agent Card describes the agent.
+The Executor performs the work.
+
+This separation makes the agent easier to maintain and evolve.             
+
+
+Q2. Where does business logic belong?:
+
+Inside the Executor.
+
+The Agent Card, Skills, and Task Manager are metadata and orchestration. The Executor coordinates LLM reasoning, tool calls, and task execution.
+
+Q3. Why separate Skills and Executor?:
+
+Skills describe what the agent can do.
+
+The Executor defines how those skills are implemented.
+
+This separation allows the implementation to change without changing the public contract.
+
+
+a2a-demo/
+│
+├── pyproject.toml
+├── README.md
+│
+└── src/
+    │
+    └── a2a_demo/
+        │
+        ├── common/                    # Shared utilities
+        │   ├── __init__.py
+        │   ├── config.py
+        │   ├── models.py
+        │   └── utils.py
+        │
+        ├── finance_agent/
+        │   ├── __init__.py
+        │   ├── main.py
+        │   ├── agent_card.py      ← Finance Agent Card
+        │   ├── skills.py
+        │   ├── executor.py
+        │   ├── task_manager.py
+        │   ├── messages.py
+        │   ├── artifacts.py
+        │   └── server.py
+        │
+        ├── travel_agent/
+        │   ├── __init__.py
+        │   ├── main.py
+        │   ├── agent_card.py      ← Travel Agent Card
+        │   ├── skills.py
+        │   ├── executor.py
+        │   ├── task_manager.py
+        │   ├── client.py
+        │   └── server.py
+        │
+        └── tests/
+        
+        
+#####################################################################################################
+Step 1 – When does agent_card.py execute?:
+
+Suppose we start our Finance Agent.
+
+User runs
+
+python main.py        
+Question:
+
+What happens first?
+main.py
+
+↓
+
+Read Config
+
+↓
+
+Create Agent Card
+
+↓
+
+Register Agent Card
+
+↓
+
+Register Skills
+
+↓
+
+Create Executor
+
+↓
+
+Start HTTP Server
+
+↓
+
+Waiting...
+
+
+Notice:
+
+Agent Card
+
+is created
+
+only once
+
+during application startup.
+
+
+Step 2 – Runtime Architecture:
+                 main.py
+
+                    │
+
+                    ▼
+
+        create_agent_card()
+
+                    │
+
+                    ▼
+
+             Agent Card Object
+
+                    │
+
+                    ▼
+
+            Register with Server
+
+                    │
+
+                    ▼
+
+           HTTP Server Starts
+
+                    │
+
+                    ▼
+
+        Other Agents Discover It
+        
+        
+Notice:
+
+agent_card.py
+
+doesn't execute
+
+Tasks.
+
+It only creates
+
+metadata.        
+
+
+Step 3 – Who Uses Agent Card?:
+
+Suppose
+
+Travel Agent starts.
+Question
+
+Does
+
+Finance Agent
+
+read
+
+its own Agent Card?
+
+No.:
+
+Instead
+
+Travel Agent
+
+downloads it.
+
+Travel Agent
+
+↓
+
+HTTP GET
+
+↓
+
+Finance Agent
+
+↓
+
+Returns Agent Card
+
+So:
+
+Agent Card
+
+is
+
+for
+
+other agents.
+
+
+Step 4 – Responsibility of agent_card.py:
+
+Its only responsibility is
+
+Build
+
+↓
+
+Agent Card Object
+
+Nothing else.
+
+It should NOT
+
+Execute Tasks
+
+↓
+
+Call LLM
+
+↓
+
+Call Database
+
+↓
+
+Call MCP
+
+↓
+
+Call APIs
+
+This follows
+
+Single Responsibility Principle.
+
+
+
+
+Step 5 – Object Lifecycle:
+
+Suppose
+
+Finance Agent starts.
+
+Application Starts
+
+↓
+
+agent_card.py
+
+↓
+
+Creates AgentCard Object
+
+↓
+
+Memory
+
+↓
+
+Server Registers It
+
+↓
+
+Clients Read It
+
+Question
+
+Does
+
+Agent Card
+
+change
+
+every request?
+
+Normally
+
+No.
+
+It is
+
+almost static.
+
+
+Step 6 – What Information Will It Contain?:
+
+Our Finance Agent Card
+
+will contain
+Finance Agent
+
+Description
+
+Version
+
+Provider
+
+Skills
+
+Capabilities
+
+Authentication
+
+Input Modes
+
+Output Modes
+Exactly
+
+what we studied
+
+earlier.
+
+
+Step 8 – What Will main.py Look Like Later?:
+
+Later
+
+our startup
+
+will look
+
+something like
+
+main.py
+
+↓
+
+Import Agent Card
+
+↓
+
+Import Skills
+
+↓
+
+Import Executor
+
+↓
+
+Create Server
+
+↓
+
+Register Everything
+
+↓
+
+Run Server
+
+Notice:
+
+main.py
+
+doesn't contain
+
+Agent Card details.
+
+Those remain
+
+inside
+
+agent_card.py.
+
+
+
+Step 9 – Should Agent Card Know About Skills?:
+
+This is an excellent interview question.
+
+Question
+
+Should
+
+agent_card.py
+
+contain
+
+business logic?
+
+No.
+
+It only
+
+references
+
+the Skills
+
+that the Agent supports.
+
+Example
+
+Finance Agent
+
+↓
+
+Skills
+
+↓
+
+Approve Budget
+
+Generate Invoice
+
+Expense Validation
+
+The implementation of those skills remains in skills.py.
+
+
+
+Step 10 – Should Agent Card Know About Executor?:
+
+No.
+
+Think of it like this.
+Agent Card
+
+↓
+
+Public Advertisement
+
+-------------------------
+
+Executor
+
+↓
+
+Internal Employee
+
+
+Clients see:
+
+Agent Card.
+
+Clients never see
+
+Executor.
+
+
+
+Step 11 – Code Dependencies:
+
+Our dependency flow will be
+main.py
+
+│
+
+├── agent_card.py
+
+├── skills.py
+
+├── executor.py
+
+└── server.py
+
+
+Notice:
+
+agent_card.py
+
+does NOT import
+
+Executor.
+
+It stays independent.
+
+
+
+Step 12 – One Important Design Principle:
+
+Never do this
+
+agent_card.py
+
+↓
+
+Import Database
+
+↓
+
+Import LLM
+
+↓
+
+Import MCP
+
+This creates
+
+tight coupling.
+
+Instead
+
+keep
+
+Agent Card
+
+completely lightweight.
+
+
+
+Step 13 – File Responsibility Summary:
+| File              | Responsibility                                     |
+| ----------------- | -------------------------------------------------- |
+| `agent_card.py`   | Build and expose Agent metadata                    |
+| `skills.py`       | Define business capabilities                       |
+| `executor.py`     | Execute Tasks                                      |
+| `task_manager.py` | Maintain Task lifecycle                            |
+| `server.py`       | Expose HTTP endpoints                              |
+| `main.py`         | Wire everything together and start the application |
+
+Interview Questions:
+Q1. Why is agent_card.py a separate file?:
+
+Because the Agent Card represents the agent's public metadata and should be independent of business logic, task execution, and infrastructure concerns.
+
+
+Q2. Does the Agent Card change during Task execution?:
+
+Normally, no.
+
+It is created during application startup and remains largely static until the agent is reconfigured or redeployed.
+
+Q3. Does the Agent Card execute Skills?:
+
+No.
+
+It only advertises which Skills are available. The Executor invokes the implementation when a Task is received.
+
+
+###################################################################################################
+Why create models?:
+
+Every enterprise application separates
+
+Business Model
+
+from
+
+Business Logic
+
+Exactly like
+
+Java DTOs
+
+or
+
+Pydantic Models.
+
+Interview Questions:
+Q1. Why doesn't agent_card.py contain business logic?:
+
+Because its responsibility is only to describe the agent. Business execution belongs to the Executor.
+
+
+Q2. Why keep Skills in a separate file?:
+
+Skills are part of the public contract of the agent. Separating them makes it easy to update capabilities without modifying the Agent Card implementation
+
+
+Q3. Why create models.py?:
+
+It centralizes shared data structures and avoids duplicating model definitions across files.
+
+
+#################################################################
+Chapter 2 – Task Manager:
+
+This is exactly like we built MemorySaver before building the LangGraph.
+The Task Manager is responsible for
+Create Task
+
+↓
+
+Store Task
+
+↓
+
+Update Status
+
+↓
+
+Find Task
+
+↓
+
+Delete Task
+
+
+Think of it as:
+
+Task Database
+
+Initially we'll keep everything
+
+in memory
+
+Later we can replace it with:
+
+PostgreSQL
+Redis
+MongoDB
+
+without changing the Executor.
+
+
+
+Step 1 — Runtime Architecture:
+Travel Agent
+
+      │
+
+Create Task
+
+      ▼
+
+Finance Agent
+
+      │
+
+Task Manager
+
+      │
+
+Memory
+
+      │
+
+Executor
+
+Notice
+
+Executor never creates Tasks.
+
+Task Manager does.
+
+
+TaskManager
+
+│
+
+├── create_task()
+
+├── get_task()
+
+├── update_state()
+
+└── delete_task()
+
+Very similar to
+
+CRUD.
+
+
+Interview Questions
+Q1. Why does the Task Manager create the Task instead of the Executor?:
+
+Because creating, storing, retrieving, updating, and deleting Tasks is a persistence/lifecycle responsibility. The Executor's responsibility is to execute the Task, not manage its storage.
+
+Q2. Why use UUID for Task IDs?:
+
+UUIDs are globally unique, making them suitable for distributed systems where multiple agent instances may create Tasks concurrently.
+
+Q3. Why use an Enum for TaskState?:
+
+Enums provide type safety, prevent invalid state values, improve readability, and make state transitions easier to validate.
+
+
+# Chapter 2 – Task Manager
+
+This is exactly like we built **MemorySaver** before building the LangGraph.
+
+The **Task Manager** is responsible for:
+
+```text
+Create Task
+    ↓
+Store Task
+    ↓
+Update Status
+    ↓
+Find Task
+    ↓
+Delete Task
+```
+
+Think of it as the **Task Database** for your A2A agent.
+
+Initially, we'll keep everything **in memory**. Later, we can replace it with a persistent datastore such as:
+
+* PostgreSQL
+* Redis
+* MongoDB
+
+without changing the Executor.
+
+
+##############################################################################
+Chapter 3 – Executor (The Brain of the Agent):
+
+Now our Finance Agent starts becoming intelligent.
+
+So far we have built:
+
+Agent Card
+      │
+      ▼
+Skills
+      │
+      ▼
+Task Manager
+
+The Task Manager can create a Task, but it cannot execute it.
+
+Now we'll build the Executor, which is responsible for performing the actual business work.
+
+# Enterprise A2A using Python
+
+# Chapter 3 – Executor (The Brain of the Agent)
+
+Now our Finance Agent starts becoming **intelligent**.
+
+So far we have built:
+
+```text
+Agent Card
+      │
+      ▼
+Skills
+      │
+      ▼
+Task Manager
+```
+
+The Task Manager can create a Task, but it **cannot execute** it.
+
+Now we'll build the **Executor**, which is responsible for performing the actual business work.
+
+---
+
+# Step 1 – What is an Executor?
+
+The Executor is the runtime engine that executes a Task.
+
+Think of it as the employee inside the Finance department.
+
+For every Task, the Executor will:
+
+```text
+Receive Task
+      │
+      ▼
+Read Skill
+      │
+      ▼
+Execute Business Logic
+      │
+      ▼
+Update Task State
+      │
+      ▼
+Generate Messages
+      │
+      ▼
+Generate Artifacts
+      │
+      ▼
+Complete Task
+```
+
+Notice that the Executor **does not create Tasks**.
+
+That responsibility belongs to the Task Manager.
+
+---
+
+# Step 2 – Runtime Architecture
+
+```text
+Travel Agent
+
+      │
+
+Create Task
+
+      ▼
+
+Task Manager
+
+      │
+
+Create Task
+
+      ▼
+
+Executor
+
+      │
+
+Business Logic
+
+      │
+
+LLM
+
+      │
+
+MCP Tools
+
+      │
+
+Artifacts
+
+      ▼
+
+Completed
+```
+
+---
+
+# Step 3 – Responsibilities of the Executor
+
+The Executor should only perform execution.
+
+It should **not**:
+
+* Create Agent Card
+* Register Skills
+* Start HTTP Server
+* Manage Task storage
+
+Its responsibilities are:
+
+* Read Task
+* Execute Skill
+* Call LLM
+* Call MCP Tools
+* Update Task State
+* Produce Messages
+* Produce Artifacts
+
+---
+
+# Step 4 – Create executor.py
+
+Location
+
+```text
+src/
+└── a2a_demo/
+    └── finance_agent/
+        └── executor.py
+```
+
+---
+
+# Step 5 – Imports
+
+Initially our Executor depends on only two components.
+
+```python
+from .task_manager import TaskManager
+from .models import TaskState
+```
+
+Later we will also import
+
+```python
+MCP Client
+
+OpenAI Agent SDK
+
+LangGraph
+
+Ollama
+```
+
+---
+
+# Step 6 – Create Executor Class
+
+```python
+class Executor:
+
+    def __init__(self, task_manager: TaskManager):
+
+        self.task_manager = task_manager
+```
+
+Notice
+
+The Executor receives the Task Manager through dependency injection.
+
+It does **not** create it itself.
+
+---
+
+# Step 7 – Why Dependency Injection?
+
+Bad Design
+
+```python
+Executor()
+
+↓
+
+Creates TaskManager()
+```
+
+Good Design
+
+```python
+TaskManager
+
+↓
+
+Executor(TaskManager)
+```
+
+Benefits:
+
+* Loose coupling
+* Easier testing
+* Replace Task Manager later without changing Executor
+
+---
+
+# Step 8 – Execute Method
+
+The main responsibility of the Executor is executing a Task.
+
+Conceptually
+
+```python
+execute(task_id)
+```
+
+Internally it performs
+
+```text
+Find Task
+
+↓
+
+Update State
+
+↓
+
+Execute Skill
+
+↓
+
+Generate Result
+
+↓
+
+Completed
+```
+
+---
+
+# Step 9 – Runtime Flow
+
+Suppose the Task is
+
+```text
+Approve Budget
+```
+
+The Executor performs
+
+```text
+Read Task
+
+↓
+
+Update State → Working
+
+↓
+
+Execute Business Logic
+
+↓
+
+Generate Approval
+
+↓
+
+Update State → Completed
+```
+
+---
+
+# Step 10 – First Version (Without LLM)
+
+Initially we'll simulate business logic.
+
+```text
+Approve Budget
+
+↓
+
+Wait
+
+↓
+
+Return Approved
+```
+
+Later this simulation will be replaced by:
+
+* Ollama
+* OpenAI
+* LangGraph
+* MCP Tool Calls
+
+---
+
+# Step 11 – Future Architecture
+
+Eventually the Executor will orchestrate many systems.
+
+```text
+Executor
+
+├── Ollama
+
+├── MCP Client
+
+├── REST API
+
+├── Database
+
+├── Another A2A Agent
+
+└── Artifact Generator
+```
+
+The Executor becomes the orchestration engine.
+
+---
+
+# Step 12 – Why Doesn't the Task Execute Itself?
+
+A Task is only a data object.
+
+Think of a printed work order.
+
+The paper doesn't perform the work.
+
+An employee reads it and executes it.
+
+Similarly
+
+```text
+Task
+
+↓
+
+Executor
+
+↓
+
+Execution
+```
+
+---
+
+# Step 13 – Executor vs Task Manager
+
+| Task Manager      | Executor                |
+| ----------------- | ----------------------- |
+| Creates Tasks     | Executes Tasks          |
+| Stores Tasks      | Reads Tasks             |
+| Updates lifecycle | Performs business logic |
+| Retrieves Tasks   | Calls tools and LLMs    |
+
+Each class has one responsibility.
+
+---
+
+# Step 14 – Executor vs Agent
+
+Many people confuse these.
+
+The Agent represents:
+
+* Identity
+* Skills
+* Capabilities
+* Agent Card
+
+The Executor represents:
+
+* Runtime execution
+* Tool invocation
+* Reasoning
+* Workflow
+
+Think of it like this:
+
+```text
+Agent
+
+↓
+
+Who am I?
+
+-----------------------
+
+Executor
+
+↓
+
+What am I doing?
+```
+
+---
+
+# Step 15 – Final Runtime Flow
+
+```text
+Travel Agent
+
+      │
+
+Create Task
+
+      ▼
+
+Task Manager
+
+      │
+
+Create Task
+
+      ▼
+
+Executor
+
+      │
+
+Working
+
+      ▼
+
+Business Logic
+
+      ▼
+
+Completed
+```
+
+At this stage we still don't have:
+
+* HTTP Server
+* Messages
+* Artifacts
+* MCP
+* LLM
+
+Those will be added gradually.
+
+---
+
+# Current Folder Structure
+
+```text
+finance_agent/
+
+config.py
+
+models.py
+
+skills.py
+
+agent_card.py
+
+task_manager.py
+
+executor.py      ✅
+
+main.py
+```
+
+---
+
+# Interview Questions
+
+### Q1. Why is the Executor separate from the Task Manager?
+
+Because they have different responsibilities.
+
+The Task Manager manages the lifecycle and storage of Tasks.
+
+The Executor performs the business logic.
+
+---
+
+### Q2. Why inject the Task Manager into the Executor?
+
+Dependency Injection reduces coupling, improves testing, and allows different Task Manager implementations (memory, Redis, PostgreSQL) without changing the Executor.
+
+---
+
+### Q3. Can the Executor call another Agent?
+
+Yes.
+
+An Executor may:
+
+* Invoke MCP tools
+* Call REST APIs
+* Query databases
+* Communicate with another A2A agent
+* Invoke an LLM
+
+It is the orchestration component of the agent.
+
+---
+
+## Next Chapter
+
+In the next chapter we'll build **Messages**.
+
+We'll create:
+
+* `messages.py`
+* Message model
+* Progress messages
+* User messages
+* Assistant messages
+* Structured JSON messages
+* Streaming messages
+
+Then we'll integrate Messages with the Executor so our Finance Agent starts communicating like a real A2A agent.
+
