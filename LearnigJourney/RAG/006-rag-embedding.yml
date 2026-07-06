@@ -1,0 +1,814 @@
+Chapter 8 – Embeddings:
+Step 1 – Why do we need Embeddings?:
+
+Suppose we have
+
+HRPolicy.pdf
+
+↓
+
+Chunk 1
+
+Employees are entitled to 20 days annual leave.
+
+Question
+
+Can ChromaDB understand English?
+
+Answer
+
+No.
+
+Computers understand
+
+0
+
+1
+
+Numbers
+
+NOT
+
+Employees are entitled...
+
+Therefore
+
+we must convert
+
+Human Language
+
+↓
+
+Numbers
+
+This process is called
+
+Embedding.
+
+
+Step 2 – What is an Embedding?:
+
+Suppose we have
+
+Employees are entitled to 20 days leave.
+
+Embedding Model converts it into
+
+[0.234,
+-0.871,
+0.192,
+...
+0.721]
+
+Question
+
+Is this encryption?
+
+No.
+
+Question
+
+Is this compression?
+
+No.
+
+Question
+
+Is this hashing?
+
+No.
+
+It is
+
+a mathematical representation
+
+of the sentence's meaning.
+
+
+Step 3 – Think Like GPS:
+
+Imagine Google Maps.
+
+Delhi
+
+↓
+
+Latitude
+
+↓
+
+28.6139
+
+Longitude
+
+↓
+
+77.2090
+
+Now
+
+Mumbai
+
+↓
+
+19.0760
+
+72.8777
+
+Question
+
+Can Google calculate
+
+distance?
+
+Yes.
+
+Because
+
+both cities
+
+have coordinates.
+
+Exactly the same.
+
+Instead of cities
+
+we have
+
+sentences.
+
+Sentence
+
+↓
+
+Coordinates
+
+↓
+
+Vector
+
+Now
+
+Vector Database
+
+can calculate
+
+similarity.
+
+
+Step 4 – Why Not Store Plain Text?:
+
+Suppose we store
+
+Employees are entitled to annual leave.
+
+User asks
+
+How many vacation days do employees get?
+
+Question
+
+The words
+
+Vacation
+
+Annual Leave
+
+are different.
+
+Traditional search says
+
+Not Found.
+
+Semantic Search says
+
+Same Meaning.
+
+How?
+
+Because
+
+their vectors
+
+are close together.
+
+
+Step 5 – Embedding Architecture:
+Chunk
+
+↓
+
+Embedding Model
+
+↓
+
+Vector
+
+↓
+
+Vector Database
+
+Example:
+"Employees are entitled..."
+
+↓
+
+Embedding Model
+
+↓
+
+[0.21,-0.44,0.71...]
+
+↓
+
+ChromaDB
+
+
+Step 6 – Which Package?:
+
+For Ollama
+
+Install
+uv add langchain-ollama
+
+Import
+
+from langchain_ollama import OllamaEmbeddings
+
+Question
+
+Why:
+
+langchain-ollama?
+
+Because
+
+LangChain
+
+doesn't know
+
+how to communicate
+
+with Ollama.
+
+This package acts
+
+as a connector.
+
+Step 7 – Create Embedding Model
+from langchain_ollama import OllamaEmbeddings
+
+embedding = OllamaEmbeddings(
+    model="nomic-embed-text"
+)
+
+Question:
+
+Did it generate any vectors?
+
+No.
+
+It only created
+
+an Embedding Object.
+
+Exactly like
+
+loader = PyPDFLoader(...)
+
+Nothing happens yet.
+
+
+Step 8 – Constructor Parameters:
+
+Let's understand every parameter.
+
+OllamaEmbeddings(
+
+    model,
+
+    base_url,
+
+    client_kwargs
+
+)
+
+(Some SDK versions expose additional optional parameters.)
+
+Parameter 1 – model:
+
+Most important.
+
+Example
+
+model="nomic-embed-text"
+
+Question
+
+Can we use
+
+llama3.2
+
+No.
+
+Why?
+
+Because
+
+Llama
+
+is a chat model.
+
+We need
+
+an embedding model.
+
+Examples
+
+nomic-embed-text
+
+bge-large
+
+mxbai-embed-large
+
+all-minilm
+
+snowflake-arctic-embed
+
+
+Parameter 2 – base_url:
+
+Default
+
+http://localhost:11434
+
+If Ollama
+
+runs on another machine
+
+base_url="http://192.168.1.10:11434"
+
+
+
+Parameter 3 – client_kwargs:
+
+Advanced HTTP settings
+
+Example
+client_kwargs={
+    "timeout":60
+}
+
+
+Used
+
+for
+
+authentication
+
+timeouts
+
+proxy
+
+SSL
+
+
+
+Step 9 – Important Methods:
+
+Two methods
+
+are extremely important.
+embed_documents()
+
+embed_query()
+Question
+
+Why two methods?
+
+Let's understand.
+
+Step 10 – embed_documents():
+
+Suppose
+
+Chunk 1
+
+Employees are entitled to annual leave.
+
+Chunk 2
+
+Medical reimbursement policy.
+
+Python
+
+vectors = embedding.embed_documents(
+    [
+        "Employees are entitled to annual leave.",
+        "Medical reimbursement policy."
+    ]
+)
+
+Internally
+
+Chunk 1
+
+↓
+
+Embedding Model
+
+↓
+
+Vector 1
+
+---------------------
+
+Chunk 2
+
+↓
+
+Embedding Model
+
+↓
+
+Vector 2
+
+Output
+
+[
+ [0.12,-0.44,...],
+
+ [0.89,0.22,...]
+]
+
+Notice
+
+One vector
+
+per document.
+
+
+
+
+Step 11 – embed_query():
+
+Now
+
+User asks
+
+How many vacation days are allowed?
+
+We must convert
+
+the query
+
+into
+
+a vector.
+
+Python
+
+query_vector = embedding.embed_query(
+    "How many vacation days are allowed?"
+)
+
+Output
+
+[
+0.44,
+-0.72,
+0.31,
+...
+]
+
+Question
+
+Why not use
+
+embed_documents()?
+
+Because
+
+some embedding models
+
+optimize
+
+documents
+
+and queries
+
+slightly differently.
+
+That's why
+
+LangChain
+
+provides
+
+two methods.
+
+
+Step 12 – Complete Lifecycle:
+
+During Ingestion:
+Chunk
+
+↓
+
+embed_documents()
+
+↓
+
+Vector
+
+↓
+
+Store in ChromaDB
+
+
+During Query:
+User Question
+
+↓
+
+embed_query()
+
+↓
+
+Query Vector
+
+↓
+
+Search ChromaDB
+
+
+Notice:
+
+The same embedding model
+
+should be used
+
+for both ingestion
+
+and query
+
+
+
+Step 13 – Vector Dimensions:
+
+Question
+
+How big is a vector?
+
+Depends on
+
+the model.
+
+Examples
+
+| Model                         | Approximate Dimensions |
+| ----------------------------- | ---------------------: |
+| all-MiniLM                    |                    384 |
+| bge-base                      |                    768 |
+| bge-large                     |                   1024 |
+| nomic-embed-text              |  768 (model-dependent) |
+| OpenAI text-embedding-3-small |                   1536 |
+| OpenAI text-embedding-3-large |                   3072 |
+
+
+Step 14 – Similarity:
+
+Suppose
+
+Chunk
+
+Annual Leave Policy
+
+Vector
+
+A
+
+Query
+
+Vacation Policy
+
+Vector
+
+B
+
+Question:
+
+How do we compare?
+
+Using
+
+similarity.
+
+Most common
+
+Cosine Similarity
+
+Dot Product
+
+Euclidean Distance
+
+We'll study
+
+each one
+
+in the Search chapter.
+
+
+
+Step 15 – What Happens Internally?:
+Chunk
+
+↓
+
+Tokenizer
+
+↓
+
+Embedding Neural Network
+
+↓
+
+Dense Vector
+
+↓
+
+Return to Python
+
+↓
+
+Store in Vector DB
+
+
+Notice:
+
+Embedding model:
+
+is itself
+
+a neural network.
+
+It is not
+
+just
+
+a lookup table.
+
+
+Step 16 – Memory Lifecycle:
+Chunk
+
+↓
+
+embed_documents()
+
+↓
+
+Vector
+
+↓
+
+Metadata
+
+↓
+
+Vector Store
+
+-------------------------
+
+User Query
+
+↓
+
+embed_query()
+
+↓
+
+Query Vector
+
+↓
+
+Similarity Search
+
+
+Step 17 – Enterprise Best Practices:
+Always use the same embedding model
+
+If documents are embedded using
+
+nomic-embed-text
+
+then queries should also use
+
+nomic-embed-text
+
+Changing the model later usually requires re-embedding all stored documents because vectors from different embedding models are generally not comparable.
+
+
+Choose an embedding model for retrieval:
+
+Don't use a chat model
+
+for embeddings.
+
+Use
+nomic-embed-text
+
+bge
+
+mxbai
+
+OpenAI Embeddings
+
+Vertex AI Embeddings
+
+
+Batch document embeddings:
+
+Instead of embedding
+
+one chunk
+
+at a time
+
+batch
+
+100
+
+or
+
+1000
+
+chunks
+
+for better throughput
+
+(depending on the model and available memory).
+
+
+Complete Architecture:
+Company Documents
+
+        │
+
+        ▼
+
+Chunks
+
+        │
+
+        ▼
+
+embed_documents()
+
+        │
+
+        ▼
+
+Vectors
+
+        │
+
+        ▼
+
+ChromaDB
+
+────────────────────────────
+
+User Question
+
+        │
+
+        ▼
+
+embed_query()
+
+        │
+
+        ▼
+
+Query Vector
+
+        │
+
+        ▼
+
+Similarity Search
+
+
+Interview Questions:
+Q1. Why can not we store plain text in a Vector Database?:
+
+Because a vector database indexes and compares numerical vectors, not natural language. Embeddings transform text into dense numerical representations so semantic similarity can be computed efficiently.
+
+Q2. Why are embed_documents() and embed_query() different?:
+
+They represent two different workflows. During ingestion, documents are embedded with embed_documents(). During retrieval, the user's question is embedded with embed_query(). Some embedding models optimize these two operations differently.
+
+Q3. Can I use different embedding models for ingestion and query?:
+
+Technically you can, but it is generally not recommended. The document vectors and query vectors should be generated by the same embedding model so they occupy the same vector space and similarity scores remain meaningful.

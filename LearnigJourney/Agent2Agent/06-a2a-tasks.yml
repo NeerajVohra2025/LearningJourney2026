@@ -1,0 +1,1022 @@
+Chapter 6 – Tasks (The Heart of A2A Communication)
+If Agent Card is the identity of an agent, then Task is the unit of work.
+
+Step 1 – Why Do We Need Tasks?:
+
+Let's start with a simple REST API.
+
+Suppose we have
+
+POST /employees
+
+Request
+
+{
+   "name":"Neeraj"
+}
+
+Response
+
+{
+   "status":"Created"
+}
+
+Everything finishes
+
+within
+
+a few milliseconds.
+
+Question:
+
+Do we need
+
+Task
+
+here?
+
+Answer
+
+No.
+
+REST request:
+
+is sufficient.
+
+
+Step 2 – Enterprise AI Scenario:
+
+Now suppose
+
+User asks
+
+Book an international business trip to London.
+
+Question:
+
+Can Finance Agent
+
+finish this
+
+within
+
+200 milliseconds?
+
+No.
+
+Because internally:
+
+it may perform
+
+Read Budget
+
+↓
+
+Read Company Policy
+
+↓
+
+Read Employee Grade
+
+↓
+
+Verify Cost Center
+
+↓
+
+Call SAP
+
+↓
+
+Call Exchange Rate API
+
+↓
+
+Call LLM
+
+↓
+
+Wait for Manager Approval
+
+↓
+
+Generate Approval
+
+Question:
+
+Can one HTTP request
+
+stay open
+
+for
+
+30 minutes?
+
+Technically possible,
+
+but very impractical and unreliable.
+
+
+Step 3 – Traditional REST Lifecycle:
+
+REST looks like
+
+Client
+
+↓
+
+HTTP Request
+
+↓
+
+Server
+
+↓
+
+Process
+
+↓
+
+HTTP Response
+
+↓
+
+Connection Closed
+
+Everything:
+
+must finish
+
+before
+
+the response.
+
+
+Step 4 – Why REST Becomes a Problem:
+
+Suppose
+
+Finance Agent:
+
+needs
+
+Manager Approval.
+
+Manager replies
+
+after
+
+2 hours.
+
+Question:
+
+Should
+
+Travel Agent
+
+keep
+
+HTTP connection open
+
+for
+
+2 hours?
+
+No.
+
+Problems:
+
+HTTP Timeout
+
+Memory Usage
+
+Connection Limits
+
+Network Failures
+
+Retries
+
+REST:
+
+wasn't designed
+
+for
+
+long-running AI work.
+
+
+Step 5 – The A2A Solution:
+
+Instead of:
+
+Request → Response
+
+A2A introduces:
+
+Task
+
+Think of it
+
+like
+
+opening
+
+a support ticket.
+
+
+Step 6 – Human Analogy:
+
+Suppose
+
+you submit
+
+an IT ticket.
+
+Question:
+
+Does IT solve it
+
+immediately?
+
+No.:
+
+Instead
+
+Ticket Created
+
+↓
+
+Assigned
+
+↓
+
+Working
+
+↓
+
+Waiting
+
+↓
+
+Completed
+
+Exactly.
+
+Task:
+
+is
+
+a Ticket
+
+for AI Agents.
+
+
+Step 7 – What is a Task?:
+
+Definition:
+
+A Task is a long-lived unit of work representing a business goal delegated from one agent to another.
+
+Unlike an HTTP request,:
+
+a Task
+
+can
+
+run for seconds
+minutes
+hours
+even days
+
+without keeping
+
+one HTTP request
+
+open.
+
+
+
+Step 8 – Complete Architecture:
+
+
+Travel Agent
+
+      │
+
+Create Task
+
+      │
+
+────────── A2A ──────────
+
+      ▼
+
+Finance Agent
+
+      │
+
+Create Task
+
+      │
+
+Task Manager
+
+      │
+
+Executor
+
+      │
+
+LLM
+
+      │
+
+MCP
+
+      │
+
+SAP
+
+Notice:
+
+HTTP
+
+creates
+
+the Task.
+
+The Task:
+
+continues
+
+even after
+
+the HTTP request
+
+finishes.
+
+
+Step 9 – Think Like Food Delivery:
+
+Suppose
+
+you order
+
+pizza.
+
+Question
+
+Does restaurant
+
+keep
+
+phone call
+
+open
+
+until
+
+pizza arrives?
+
+No.
+
+Instead
+
+Restaurant says
+
+Order
+
+#1042
+
+Created
+
+Later
+
+Preparing
+
+↓
+
+Cooking
+
+↓
+
+Out for Delivery
+
+↓
+
+Delivered
+
+Task
+
+works
+
+exactly
+
+the same.
+
+
+
+Step 10 – Task Lifecycle:
+
+Every Task
+
+moves
+
+through
+
+multiple states.
+
+
+Submitted
+
+↓
+
+Working
+
+↓
+
+Input Required
+
+↓
+
+Working
+
+↓
+
+Completed
+
+Sometimes
+
+Submitted
+
+↓
+
+Working
+
+↓
+
+Failed
+
+Or
+
+Submitted
+
+↓
+
+Cancelled
+
+Question
+
+Why?
+
+Because
+
+AI work
+
+is dynamic.
+
+
+Step 11 – Task ID:
+
+Question
+
+Suppose
+
+Finance Agent
+
+has
+
+1000 Tasks.
+
+How does it know
+
+which one
+
+you're asking about?
+
+Every Task
+
+gets
+
+a unique
+
+Task ID.
+
+Example
+
+TASK-10231
+
+Think
+
+Courier Tracking Number.
+
+
+Step 12 – Complete Lifecycle:
+
+Suppose
+
+Travel Agent
+
+asks
+
+Finance Agent
+
+Approve Budget.
+
+Phase 1:
+
+Travel Agent:
+
+creates
+
+Task.
+
+Task
+
+↓
+
+TASK-1001
+
+
+Phase 2:
+
+Finance Agent:
+
+returns
+
+Accepted
+
+Task ID
+
+TASK-1001
+
+Notice
+
+Budget
+
+may not
+
+yet
+
+be approved.
+
+
+
+Phase 3:
+
+Finance Agent
+
+starts working.
+
+Read SAP
+
+↓
+
+Read Budget
+
+↓
+
+Read Policy
+
+
+Phase 4:
+
+Manager Approval
+
+needed.
+
+Task Status
+
+becomes
+
+Input Required
+
+
+Phase 5:
+
+Manager
+
+approves.
+
+Task resumes.
+
+Phase 6:
+
+Completed.
+
+Result
+
+returned.
+
+Complete lifecycle:
+
+Create Task
+
+↓
+
+Accepted
+
+↓
+
+Working
+
+↓
+
+Waiting
+
+↓
+
+Working
+
+↓
+
+Completed
+
+Step 13 – Task vs HTTP Request:
+
+This is a favourite interview question.
+
+| HTTP Request         | Task                       |
+| -------------------- | -------------------------- |
+| Short-lived          | Long-lived                 |
+| Ends after response  | Exists until work finishes |
+| No lifecycle         | Has multiple states        |
+| Stateless            | Has identity and state     |
+| No progress tracking | Progress can be tracked    |
+
+
+Step 14 – Task vs Session:
+
+Another confusing topic.
+
+Suppose
+
+Travel Agent
+
+talks
+
+to
+
+Finance Agent.
+
+Question
+
+Is Task:
+
+same
+
+as
+
+Session?:
+
+No.
+
+Think
+
+like
+
+MCP.
+
+
+Session:
+
+Represents
+
+the conversation.
+
+Travel Agent
+
+↓
+
+Finance Agent
+
+↓
+
+Conversation
+
+Long-lived.
+
+
+Task:
+
+Represents
+
+one
+
+piece
+
+of work.
+
+Example
+
+Conversation
+
+↓
+
+Approve Budget
+
+(Task 1)
+
+↓
+
+Generate Invoice
+
+(Task 2)
+
+↓
+
+Expense Validation
+
+(Task 3)
+
+
+One Session:
+
+can contain
+
+many Tasks.
+
+Exactly like
+
+one MCP Session
+
+contains
+
+many JSON-RPC Requests.
+
+
+Step 15 – Task vs Workflow:
+
+Question:
+
+Suppose
+
+Approve Budget
+
+requires
+Read Budget
+
+↓
+
+Policy
+
+↓
+
+Manager Approval
+
+Question:
+
+Is this
+
+Task?
+
+No.
+
+This is
+
+Workflow
+
+inside
+
+the Task.
+
+Visual:
+
+Task
+
+↓
+
+Workflow
+
+↓
+
+Step 1
+
+↓
+
+Step 2
+
+↓
+
+Step 3
+
+
+Task:
+
+contains
+
+Workflow.
+
+
+
+Step 16 – Task vs Skill:
+
+Another interview question.
+
+Suppose
+
+Finance Agent
+
+publishes
+
+Approve Budget
+
+Question
+
+What is this?:
+
+Skill.
+
+Now
+
+Travel Agent
+
+asks
+
+Finance Agent
+
+Approve Budget
+
+for Employee 123.
+
+Question
+
+What is created?:
+
+Task.
+
+Think
+
+Skill
+
+↓
+
+Capability
+
+------------------
+
+Task
+
+↓
+
+Execution
+
+of that capability
+
+
+Step 17 – Complete Enterprise Lifecycle:
+User
+
+      │
+
+      ▼
+
+Travel Agent
+
+      │
+
+Read Agent Card
+
+      │
+
+Choose Skill
+
+Approve Budget
+
+      │
+
+Create Task
+
+──────────── A2A ────────────
+
+      ▼
+
+Finance Agent
+
+      │
+
+Create TASK-1001
+
+      │
+
+Planner
+
+      │
+
+Executor
+
+      │
+
+LLM
+
+      │
+
+MCP
+
+      │
+
+SAP
+
+      │
+
+Update Status
+
+      │
+
+Completed
+
+      │
+
+Return Result
+
+Notice:
+
+Task
+
+is
+
+the central object
+
+throughout execution.
+
+
+Step 18 – Why Tasks Matter:
+
+Without Tasks
+HTTP
+
+↓
+
+Wait
+
+↓
+
+Wait
+
+↓
+
+Timeout
+
+↓
+
+Failure
+
+
+With Tasks:
+
+Create
+
+↓
+
+Track
+
+↓
+
+Resume
+
+↓
+
+Complete
+
+This makes A2A suitable for enterprise workflows that may involve approvals, human interaction, retries, or multiple backend systems.
+
+
+Step 19 – Responsibilities of a Task:
+
+A Task is responsible for:
+| Responsibility          | Description                                      |
+| ----------------------- | ------------------------------------------------ |
+| Represent work          | Encapsulates one business request.               |
+| Maintain identity       | Has a unique Task ID.                            |
+| Track progress          | Moves through lifecycle states.                  |
+| Store execution context | Keeps information related to that work item.     |
+| Return results          | Produces messages, artifacts, or status updates. |
+
+
+Step 20 – Interview Questions:
+Q1. Why does A2A introduce Tasks instead of simple HTTP requests?:
+
+Answer:
+
+Because AI work is often long-running and asynchronous. Tasks provide identity, lifecycle management, progress tracking, cancellation, and resumability, which plain HTTP request/response does not.
+
+
+Q2. Can multiple Tasks exist in one Session?:
+
+Yes.
+
+A Session represents an ongoing relationship or conversation between agents. Multiple independent Tasks can be created within the same Session.
+
+Q3. What is the difference between a Skill and a Task?:
+| Skill                       | Task                              |
+| --------------------------- | --------------------------------- |
+| Business capability         | Execution of that capability      |
+| Published in the Agent Card | Created at runtime                |
+| Long-lived metadata         | Temporary runtime object          |
+| Example: "Approve Budget"   | "Approve Budget for Employee 123" |
+
+Q4. Does a Task replace the workflow?:
+
+No.
+
+The Task represents the overall unit of work. The internal workflow (planning, tool calls, approvals, LLM reasoning, etc.) is how the agent completes that task.

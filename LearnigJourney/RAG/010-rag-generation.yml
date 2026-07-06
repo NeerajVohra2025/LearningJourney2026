@@ -1,0 +1,1000 @@
+Chapter 12 – Generation Phase (LLM Response Generation):
+Step 1 – What is Generation?:
+
+Suppose Prompt Builder produced
+
+--------------------------------------------------
+
+SYSTEM
+
+You are an HR assistant.
+
+Only answer using the supplied context.
+
+--------------------------------------------------
+
+CONTEXT
+
+Employees are entitled to 20 days annual leave.
+
+Medical leave requires approval.
+
+--------------------------------------------------
+
+QUESTION
+
+How many annual leaves are allowed?
+
+--------------------------------------------------
+
+Question:
+
+Who reads this?
+
+Answer
+
+The LLM.
+
+Example
+
+GPT-4
+
+Llama
+
+Gemini
+
+Claude
+
+Mistral
+
+The LLM's responsibility is
+
+Read Prompt
+
+↓
+
+Understand Context
+
+↓
+
+Generate Answer
+
+Notice
+
+The LLM does not know where the context came from.
+
+It simply receives text.
+
+
+Step 2 – Complete Generation Architecture:
+Augmented Prompt
+
+        │
+
+        ▼
+
+LLM
+
+        │
+
+        ▼
+
+Tokenizer
+
+        │
+
+        ▼
+
+Neural Network
+
+        │
+
+        ▼
+
+Generate Tokens
+
+        │
+
+        ▼
+
+Sentence
+
+        │
+
+        ▼
+
+Response
+
+
+
+Step 3 – Does LLM Search the Vector Database?:
+
+This is one of the most common interview questions.
+
+Answer
+
+No.
+
+The LLM never communicates with
+
+Chroma
+
+Pinecone
+
+Milvus
+
+Qdrant
+
+The Vector Store has already done its job.
+
+The only thing the LLM receives is
+
+Prompt
+
+Think of it like this
+
+Retriever
+
+↓
+
+Finds Information
+
+----------------------------
+
+LLM
+
+↓
+
+Reads Information
+
+↓
+
+Writes Answer
+
+
+Step 4 – What Happens Internally?:
+Suppose Prompt
+
+Employees receive
+
+20 days annual leave.
+
+Question
+
+How many annual leaves?
+
+Question
+
+Does GPT read English?
+
+Not exactly.
+
+First
+
+Prompt becomes
+
+Tokens.
+
+
+Step 5 – Tokenization:
+
+Suppose
+
+Prompt is
+
+Employees receive 20 days annual leave.
+
+Tokenizer converts:
+
+Employees
+
+↓
+
+Token
+
+----------------
+
+receive
+
+↓
+
+Token
+
+----------------
+
+20
+
+↓
+
+Token
+
+----------------
+
+days
+
+↓
+
+Token
+
+
+Eventually:
+
+Prompt
+
+↓
+
+Token IDs
+
+↓
+
+LLM
+
+
+Question:
+
+Why?
+
+Because
+
+Neural Networks understand
+
+Numbers
+
+NOT
+
+English.
+
+
+Step 6 – Embedding Layer:
+
+Question
+
+Didn't we already create embeddings?
+
+Yes.
+
+But
+
+Those embeddings
+
+were for
+
+Vector Search.
+
+Now
+
+LLM creates
+
+its own
+
+internal embeddings.:
+
+Important
+
+These are
+
+NOT
+
+the same.
+
+There are two completely different embedding processes.
+
+
+RAG Embeddings:
+Chunk
+
+↓
+
+Embedding Model
+
+↓
+
+Vector Database
+
+Purpose
+
+Search.
+
+LLM Embeddings:
+Prompt
+
+↓
+
+Tokenizer
+
+↓
+
+Embedding Layer
+
+↓
+
+Transformer
+
+Purpose
+
+Language Understanding.
+
+Many beginners confuse these.
+
+
+Step 7 – Context Window:
+
+Suppose Prompt
+
+contains
+System Prompt
+
++
+
+5 Retrieved Chunks
+
++
+
+Question
+
+Question:
+
+Can Prompt
+
+be infinitely large?
+
+No.
+
+Every LLM has
+
+Context Window.
+
+Example:
+Llama
+
+↓
+
+128K Tokens
+
+-----------------------
+
+GPT
+
+↓
+
+Large Context
+
+-----------------------
+
+Gemini
+
+↓
+
+Very Large Context
+
+If Prompt:
+
+exceeds
+
+Context Window
+
+Old tokens
+
+must be removed
+
+or the request will fail, depending on the model and API.
+
+
+
+Step 8 – Attention (Conceptual):
+
+Question:
+
+How does LLM know
+
+which sentence
+
+is important?
+
+Example:
+
+Employees receive
+
+20 days annual leave.
+
+Medical leave requires approval.
+
+Question
+
+How many annual leaves?
+Question
+
+Will GPT
+
+read
+
+Medical Leave?
+
+Yes.
+
+But
+
+it pays
+
+much more attention:
+
+to
+
+Annual Leave
+
+This mechanism
+
+is called
+
+Attention.
+
+Think of it as:
+
+Question
+
+↓
+
+Highlight
+
+Relevant Words
+
+↓
+
+Generate Answer
+
+The actual transformer attention mechanism is mathematically more complex, but conceptually it lets the model weigh relationships between tokens
+
+
+Step 9 – Token Generation:
+Question
+
+Does GPT generate
+
+one sentence
+
+at once?
+
+No.
+
+One token
+
+at a time.
+
+Example:
+
+Question
+
+↓
+
+How many annual leaves?
+
+↓
+
+Token 1
+
+Employees
+
+↓
+
+Token 2
+
+are
+
+↓
+
+Token 3
+
+entitled
+
+↓
+
+Token 4
+
+to
+
+↓
+
+Token 5
+
+20
+
+↓
+
+Token 6
+
+days
+
+Notice:
+
+Generation
+
+is sequential.
+
+
+Step 10 – Why Streaming Works:
+
+Suppose GPT generates
+
+Employees are entitled to 20 days annual leave.
+
+Question
+
+Does it wait
+
+until
+
+entire answer
+
+is complete?
+
+No.
+
+As soon as
+
+Token 1
+
+is generated
+
+it can be streamed.
+
+Example
+
+Token 1
+
+Employees
+
+↓
+
+Browser
+
+------------------
+
+Token 2
+
+are
+
+↓
+
+Browser
+
+------------------
+
+Token 3
+
+entitled
+
+↓
+
+Browser
+
+That's why ChatGPT appears to type.
+
+Step 11 – Temperature:
+
+One of the most important parameters.
+
+Example:
+
+temperature=0
+
+Question
+
+Meaning?
+
+Always choose
+
+most probable
+
+next token.
+
+Very deterministic.
+
+Perfect
+
+for RAG.
+
+
+Another example:
+
+temperature=1
+
+More creative.
+
+Useful
+
+for stories
+
+poems
+
+brainstorming.
+
+Not ideal
+
+for enterprise RAG.
+
+
+Step 12 – Top-p:
+
+Question
+
+Should GPT
+
+consider
+
+every possible word?
+
+No.
+
+Top-p
+
+limits
+
+the probability mass considered.:
+
+Example
+
+top_p=0.9
+
+LLM chooses
+
+from
+
+the most probable
+
+90%
+
+of candidate tokens.
+
+
+
+Step 13 – Top-k:
+
+Some models support
+
+Top-k.
+
+Example
+
+top_k=40
+
+Only
+
+Top 40
+
+candidate tokens
+
+are considered
+
+for the next token.
+
+
+
+Step 14 – Hallucination:
+
+Question
+
+Can RAG:
+
+still hallucinate?
+
+Yes.
+
+Example
+
+Context
+Employees receive
+
+20 days annual leave.
+
+Question
+
+Can employees
+
+work from home?
+
+Context
+
+doesn't mention it.
+
+Poor Prompt
+
+↓
+
+LLM guesses.
+
+Good Prompt
+
+If answer
+
+is not present
+
+in context,
+
+say
+
+"I don't know."
+
+Hallucination
+
+reduces.
+
+Notice
+
+RAG reduces hallucinations but does not eliminate them completely.:
+
+
+Step 15 – Complete Generation Lifecycle:
+Prompt
+
+        │
+
+        ▼
+
+Tokenizer
+
+        │
+
+        ▼
+
+Token IDs
+
+        │
+
+        ▼
+
+Embedding Layer
+
+        │
+
+        ▼
+
+Transformer
+
+        │
+
+        ▼
+
+Attention
+
+        │
+
+        ▼
+
+Predict Next Token
+
+        │
+
+        ▼
+
+Generate Response
+
+        │
+
+        ▼
+
+Stream Tokens
+
+        │
+
+        ▼
+
+Final Answer
+
+
+
+Step 16 – LangChain Code:
+
+Suppose
+
+Prompt Builder returned
+
+prompt_value
+
+LLM
+
+from langchain_ollama import ChatOllama
+
+llm = ChatOllama(
+    model="llama3.2",
+    temperature=0
+)
+
+Generate
+
+response = llm.invoke(prompt_value)
+
+Question
+
+What happens?
+
+Internally
+
+ChatPromptValue
+
+↓
+
+HTTP Request
+
+↓
+
+Ollama
+
+↓
+
+Llama
+
+↓
+
+Generate Tokens
+
+↓
+
+HTTP Response
+
+↓
+
+AIMessage
+
+
+Step 17 – What Does invoke() Return?:
+
+Not String.
+
+Returns:
+
+AIMessage
+
+Example:
+
+response.content
+
+Output
+
+Employees are entitled to
+
+20 days annual leave.
+
+
+Step 18 – Complete End-to-End RAG Lifecycle:
+Company PDF
+
+        │
+
+        ▼
+
+Document Loader
+
+        │
+
+        ▼
+
+Document Objects
+
+        │
+
+        ▼
+
+Chunking
+
+        │
+
+        ▼
+
+Embeddings
+
+        │
+
+        ▼
+
+Vector Database
+
+────────────────────────────────────────────
+
+User Question
+
+        │
+
+        ▼
+
+Query Embedding
+
+        │
+
+        ▼
+
+Retriever
+
+        │
+
+        ▼
+
+Top 5 Chunks
+
+        │
+
+        ▼
+
+Prompt Augmentation
+
+        │
+
+        ▼
+
+LLM
+
+        │
+
+        ▼
+
+Tokenizer
+
+        │
+
+        ▼
+
+Transformer
+
+        │
+
+        ▼
+
+Generate Tokens
+
+        │
+
+        ▼
+
+Stream Response
+
+        │
+
+        ▼
+
+Final Answer
+
+
+Step 19 – Responsibilities of Each Component:
+| Component       | Responsibility                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| Loader          | Read documents from a source and create `Document` objects.                                       |
+| Splitter        | Divide documents into manageable chunks while preserving context.                                 |
+| Embedding Model | Convert text into vectors for semantic search.                                                    |
+| Vector Store    | Persist vectors, metadata, and indexes for efficient retrieval.                                   |
+| Retriever       | Find the most relevant chunks for a user's query.                                                 |
+| Prompt Builder  | Combine retrieved context, system instructions, and the user's question into an augmented prompt. |
+| LLM             | Read the augmented prompt and generate a natural-language answer token by token.                  |
+
+Step 20 – Enterprise Best Practices:
+
+✔ Use the same embedding model for document ingestion and query embedding.
+
+✔ Choose a chunk size and overlap that match your document type and retrieval needs.
+
+✔ Retrieve only the top few relevant chunks instead of flooding the prompt.
+
+✔ Use a clear system prompt that instructs the model not to guess when the context is insufficient.
+
+✔ Set temperature close to 0 for factual enterprise RAG applications.
+
+✔ Log retrieved documents and similarity scores to help debug retrieval quality.
+
+
+Interview Questions
+Q1. Does the LLM perform semantic search?:
+
+Answer: No. Semantic search happens before the LLM is called. The retriever uses embeddings and the vector store to find relevant documents. The LLM only receives the augmented prompt.
+
+Q2. Why are there two kinds of embeddings in a RAG system?:
+
+Answer: RAG uses an external embedding model to create vectors for retrieval. Separately, every LLM has its own internal embedding layer that converts input tokens into vectors for language understanding. These serve different purposes.
+
+Q3. Does the LLM generate the whole answer at once?:
+
+Answer: No. It predicts one token at a time. Streaming works because tokens are sent to the client as soon as they are generated.
+
+
+Q4. Does RAG eliminate hallucinations?:
+
+Answer: No. RAG significantly reduces hallucinations by grounding the model with retrieved context, but the LLM can still produce unsupported information if the prompt is weak, retrieval quality is poor, or the retrieved context is insufficient.
+
+

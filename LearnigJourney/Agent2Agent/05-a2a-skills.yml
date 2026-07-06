@@ -1,0 +1,1000 @@
+Chapter 5 – Skills (The Business Capability of an Agent):
+Step 1 – Why Do We Need Skills?:
+
+Let's start with a real company.
+
+Suppose your organization has
+
+Finance Department
+
+Question
+
+If someone asks
+
+"What can Finance do?"
+
+Will Finance answer
+
+SAP API
+
+Oracle Database
+
+Excel
+
+REST API
+
+SQL
+
+No.
+
+Finance will say
+
+Approve Budget
+
+Generate Invoice
+
+Calculate Tax
+
+Expense Approval
+
+Travel Reimbursement
+
+Notice
+
+These are
+
+Business Capabilities.
+
+Exactly the same idea
+
+is used in A2A.
+
+
+Step 2 – Enterprise Example:
+
+Suppose
+
+Travel Agent
+
+needs
+
+budget approval.
+
+Question
+
+How does it know
+
+Finance Agent:
+
+can approve budgets?
+
+It doesn't inspect
+
+Finance Agent's code.
+
+Instead
+
+it reads
+
+the Agent Card.:
+
+Finance Agent
+
+↓
+
+Skills
+
+↓
+
+Approve Budget
+
+Expense Validation
+
+Generate Invoice
+
+Travel Agent immediately understands
+
+what Finance Agent
+
+can do.
+
+
+Step 3 – What is a Skill?:
+
+Definition:
+
+A Skill represents a business capability that an agent exposes to other agents.
+
+Think of a Skill as
+
+"What business problem can this agent solve?"
+
+NOT
+
+"What APIs does this agent call?"
+
+This distinction is extremely important.
+
+
+
+Step 4 – Human Analogy:
+
+Imagine a doctor.
+
+Question:
+
+What are the doctor's skills?
+Heart Surgery
+ECG Interpretation
+Patient Diagnosis
+
+Question:
+Would the doctor say
+Stethoscope
+Scalpel
+MRI Machine
+No.
+
+Those are:
+Tools.
+Patients care about
+Skills.
+Exactly the same.
+
+
+Step 5 – Skill vs Tool:
+
+This is the biggest confusion.
+
+Suppose
+
+Finance Agent:
+
+internally uses
+
+SAP
+
+Oracle
+
+Exchange Rate API
+
+Tax API
+
+Excel
+
+LLM
+
+These are
+
+Tools.
+
+But Finance Agent publishes:
+
+Approve Budget
+
+Generate Invoice
+
+Expense Validation
+
+These are
+
+Skills.
+
+Visual
+
+Client Agent
+
+        │
+
+        ▼
+
+Finance Agent
+
+────────────────────
+
+Published
+
+Skills
+
+────────────────────
+
+Approve Budget
+
+Expense Validation
+
+────────────────────
+
+Internal Implementation
+
+────────────────────
+
+SAP
+
+Oracle
+
+REST APIs
+
+MCP Tools
+
+LLM
+
+────────────────────
+
+Notice
+
+Clients:
+
+never see
+
+internal tools.
+
+
+
+Step 6 – Why Hide Internal Tools?:
+
+Suppose
+
+Finance Agent:
+
+today uses:
+
+SAP
+
+Tomorrow:
+
+company migrates to
+
+Oracle ERP
+
+Question
+
+Should
+
+Travel Agent:
+
+care?
+
+No.
+
+Its only concern is
+
+Approve Budget
+
+This is called
+
+Implementation Hiding.
+
+
+Step 7 – Complete Skill Lifecycle:
+
+Let's follow
+
+a real request.
+
+User asks
+
+"Book my London trip."
+
+Travel Agent thinks
+
+Need Budget Approval
+
+Question
+
+How does Travel Agent know
+
+Finance Agent
+
+can help?
+
+Step 1:
+
+Reads Agent Card.
+
+Finance Agent
+
+↓
+
+Skills
+
+↓
+
+Approve Budget
+
+Step 2:
+
+Creates Task.
+
+Step 3:
+
+Finance Agent executes
+
+Approve Budget skill.
+
+Step 4:
+
+Returns result.
+
+Complete lifecycle:
+
+Read Agent Card
+
+↓
+
+Find Skill
+
+↓
+
+Create Task
+
+↓
+
+Executor
+
+
+
+↓
+
+Tools
+
+↓
+
+Result
+
+Notice
+
+Skill
+
+is the entry point
+
+to business logic.
+
+
+
+Step 8 – One Skill Can Use Many Tools:
+
+Suppose
+
+Skill:
+
+Approve Budget
+
+Question:
+
+Internally
+
+what happens?:
+
+Approve Budget
+
+↓
+
+Read Employee
+
+↓
+
+Read Project
+
+↓
+
+Read Budget
+
+↓
+
+Read Policy
+
+↓
+
+Currency Conversion
+
+↓
+
+Tax Rules
+
+↓
+
+LLM Reasoning
+
+↓
+
+Approval
+
+Question:
+
+How many tools?
+
+Maybe
+
+10
+
+Maybe
+
+100
+
+Client doesn't know.
+
+Client doesn't care.
+
+
+Step 9 – One Agent Can Have Multiple Skills:
+
+Example:
+
+Finance Agent:
+
+Approve Budget
+
+Expense Validation
+
+Generate Invoice
+
+Travel Reimbursement
+
+Project Cost Analysis
+
+Travel Agent
+
+chooses
+
+the appropriate skill
+
+based on
+
+the business problem.
+
+
+Step 10 – Skill vs REST API:
+
+Suppose
+
+Finance Service
+
+has
+
+POST
+
+/approveBudget
+
+Question
+
+Is this
+
+Skill?
+
+No.
+
+REST API:
+
+is
+
+Technical Interface.
+
+Skill:
+
+is
+
+Business Capability.
+
+Example
+
+Skill
+
+↓
+
+Approve Budget
+
+↓
+
+Internally
+
+↓
+
+POST /approveBudget
+
+Tomorrow
+
+Finance changes
+
+POST
+
+↓
+
+GraphQL
+
+↓
+
+gRPC
+
+Skill
+
+remains
+
+the same.
+
+
+Step 11 – Skill vs MCP Tool:
+
+This is another interview favourite.
+
+Suppose
+
+Finance Agent
+
+calls
+
+SAP.
+
+Inside
+
+Finance Agent
+
+Approve Budget
+
+↓
+
+MCP Tool
+
+↓
+
+SAP
+
+↓
+
+Budget API
+
+Question
+
+Who sees
+
+SAP Tool?
+
+Only
+
+Finance Agent.
+
+Travel Agent
+
+never sees
+
+MCP Tools.
+
+Travel Agent
+
+only sees
+
+Skill.
+
+Visual
+
+Travel Agent
+
+        │
+
+        ▼
+
+Approve Budget
+
+        │
+
+────────A2A────────
+
+        │
+
+        ▼
+
+Finance Agent
+
+        │
+
+────────MCP────────
+
+        │
+
+        ▼
+
+SAP Tool
+
+Notice
+
+A2A exposes
+
+Skills.
+
+MCP exposes
+
+Tools.
+
+Step 12 – Skill vs Function Calling:
+
+OpenAI
+
+Function
+Step 12 – Skill vs Function Calling
+
+OpenAI
+
+Function:
+
+approve_budget()
+
+Question
+
+Is Function
+
+same
+
+as Skill?
+
+No.
+
+Function:
+
+is
+
+Implementation.
+
+Skill:
+
+is
+
+Business Meaning.
+
+One Skill
+
+may call
+
+many Functions.
+
+
+Step 13 – Skill vs LangGraph Node:
+
+Suppose
+
+LangGraph
+
+contains
+
+Planner
+
+↓
+
+SAP Node
+
+↓
+
+Policy Node
+
+↓
+
+Approval Node
+
+Question:
+
+Should
+
+Travel Agent
+
+know
+
+all nodes?
+
+No.
+
+Travel Agent
+
+simply knows:
+
+Approve Budget
+
+Everything else
+
+is internal.
+
+
+Step 14 – Enterprise Architecture:
+                Travel Agent
+
+                       │
+
+             Read Agent Card
+
+                       │
+
+                       ▼
+
+            Skill
+
+Approve Budget
+
+                       │
+
+──────────────A2A──────────────
+
+                       ▼
+
+              Finance Agent
+
+                       │
+
+────────────────────────────────
+
+Planner
+
+↓
+
+LLM
+
+↓
+
+Executor
+
+↓
+
+MCP Client
+
+↓
+
+SAP
+
+↓
+
+Oracle
+
+↓
+
+Policy DB
+
+────────────────────────────────
+
+                       │
+
+                       ▼
+
+                Result
+
+Notice:
+
+Skill
+
+is only
+
+the public contract.
+
+
+Step 15 – Why Skills Matter:
+
+Without Skills
+
+Client
+
+must know
+REST APIs
+
+Database
+
+SAP
+
+Oracle
+
+Tools
+
+Functions
+
+Very tightly coupled.
+
+With Skills:
+
+Client only knows
+
+Approve Budget
+
+Everything else
+
+can change
+
+without affecting
+
+the client.
+
+
+
+Step 16 – Enterprise Example:
+
+Suppose
+
+Legal Agent
+
+publishes
+
+Find Risk
+
+Review Contract
+
+Compliance Check
+
+Question
+
+How does
+
+Legal Agent
+
+perform
+
+Review Contract?
+
+Maybe
+
+LLM
+
+↓
+
+Vector Search
+
+↓
+
+Contract Database
+
+↓
+
+MCP
+
+↓
+
+SharePoint
+
+↓
+
+PDF Parser
+
+Client doesn't know.
+
+Client doesn't care.
+
+Only
+
+Skill
+
+is public.
+
+
+Step 17 – Responsibilities of a Skill:
+
+A Skill represents a stable business capability.
+
+It should:
+
+| Responsibility                | Description                                               |
+| ----------------------------- | --------------------------------------------------------- |
+| Represent a business function | e.g., "Approve Budget"                                    |
+| Hide implementation details   | Internal tools and workflows remain private               |
+| Remain stable                 | Internal technology can change without changing the Skill |
+| Be discoverable               | Published through the Agent Card                          |
+| Be reusable                   | Multiple clients can invoke the same business capability  |
+
+
+
+Step 18 – Enterprise Analogy:
+
+Think of a restaurant.
+Customer asks
+
+Pizza
+
+Question:
+
+Does customer specify
+
+Use Oven A
+
+Use Cheese B
+
+Use Knife C
+
+No.
+
+Kitchen decides.
+
+Exactly.
+
+Customer requests
+
+Skill.
+
+Kitchen chooses
+
+Tools.
+
+
+Step 19 – Complete Lifecycle:
+Travel Agent
+
+      │
+
+      ▼
+
+Read Agent Card
+
+      │
+
+      ▼
+
+Approve Budget
+
+      │
+
+────────── A2A ──────────
+
+      ▼
+
+Finance Agent
+
+      │
+
+      ▼
+
+Planner
+
+      │
+
+      ▼
+
+Executor
+
+      │
+
+      ▼
+
+LLM
+
+      │
+
+      ▼
+
+MCP Tools
+
+      │
+
+      ▼
+
+SAP
+
+      │
+
+      ▼
+
+Return Result
+
+Notice:
+
+The Skill is not executable code.
+
+It is the public business capability that the executor fulfills.
+
+Step 20 – Interview Questions:
+Q1. What is a Skill in A2A?:
+
+Answer:
+
+A Skill is a business capability that an agent exposes to other agents. It describes what the agent can do, not how it does it.
+
+
+Q2. What is the difference between a Skill and an MCP Tool?:
+
+| Skill                     | MCP Tool                               |
+| ------------------------- | -------------------------------------- |
+| Business capability       | Technical operation                    |
+| Visible to other agents   | Used internally by an agent            |
+| Exposed in the Agent Card | Exposed by an MCP Server               |
+| Example: "Approve Budget" | Example: `get_budget()`, `query_sap()` |
+
+
+Q3. Can one Skill use multiple MCP Tools?:
+
+Yes.
+
+A single Skill may invoke many MCP tools, REST APIs, databases, or LLM calls. The client only sees the Skill, while the implementation remains hidden.
+
+
+Q4. Why not expose Tools instead of Skills?:
+
+Because clients should depend on stable business capabilities, not internal implementation details. This keeps agents loosely coupled and allows implementations to evolve without breaking clients.

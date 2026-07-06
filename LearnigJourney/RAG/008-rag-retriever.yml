@@ -1,0 +1,994 @@
+Chapter 10 – Retriever:
+Step 1 – What is a Retriever?:
+
+Let's start with a question.
+
+Suppose we already have
+
+ChromaDB
+
+↓
+
+1 Million Chunks
+
+User asks
+
+How many casual leaves are allowed?
+
+Question
+
+Should we send
+
+all
+
+1 Million chunks
+
+to the LLM?
+
+No.
+
+Question
+
+Should the LLM search
+
+the Vector Database?
+
+No.
+
+Instead
+
+someone else searches
+
+the Vector Database
+
+and returns
+
+only the relevant chunks.
+
+That component is called
+
+Retriever
+
+
+Step 2 – Complete Architecture:
+User Question
+
+        │
+
+        ▼
+
+Retriever
+
+        │
+
+        ▼
+
+Vector Store
+
+        │
+
+        ▼
+
+Top K Documents
+
+        │
+
+        ▼
+
+Prompt Builder
+
+        │
+
+        ▼
+
+LLM
+
+Notice
+
+Retriever
+
+acts like
+
+a librarian.
+
+
+
+Step 3 – Think Like a Library:
+
+Suppose
+
+you enter
+
+a library.
+
+Question:
+
+Do you search
+
+every shelf?
+
+No.
+
+You ask
+
+the librarian.
+
+You
+
+↓
+
+Librarian
+
+↓
+
+Shelf
+
+↓
+
+Book
+
+↓
+
+Return Book
+
+Exactly
+
+Retriever.
+
+
+
+Step 4 – Why Not Directly Call Chroma?:
+
+Many beginners write
+
+vector_store.similarity_search(...)
+
+Question
+
+Then why did LangChain create
+
+Retriever?
+
+Answer
+
+Because
+
+tomorrow
+
+you may use
+
+Chroma
+
+↓
+
+Pinecone
+
+↓
+
+Milvus
+
+↓
+
+Qdrant
+
+Should application change?
+
+No.
+
+Application should only know
+
+retriever.invoke(...)
+
+Retriever hides
+
+database-specific implementation.
+
+Exactly like
+
+Java.
+
+Application
+
+↓
+
+JPA Repository
+
+↓
+
+Database
+
+Application
+
+doesn't know
+
+Oracle
+
+or SQL Server.
+
+Exactly the same.
+
+
+Step 5 – Retriever Architecture:
+
+Application
+
+        │
+
+        ▼
+
+Retriever
+
+        │
+
+        ▼
+
+Vector Store
+
+        │
+
+        ▼
+
+Vector Database
+
+
+Notice
+
+Application
+
+never talks
+
+directly
+
+to
+
+Vector Store.
+
+
+Step 6 – Creating Retriever:
+
+Suppose
+
+we already have
+vector_store
+Create Retriever
+
+retriever = vector_store.as_retriever()
+
+Question
+
+Did search happen?
+
+No.
+
+Exactly like
+
+loader = PyPDFLoader(...)
+
+Nothing happened.
+
+Retriever object
+
+was created.
+
+
+Step 7 – Constructor Parameters:
+
+Most common
+retriever = vector_store.as_retriever(
+
+    search_type="similarity",
+
+    search_kwargs={
+
+        "k":5
+
+    }
+
+)
+
+Let's understand
+
+every parameter.
+
+
+Parameter 1:
+search_type
+
+This decides
+
+how search
+
+will happen.
+
+Common values:
+similarity
+
+mmr
+
+similarity_score_threshold
+
+We'll study
+
+all three.
+
+
+similarity:
+
+Most common.
+
+Question
+
+User asks
+
+Leave Policy
+
+Retriever returns
+
+Top
+
+most similar
+
+documents.
+
+Simple.
+
+
+mmr:
+
+Means
+
+Maximum Marginal Relevance.
+
+Question
+
+Suppose
+
+Top 5 chunks
+
+are
+
+Leave Policy
+
+Leave Policy
+
+Leave Policy
+
+Leave Policy
+
+Leave Policy
+
+Almost duplicates.
+
+Bad.
+
+MMR returns
+
+Leave Policy
+
+Medical Policy
+
+Holiday Policy
+
+WFH Policy
+
+Travel Policy
+
+Less duplicate.
+
+More diverse.
+
+Useful
+
+for summarization.
+
+
+similarity_score_threshold:
+
+Suppose
+
+similarity
+
+is
+
+only
+
+0.20
+
+Question
+
+Should Retriever
+
+still return?
+
+No.
+
+Example
+
+search_type="similarity_score_threshold"
+
+Only
+
+documents
+
+above threshold
+
+are returned.
+
+Useful
+
+to reduce
+
+hallucination.
+
+
+Question
+
+What is
+
+k?:
+
+Top
+
+number
+
+of documents.
+
+Example
+
+Query
+
+↓
+
+Search
+
+↓
+
+Top 5 Documents
+
+
+Step 8 – invoke():
+
+Most important method.
+
+Suppose
+
+docs = retriever.invoke(
+
+    "Leave Policy"
+
+)
+
+Question
+
+What happens?
+
+Let's see.
+
+Phase 1:
+
+Retriever receives
+
+question.
+
+Phase 2:
+
+Calls
+
+embed_query()
+
+Phase 3:
+
+Gets
+
+Query Vector.
+
+Phase 4:
+
+Calls
+
+Vector Store
+
+
+Phase 5:
+
+Vector Store
+
+returns
+
+Top K Documents.
+
+
+Phase 6:
+
+Retriever returns
+
+List[Document]
+
+Complete lifecycle:
+
+Question
+
+↓
+
+Retriever
+
+↓
+
+Embedding
+
+↓
+
+Vector Store
+
+↓
+
+Similarity Search
+
+↓
+
+Top K
+
+↓
+
+Documents
+
+
+
+Step 9 – batch():
+
+Suppose
+
+HR chatbot
+
+receives
+
+100 questions.
+
+Should we call
+invoke()
+
+100 times?
+
+Possible.
+
+Better
+
+answers = retriever.batch([
+
+    "Leave Policy",
+
+    "Medical Policy",
+
+    "Travel Policy"
+
+])
+
+Processes
+
+multiple
+
+queries.
+
+
+Step 10 – ainvoke():
+
+Async version.
+docs = await retriever.ainvoke(
+
+    "Leave Policy"
+
+)
+
+Useful
+
+inside
+
+FastAPI
+
+LangGraph
+
+OpenAI Agents
+
+
+
+Step 11 – stream():
+
+Question
+
+Retriever
+
+returns
+
+documents.
+
+Can it stream?
+
+Yes.
+
+Especially
+
+large retrieval
+
+pipelines.
+
+Example
+
+for doc in retriever.stream(
+
+    "Leave Policy"
+
+):
+    print(doc)
+    
+    
+    
+Step 12 – Retriever Types:
+
+LangChain provides
+
+many retrievers.   
+
+1. VectorStoreRetriever:
+Default.
+
+Most projects use this.
+
+Question
+
+↓
+
+Vector Search
+
+↓
+
+Documents 
+
+
+2. MultiQueryRetriever:
+
+Question
+
+User asks
+
+Vacation Policy
+
+Retriever internally creates
+
+Vacation Policy
+
+Annual Leave
+
+Casual Leave
+
+Paid Leave
+
+Searches
+
+all.
+
+Better recall.
+
+
+3. SelfQueryRetriever:
+
+Interesting.
+
+Suppose
+
+User asks
+
+Show HR policy after 2024
+
+Retriever understands
+
+Department=HR
+
+Year>2024
+
+Automatically
+
+creates
+
+metadata filter.
+
+Very powerful.
+
+
+4.ParentDocumentRetriever:
+
+Suppose
+
+chunks are
+
+too small.
+
+Retriever
+
+returns
+
+entire
+
+parent document.
+
+Useful
+
+for legal documents.
+
+
+5. ContextualCompressionRetriever:
+
+Suppose
+
+Retriever
+
+returns
+
+10 pages.
+
+Too much.
+
+Compressor
+
+keeps
+
+only
+
+relevant
+
+sentences.
+
+LLM cost
+
+reduces.
+
+
+6. EnsembleRetriever:
+
+Combines
+BM25
+
++
+
+Semantic Search
+
++
+
+Keyword Search
+
+
+Very common
+
+in enterprise.
+
+
+
+7. MultiVectorRetriever:
+
+One document
+
+Multiple vectors.
+
+Useful
+
+for
+
+multimodal
+
+or
+
+long documents
+
+
+Step 13 – Complete Query Lifecycle:
+
+User Question
+
+        │
+
+        ▼
+
+Retriever
+
+        │
+
+        ▼
+
+embed_query()
+
+        │
+
+        ▼
+
+Vector Store
+
+        │
+
+        ▼
+
+Top 5 Documents
+
+        │
+
+        ▼
+
+Prompt Builder
+
+Notice:
+
+Retriever
+
+never
+
+calls
+
+LLM.
+
+Its job ends
+
+after retrieval.
+
+
+Step 14 – Why Retriever Instead of Vector Store?:
+
+This is
+
+a favourite interview question.
+
+Without Retriever:
+
+
+Application
+
+↓
+
+Chroma APIs
+
+↓
+
+Pinecone APIs
+
+↓
+
+Milvus APIs
+
+
+Application
+
+becomes
+
+database dependent.:
+
+With Retriever:
+
+Application
+
+↓
+
+Retriever
+
+↓
+
+Any Vector Store
+
+Swap
+
+database
+
+without changing
+
+application code.
+
+
+Step 15 – Enterprise Architecture:
+               User
+
+                 │
+
+                 ▼
+
+           HR Chatbot
+
+                 │
+
+                 ▼
+
+             Retriever
+
+                 │
+
+        ┌────────┴────────┐
+
+        ▼                 ▼
+
+   ChromaDB          Metadata Filter
+
+        │
+
+        ▼
+
+ Top 5 Documents
+
+        │
+
+        ▼
+
+ Prompt Builder
+
+        │
+
+        ▼
+
+      GPT / Llama
+      
+      
+Step 16 – Retriever vs Vector Store:
+
+This confuses almost everyone.      
+| Vector Store                | Retriever                                |
+| --------------------------- | ---------------------------------------- |
+| Stores vectors              | Retrieves documents                      |
+| Knows database APIs         | Knows retrieval strategy                 |
+| add_documents()             | invoke()                                 |
+| similarity_search()         | invoke(), batch(), stream()              |
+| Responsible for persistence | Responsible for finding relevant context |
+
+Think of it like:
+
+Restaurant
+
+Kitchen
+
+↓
+
+Cooks Food
+
+--------------------
+
+Waiter
+
+↓
+
+Brings Food
+
+Kitchen
+
+=
+
+Vector Store
+
+Waiter
+
+=
+
+Retriever
+
+Application
+
+talks
+
+to Waiter.
+
+Not Kitchen.
+
+
+Step 17 – Interview Questions:
+Q1. Why do we need a Retriever if Vector Store already supports similarity search?:
+
+Answer:
+
+A Retriever provides a database-independent abstraction for retrieving relevant documents. It hides vector store implementation details and allows applications to switch retrieval strategies (similarity, MMR, hybrid, metadata filtering, etc.) without changing business logic.
+
+Q2. Does the Retriever call the LLM?:
+
+No.
+
+Its responsibility ends after returning the relevant Document objects.
+
+
+Q3. Why use as_retriever()?:
+
+Because LangChain chains, agents, and RAG pipelines are designed to work with the generic BaseRetriever interface instead of a specific vector database implementation.
+
+Q4. When should we use MMR instead of similarity search?:
+
+When you want diverse results instead of several nearly identical chunks—for example, summarization, research assistants, or broad information gathering.

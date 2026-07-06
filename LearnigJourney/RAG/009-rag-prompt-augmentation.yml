@@ -1,0 +1,876 @@
+Chapter 11 – Prompt Augmentation:
+
+Step 1 – What is Prompt Augmentation?
+
+Suppose user asks
+
+How many casual leaves are allowed?
+
+Retriever returns
+
+Chunk 1
+
+Employees are entitled to 20 days annual leave.
+
+-------------------------
+
+Chunk 2
+
+Casual leave may be carried forward.
+
+-------------------------
+
+Chunk 3
+
+Medical leave requires approval.
+
+Question
+
+Can LLM understand
+
+List<Document>
+
+No.
+
+LLM understands
+
+Prompt
+
+Therefore
+
+someone has to convert
+
+List<Document>
+
+↓
+
+Prompt
+
+This process is called
+
+Prompt Augmentation
+
+
+Step 2 – Complete Architecture:
+                User Question
+
+                      │
+
+                      ▼
+
+                Retriever
+
+                      │
+
+                      ▼
+
+              List<Document>
+
+                      │
+
+                      ▼
+
+             Prompt Builder
+
+                      │
+
+                      ▼
+
+          Augmented Prompt
+
+                      │
+
+                      ▼
+
+                    LLM
+
+                      │
+
+                      ▼
+
+                   Answer
+
+Notice:
+
+Prompt Builder
+
+did something
+
+between
+
+Retriever
+
+and
+
+LLM.
+
+That is
+
+Prompt Augmentation.
+
+
+Step 3 – Why can not we send List<Document> directly?:
+
+Suppose Retriever returns
+[
+ Document(...),
+
+ Document(...),
+
+ Document(...)
+]
+
+Question:
+
+Can GPT understand
+
+Python objects?
+
+No.
+
+LLM expects
+
+plain text.
+
+So
+
+Prompt Builder converts
+Document
+
+↓
+
+Text
+
+
+Step 4 – What is an Augmented Prompt?:
+
+Suppose user asks
+
+How many annual leaves are allowed?
+
+Retriever returns
+
+Employees are entitled to 20 days annual leave.
+
+Prompt Builder creates
+
+You are an HR Assistant.
+
+Answer ONLY using the supplied context.
+
+Context
+
+Employees are entitled to 20 days annual leave.
+
+Question
+
+How many annual leaves are allowed?
+
+This
+
+is called
+
+the
+
+Augmented Prompt.
+
+Notice
+
+Original question
+
+became
+
+a much larger prompt.
+
+
+
+Step 5 – Why "Augmented"?:
+
+The word
+
+Augmented
+
+means
+
+
+Original Prompt
+
++
+
+Retrieved Context
+
+↓
+
+New Prompt
+
+Question
+
+Before retrieval
+
+what was the prompt?
+
+How many annual leaves?
+
+After retrieval
+
+System Instructions
+
++
+
+Retrieved Chunks
+
++
+
+User Question
+
+The prompt
+
+became
+
+larger.
+
+Hence
+
+Augmented.
+
+
+Step 6 – Components of an Augmented Prompt:
+
+Most enterprise prompts contain
+System Prompt
+
+↓
+
+Instructions
+
+------------------------
+
+Retrieved Context
+
+↓
+
+Chunks
+
+------------------------
+
+User Question
+
+↓
+
+Actual Query
+
+Example:
+
+You are an HR assistant.
+
+Only answer from the context.
+
+If answer is unavailable,
+
+say "Information not found."
+
+--------------------------
+
+Context
+
+Employees receive
+
+20 days annual leave.
+
+--------------------------
+
+Question
+
+How many leaves?
+
+Notice:
+
+LLM
+
+never sees
+
+the Vector Database.
+
+It only sees
+
+this prompt.
+
+
+Step 7 – Who Builds the Prompt?:
+
+Many beginners think
+
+Retriever builds it.
+
+Wrong.
+
+Retriever
+
+only returns
+List<Document>
+
+Prompt Builder:
+
+converts
+Documents
+
+↓
+
+Prompt
+
+
+
+Step 8 – Which Package?:
+
+Install
+
+uv add langchain-core
+
+Import
+
+from langchain_core.prompts import ChatPromptTemplate
+
+
+
+Step 9 – ChatPromptTemplate:
+
+Create
+from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_template(
+"""
+You are an HR Assistant.
+
+Answer only using the supplied context.
+
+Context
+
+{context}
+
+Question
+
+{question}
+"""
+)
+
+Question:
+
+Did prompt execute?
+
+No.
+
+Only
+
+Prompt Object
+
+was created.
+
+Exactly like
+
+loader = PyPDFLoader(...)
+
+
+
+Step 10 – Constructor Parameters:
+
+Suppose
+
+ChatPromptTemplate.from_template(...)
+
+Question
+
+What are
+
+{context}
+
+{question}
+
+These are called
+
+Variables.
+
+Later
+
+LangChain
+
+will replace them.
+
+
+
+Step 11 – Formatting Prompt:
+
+Suppose
+
+Retriever returned
+
+Employees receive
+
+20 days leave.
+
+Question
+
+How do variables
+
+get replaced?
+
+Python
+
+final_prompt = prompt.invoke({
+
+"context":"Employees receive 20 days leave.",
+
+"question":"How many annual leaves?"
+
+})
+
+Internally
+
+LangChain replaces
+
+{context}
+
+↓
+
+Employees receive...
+
+--------------------
+
+{question}
+
+↓
+
+How many annual leaves?
+
+
+Result
+
+You are an HR Assistant.
+
+Answer only using supplied context.
+
+Context
+
+Employees receive
+
+20 days leave.
+
+Question
+
+How many annual leaves?
+
+
+Step 12 – What does invoke() Return?:
+
+Question
+
+Does it return
+
+String?
+
+Not exactly.
+
+It returns
+
+ChatPromptValue
+
+Internally
+
+ChatPromptValue
+
+↓
+
+Messages
+
+↓
+
+System Message
+
+↓
+
+Human Message
+
+LLMs
+
+prefer
+
+messages
+
+instead of
+
+one big string.
+
+
+Step 13 – Message Structure:
+
+Modern chat models
+use
+System Message
+
+↓
+
+Human Message
+
+↓
+
+Assistant Message
+
+
+Example:
+
+System
+
+You are HR Assistant.
+
+----------------------
+
+Human
+
+Context...
+
+Question...
+
+
+Notice
+
+LangChain automatically
+
+creates
+
+message objects.
+
+
+Step 14 – Complete Lifecycle:
+
+User Question
+
+↓
+
+Retriever
+
+↓
+
+List<Document>
+
+↓
+
+Extract page_content
+
+↓
+
+Join Documents
+
+↓
+
+Replace {context}
+
+↓
+
+Replace {question}
+
+↓
+
+ChatPromptValue
+
+↓
+
+LLM
+
+
+Step 15 – Joining Documents:
+Question
+
+Suppose Retriever returns
+
+5 Documents.
+
+How are they inserted?
+
+Example
+Document 1
+
+Employees get 20 days leave.
+
+-------------------
+
+Document 2
+
+Carry forward allowed.
+
+-------------------
+
+Document 3
+
+Medical leave...
+
+
+Prompt Builder joins them.:
+Context
+
+Employees get 20 days leave.
+
+Carry forward allowed.
+
+Medical leave...
+
+Question
+
+Who joins them?:
+
+LangChain.
+
+Usually using
+
+Document Formatter
+
+We'll study
+
+that later.
+
+
+
+Step 16 – Complete Prompt:
+
+The final prompt sent to the LLM is typically much larger than the user's original question.
+------------------------------------------------
+
+SYSTEM
+
+You are an HR Assistant.
+
+Only answer from supplied context.
+
+If answer not found,
+
+say "I don't know."
+
+------------------------------------------------
+
+CONTEXT
+
+Employees receive
+
+20 days annual leave.
+
+Unused leave
+
+can be carried forward.
+
+Medical leave
+
+requires manager approval.
+
+------------------------------------------------
+
+QUESTION
+
+How many annual leaves are allowed?
+
+------------------------------------------------
+This is exactly what the LLM receives.
+
+
+Step 17 – Why System Prompt?:
+
+Question
+
+Why not only send
+
+Context?
+
+Because
+
+LLM needs instructions.
+
+Example
+Only answer
+
+using context.
+
+Never guess.
+
+Never hallucinate.
+
+Mention source page.
+
+Reply in bullet points.
+
+System Prompt controls:
+
+LLM behaviour.
+
+
+Step 18 – Enterprise Prompt:
+
+Enterprise prompts often contain
+System Prompt
+
+↓
+
+Security Rules
+
+↓
+
+Business Rules
+
+↓
+
+Retrieved Context
+
+↓
+
+Conversation History
+
+↓
+
+User Question
+
+↓
+
+Formatting Instructions
+
+Example:
+
+You are an HR Assistant.
+
+Never disclose salary information.
+
+Never answer outside HR policies.
+
+Always cite document source.
+
+Use bullet points.
+
+
+Step 19 – Complete Query Pipeline:
+                User Question
+
+                       │
+
+                       ▼
+
+                  Retriever
+
+                       │
+
+                       ▼
+
+               Top 5 Documents
+
+                       │
+
+                       ▼
+
+            Extract page_content
+
+                       │
+
+                       ▼
+
+             Prompt Template
+
+                       │
+
+                       ▼
+
+            Replace Variables
+
+                       │
+
+                       ▼
+
+             ChatPromptValue
+
+                       │
+
+                       ▼
+
+                      LLM
+
+                       │
+
+                       ▼
+
+                    Answer
+
+Step 20 – Common Mistakes:
+❌ Mistake 1:
+
+Sending entire PDF
+
+instead of
+
+retrieved chunks.
+
+❌ Mistake 2:
+
+Using
+
+Context
+
+Question
+
+without
+
+System Prompt.
+
+
+❌ Mistake 3:
+
+Allowing LLM
+
+to answer
+
+outside
+
+retrieved context.
+
+
+❌ Mistake 4:
+
+Using
+
+50 retrieved chunks
+
+when
+
+5
+
+are enough.
+
+
+Step 21 – Enterprise Best Practices:
+
+✔ Use a strong System Prompt to define the assistant's role and prevent unsupported answers.
+
+✔ Insert only the most relevant retrieved chunks into the prompt to stay within the context window.
+
+✔ Instruct the model to answer only from the supplied context and explicitly say when information is unavailable.
+
+✔ Include document metadata (such as source or page number) when citations or traceability are required.
+
+✔ Keep prompts concise—more context is not always better if it includes irrelevant information.
+
+
+Interview Questions:
+Q1. Why is Prompt Augmentation required?:
+
+Because retrievers return Document objects, while LLMs require natural-language prompts. Prompt augmentation converts retrieved content and user input into a structured prompt that the LLM can understand.
+
+
+Q2. Who performs Prompt Augmentation?:
+
+The application or framework (for example, LangChain) performs prompt augmentation using prompt templates and document formatting. The retriever only retrieves documents; it does not build prompts.
+
+
+Q3. What is the difference between Context and Prompt?:
+Context is the retrieved knowledge (chunks from the vector store).
+Prompt includes the context plus system instructions, the user's question, formatting guidance, and any other information sent to the LLM.
+
+
+Q4. Does the LLM query the Vector Database?:
+
+No.
+
+The LLM never communicates directly with the vector database. It only receives the final augmented prompt created by the application.
+
+

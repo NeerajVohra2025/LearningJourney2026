@@ -1,0 +1,929 @@
+Chapter 2 – What is an AI Agent?:
+Step 1 – What is an LLM?
+
+Let's start with something simple.
+
+Suppose you open ChatGPT.
+
+You ask
+
+What is Kubernetes?
+
+GPT answers.
+
+Architecture
+
+Question
+
+↓
+
+LLM
+
+↓
+
+Answer
+
+Question
+
+Is GPT an Agent?
+
+No.
+
+It is simply a language model.
+
+Its responsibility is
+
+Input Text
+
+↓
+
+Predict Next Token
+
+↓
+
+Generate Response
+
+That's all.
+
+
+Step 2 – What is an AI Agent?:
+
+Now let's ask
+
+Book a flight to London for next Monday under my company travel policy.
+
+Question
+
+Can GPT alone do this?
+
+No.
+
+Why?
+
+Because GPT doesn't know
+
+Your calendar
+
+Company policy
+
+Travel portal
+
+Budget
+
+Visa
+
+Available flights
+
+Someone must perform all these tasks.
+
+That is called an
+
+AI Agent
+
+
+Step 3 – Definition:
+
+An AI Agent is a software system that can
+Understand Goal
+
+↓
+
+Reason
+
+↓
+
+Plan
+
+↓
+
+Call Tools
+
+↓
+
+Use Memory
+
+↓
+
+Talk to Other Agents
+
+↓
+
+Produce Result
+
+Notice:
+
+LLM is only
+
+one component
+
+inside an Agent.
+
+
+Step 4 – Agent Architecture:
+
+A modern AI Agent looks like this.
+                User Request
+
+                      │
+
+                      ▼
+
+                  AI Agent
+
+        ┌──────────┼────────────┐
+
+        ▼          ▼            ▼
+
+      LLM       Memory       Planner
+
+        ▼          ▼            ▼
+
+             Tool Manager
+
+                    ▼
+
+      MCP Tools / APIs / Database
+
+                    ▼
+
+            Other Agents (A2A)
+            
+            
+Notice:
+
+LLM
+
+is only
+
+one box.  
+
+
+Step 5 – Human Analogy:
+
+Think about yourself.
+
+Suppose your manager says
+
+Prepare next year's project budget.
+
+Question
+
+Do you immediately answer?
+
+No.
+
+You
+
+Understand
+
+↓
+
+Think
+
+↓
+
+Collect Information
+
+↓
+
+Open Excel
+
+↓
+
+Call Finance
+
+↓
+
+Read Documents
+
+↓
+
+Prepare Report
+
+Exactly.
+
+Humans are Agents.
+
+The brain
+
+is only one component.
+
+Similarly
+
+LLM
+
+is only the brain.   
+
+Step 6 – Internal Components of an Agent:
+
+A typical enterprise agent contains     
+LLM
+
+Planner
+
+Memory
+
+Tool Manager
+
+MCP Client
+
+A2A Client
+
+Reasoning Engine
+
+Executor
+
+State Manager
+
+Prompt Manager
+
+
+Every framework:
+
+implements these
+
+slightly differently.
+
+
+Step 7 – LLM vs Agent:
+
+Let's compare.
+
+| LLM                                    | Agent                             |
+| -------------------------------------- | --------------------------------- |
+| Generates text                         | Solves business tasks             |
+| No memory by default                   | Can maintain memory               |
+| Cannot directly use enterprise systems | Uses tools and APIs               |
+| Doesn't execute workflows              | Plans and executes workflows      |
+| Doesn't collaborate                    | Can communicate with other agents |
+
+
+Think of it this way:
+
+LLM
+
+↓
+
+Brain
+
+-----------------------
+
+Agent
+
+↓
+
+Complete Employee
+
+
+Step 8 – Agent Lifecycle:
+
+Suppose
+
+User asks
+
+Book a flight.
+
+Question
+
+What happens?
+
+Let's go step by step.
+
+
+Phase 1:
+
+Agent receives request.
+
+User
+
+↓
+
+Travel Agent
+
+
+Phase 2:
+
+Agent asks LLM
+
+What needs to be done?
+
+LLM replies:
+
+Need
+
+Flight
+
+Hotel
+
+Budget Approval
+
+
+Phase 3:
+
+Planner creates
+
+execution plan.
+Task 1:
+
+Find Flight
+
+↓
+
+Task 2:
+
+Book Hotel
+
+↓
+
+Task 3:
+
+Budget Approval
+
+
+Phase 4:
+
+Agent executes tasks.
+
+Flight Tool
+
+↓
+
+Hotel Tool
+
+↓
+
+Finance Agent
+
+
+Phase 5:
+
+Collect results.
+
+Phase 6:
+
+LLM generates
+
+human-friendly answer.
+
+
+Complete lifecycle:
+Goal
+
+↓
+
+Reason
+
+↓
+
+Plan
+
+↓
+
+Execute
+
+↓
+
+Collect
+
+↓
+
+Generate Response
+
+
+Notice:
+
+LLM is used
+
+twice.
+
+Once
+
+for reasoning.
+
+Once
+
+for response generation.
+
+
+
+Step 9 – Agent vs Tool:
+
+Suppose
+
+Weather API
+
+returns
+
+25°C
+
+Question
+
+Can it think?
+
+No.
+
+Tool lifecycle
+
+Input
+
+↓
+
+Execute
+
+↓
+
+Output
+
+Now
+
+Finance Agent
+
+Understand Request
+
+↓
+
+Call SAP
+
+↓
+
+Read Policy
+
+↓
+
+Reason
+
+↓
+
+Approve
+
+↓
+
+Generate Report
+
+Huge difference.
+
+
+
+Step 10 – Agent vs Microservice:
+
+Another interview favourite.
+
+Suppose
+
+Finance Service
+
+POST
+
+/approveBudget
+
+Returns
+
+{
+"approved":true
+}
+
+Very deterministic.
+
+Now:
+
+Finance Agent
+
+receives
+
+"Should we approve this international trip considering project priority, remaining budget, and company policy?"
+
+Question
+
+Will it call
+
+only one API?
+
+No.
+
+It may
+
+Read Budget
+
+↓
+
+Read Policy
+
+↓
+
+Call SAP
+
+↓
+
+Reason
+
+↓
+
+Ask HR Agent
+
+↓
+
+Generate Recommendation
+
+This is intelligent behaviour.
+
+
+
+Step 11 – Agent vs Workflow:
+
+People confuse
+
+Agents
+
+with
+
+Workflows.
+
+Workflow
+Step 1
+
+↓
+
+Step 2
+
+↓
+
+Step 3
+
+↓
+
+Done
+
+Everything
+
+predefined.
+
+Agent
+Goal
+
+↓
+
+Think
+
+↓
+
+Decide
+
+↓
+
+Choose Next Step
+
+↓
+
+Repeat
+
+↓
+
+Done
+
+Agent decides
+
+the workflow
+
+while running.
+
+
+Step 12 – Agent vs LangGraph Graph:
+
+Suppose
+
+LangGraph
+
+contains
+Planner
+
+↓
+
+Research
+
+↓
+
+Reviewer
+
+↓
+
+Writer
+
+Question:
+
+Is the graph
+
+the agent?:
+
+Almost.
+
+The graph
+
+defines
+
+how the agent behaves.
+
+The running graph
+
+plus
+
+LLM
+
+plus
+
+memory
+
+plus
+
+tools
+
+forms
+
+the complete agent.
+
+
+
+Step 13 – Agent vs OpenAI Agent SDK Agent:
+
+Suppose
+
+OpenAI
+travel_agent = Agent(
+    name="Travel",
+    instructions="..."
+)
+
+
+Question:
+
+Is this
+
+A2A Agent?:
+
+Not yet.
+
+It is
+
+an Agent
+
+inside
+
+your application.
+
+To become
+
+A2A compatible
+
+it needs:
+Agent Card
+
+Executor
+
+HTTP Endpoint
+
+Task API
+
+Message API
+We'll learn
+
+those next
+
+
+Step 14 – Why Does not A2A Talk to LLMs?:
+
+Question
+
+Why not
+
+Travel GPT
+
+↓
+
+Finance GPT
+
+Because
+
+LLMs
+
+do not expose:
+
+Capabilities
+
+Tasks
+
+Progress
+
+Artifacts
+
+Authentication
+
+Discovery
+
+They simply:
+
+predict text.
+
+A2A communicates
+
+with
+
+complete agents.
+
+
+Step 15 – Real Enterprise Example:
+Suppose
+
+Travel Agent:
+
+needs
+
+budget approval.
+
+Architecture
+
+
+User
+
+↓
+
+Travel Agent
+
+↓
+
+A2A
+
+↓
+
+Finance Agent
+
+↓
+
+SAP
+
+↓
+
+Policy
+
+↓
+
+LLM
+
+↓
+
+Approve
+
+↓
+
+Travel Agent
+
+↓
+
+User
+
+
+Notice:
+
+Travel Agent
+
+doesn't know
+
+how Finance works.
+
+It only knows
+
+Finance Agent
+
+exists.
+
+Exactly like
+
+microservices.
+
+
+Step 16 – Enterprise Agent Architecture:
+                Travel Agent
+
+                      │
+
+      ┌───────────────┼───────────────┐
+
+      ▼               ▼               ▼
+
+     LLM          Memory         Planner
+
+      │               │               │
+
+      └───────────────┼───────────────┘
+
+                      ▼
+
+               Execution Engine
+
+          ┌──────────┴──────────┐
+
+          ▼                     ▼
+
+      MCP Client           A2A Client
+
+          ▼                     ▼
+
+   ServiceNow API       Finance Agent
+
+   SAP API              HR Agent
+
+   Database             Legal Agent
+   
+Notice:
+
+An enterprise agent usually has both
+
+MCP Client
+A2A Client
+
+because it needs
+
+both
+
+tools
+
+and
+
+other agents.   
+
+
+
+Step 17 – Responsibilities of an Agent:
+
+An enterprise AI Agent is responsible for:
+| Responsibility      | Description                                          |
+| ------------------- | ---------------------------------------------------- |
+| Goal Understanding  | Interpret the user's objective.                      |
+| Planning            | Decide the sequence of actions.                      |
+| Tool Usage          | Invoke APIs, databases, or MCP tools.                |
+| Collaboration       | Delegate work to other agents using A2A when needed. |
+| Memory              | Maintain conversation or task state if required.     |
+| Reasoning           | Evaluate information and make decisions.             |
+| Response Generation | Produce the final answer for the user.               |
+
+The LLM assists with reasoning and language generation, but the agent orchestrates the overall workflow
+
+
+Step 18 – Why This Matters for A2A:
+
+Now you can understand why A2A was designed.
+
+A2A is not trying to connect LLMs.
+
+It is connecting autonomous software systems that happen to use LLMs internally.
+
+Think of it like this:
+Company
+
+      │
+
+      ▼
+
+Employees
+
+↓
+
+Communicate
+
+↓
+
+Complete Work
+
+
+Not
+
+Brains
+
+↓
+
+Communicate
+
+The employee is analogous to an agent.
+
+The brain is analogous to the LLM.
+
+
+Interview Questions
+Q1. Is an LLM an AI Agent?:
+
+Answer:
+
+No. An LLM is a language model that predicts the next token. An AI agent is a software system that uses an LLM together with planning, memory, tool usage, and execution to achieve goals.
+
+Q2. Why does A2A communicate with Agents instead of LLMs?:
+
+Because A2A is designed for business workflows. Agents expose capabilities, tasks, progress, authentication, and collaboration interfaces. LLMs only generate text and do not provide these protocol-level features.
+
+Q3. Can an Agent exist without an LLM?:
+
+Yes, depending on the definition. An agent can follow predefined rules or workflows without using an LLM. However, in modern Generative AI systems, an LLM is typically the reasoning component of the agent.
+
+Q4. Can an Agent use both MCP and A2A?:
+
+Yes. This is the recommended enterprise architecture:
+
+MCP for interacting with tools, APIs, databases, and enterprise systems.
+A2A for collaborating with other intelligent agents.

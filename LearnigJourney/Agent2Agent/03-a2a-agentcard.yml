@@ -1,0 +1,804 @@
+Chapter 3 – Agent Card (The Identity Card of an AI Agent):
+Step 1 – Why Do We Need an Agent Card?:
+
+Let's start with a real-world example.
+
+Suppose you join a new company.
+
+On your first day, you don't know anyone.
+
+Question
+
+How do you know
+
+Who is in Finance?
+Who is in HR?
+Who is in IT?
+
+Usually,
+
+you check
+
+Employee Directory
+
+↓
+
+Name
+
+Department
+
+Role
+
+Email
+
+Phone
+
+Manager
+
+Without an Employee Directory,
+
+you wouldn't know whom to contact.
+
+Exactly the same problem exists in AI agents.
+
+
+Step 2 – Enterprise Scenario:
+
+Suppose your company has
+
+Travel Agent
+
+Finance Agent
+
+HR Agent
+
+Legal Agent
+
+Procurement Agent
+
+Now Travel Agent receives
+
+Book my London trip.
+
+Travel Agent knows
+
+it needs
+
+Finance Agent.
+
+Question
+
+How does it know
+
+Finance Agent URL?
+What work Finance Agent can do?
+Whether it supports streaming?
+Whether authentication is required?
+
+Without that information,
+
+communication cannot begin.
+
+
+
+Step 3 – First Attempt (Hard Coding):
+
+Many beginners write
+
+FINANCE_URL = "http://finance-agent:8080"
+
+Question
+
+What's wrong?
+
+Suppose tomorrow
+
+Finance team changes
+
+8080
+
+↓
+
+9090
+
+Every client must change.
+
+Suppose
+
+Finance Agent changes
+
+budgetApproval
+
+↓
+
+expenseApproval
+
+Every application breaks.
+
+This is called
+
+Tight Coupling.
+
+
+Step 4 – Second Attempt (Swagger/OpenAPI):
+
+Developers think
+
+We already have Swagger.
+
+Why not use it?
+
+Example
+
+Travel Agent
+
+↓
+
+Swagger
+
+↓
+
+Finance API
+
+Question
+
+Can Swagger tell us
+
+This agent specializes in budget approval
+
+Supports streaming
+
+Uses GPT-4
+
+Can negotiate
+
+Can ask follow-up questions
+
+No.
+
+Swagger describes
+
+HTTP APIs.
+
+It does NOT describe
+
+Agent capabilities.
+
+
+Step 5 – The Solution:
+
+The A2A protocol introduces
+
+Agent Card
+Think of it as
+Business Card
+
++
+
+Resume
+
++
+
+LinkedIn Profile
+
++
+
+OpenAPI
+
++
+
+Capability Manifest
+
+
+All combined
+
+into
+
+one document.
+
+
+Step 6 – Human Analogy:
+
+Suppose someone hands you
+
+this card.
+------------------------------------
+
+Neeraj Vohra
+
+Principal Solution Architect
+
+Expertise
+
+✓ Java
+
+✓ Kubernetes
+
+✓ GenAI
+
+✓ MCP
+
+✓ A2A
+
+Email
+
+Phone
+
+------------------------------------
+Immediately
+
+you know
+
+who this person is
+
+and
+
+what they specialize in.
+
+Agent Card does exactly the same.
+
+
+Step 7 – What is an Agent Card?:
+
+Definition
+
+An Agent Card is a machine-readable document that describes an AI agent's identity, capabilities, supported skills, authentication requirements, communication endpoint, and protocol features so that other agents can discover and interact with it.
+
+Think of it as
+Identity
+
++
+
+Capabilities
+
++
+
+Communication Details
+
++
+
+Rules
+
+
+Step 8 – Agent Discovery Architecture
+Travel Agent
+
+       │
+
+       ▼
+
+Read Agent Card
+
+       │
+
+       ▼
+
+Finance Agent Card
+
+       │
+
+──────────────────────────
+
+Name
+
+Skills
+
+Capabilities
+
+Authentication
+
+URL
+
+Version
+
+Streaming
+
+──────────────────────────
+
+       │
+
+       ▼
+
+Decide
+
+Can I use this agent?
+
+       │
+
+       ▼
+
+Send Request
+
+
+Notice:
+
+Communication
+
+doesn't begin immediately.
+
+Discovery
+
+comes first.
+
+
+Step 9 – Complete Discovery Lifecycle:
+
+Let's see
+
+what actually happens.
+Phase 1:
+
+Travel Agent
+
+needs
+
+Finance Agent.
+
+
+Phase 2:
+
+Travel Agent
+
+requests
+
+GET /.well-known/agent.json
+
+(or the discovery endpoint defined by the A2A deployment.)
+
+
+Phase 3:
+
+Finance Agent returns
+
+its Agent Card.
+
+
+Phase 4:
+
+Travel Agent reads
+
+Skills
+
+Capabilities
+
+Authentication
+
+Version
+
+URL
+
+
+Phase 5:
+
+Travel Agent decides
+Yes
+
+This agent
+
+can approve budgets.
+
+Phase 6:
+
+Actual communication begins.
+
+
+Complete lifecycle:
+Need Agent
+
+↓
+
+Discover Agent
+
+↓
+
+Read Agent Card
+
+↓
+
+Validate
+
+↓
+
+Create Task
+
+↓
+
+Receive Response
+
+Notice:
+
+Agent Card
+
+is always
+
+the first step.
+
+
+Step 10 – What Does an Agent Card Contain?:
+
+Conceptually,
+
+an Agent Card answers six questions.
+| Question                               | Answer                                |
+| -------------------------------------- | ------------------------------------- |
+| Who are you?                           | Name, description, provider, version  |
+| Where are you?                         | URL / endpoint                        |
+| What can you do?                       | Skills                                |
+| How should I communicate?              | Supported transports and capabilities |
+| How do I authenticate?                 | Authentication requirements           |
+| Which protocol version do you support? | A2A version and compatibility         |
+
+
+Step 11 – Example Agent Card:
+
+Imagine
+
+Finance Agent.
+
+Conceptually
+
+------------------------------------
+
+Name
+
+Finance Agent
+
+Description
+
+Handles travel approvals
+
+Budget validation
+
+Expense calculations
+
+Skills
+
+Approve Budget
+
+Check Expense
+
+Generate Cost Report
+
+Capabilities
+
+Streaming
+
+Notifications
+
+Authentication
+
+OAuth
+
+Version
+
+1.0
+
+URL
+
+https://finance.company.com
+
+------------------------------------
+
+Notice:
+
+No implementation details.
+
+Only
+
+capabilities.
+
+
+Step 12 – Why Skills Matter:
+
+Suppose
+
+Finance Agent
+
+supports
+
+Approve Budget
+
+Generate Invoice
+
+Question
+
+Should Travel Agent ask
+
+Book Flight
+
+No.
+
+Because
+
+Book Flight
+
+is not
+
+one of its skills.
+
+Agent Card prevents:
+
+invalid requests.
+
+
+Step 13 – Why Capabilities Matter:
+
+Suppose
+
+Finance Agent supports
+
+Streaming
+
+Travel Agent can expect
+
+10%
+
+30%
+
+60%
+
+Completed
+
+If
+
+Streaming
+
+isn't supported,
+
+Travel Agent
+
+waits
+
+for
+
+the final result.
+
+The Agent Card tells the client what interaction patterns are available.
+
+
+
+Step 14 – Why Authentication Matters:   
+
+Suppose
+
+Finance Agent
+
+contains
+
+salary information.
+
+Should
+
+everyone
+
+call it?
+
+No.
+
+Agent Card specifies
+
+Authentication Required
+
+↓
+
+OAuth
+
+or
+
+Bearer Token
+
+or
+
+mTLS
+
+The client knows
+
+how
+
+to authenticate
+
+before
+
+sending
+
+the request.
+
+
+Step 15 – Why Version Matters:
+
+Suppose
+
+Travel Agent
+
+uses
+
+A2A v1.
+
+Finance Agent
+
+uses
+
+A2A v2.
+
+Question
+
+Can communication fail?
+
+Possibly.
+
+That's why
+
+the Agent Card
+
+includes version information
+
+so clients can determine compatibility
+
+
+Step 16 – Complete Enterprise Architecture:
+                    Travel Agent
+
+                          │
+
+                          ▼
+
+               Read Agent Card
+
+                          │
+
+                          ▼
+
+                Finance Agent
+
+────────────────────────────────────────────
+
+Identity
+
+Skills
+
+Capabilities
+
+Authentication
+
+Version
+
+Endpoint
+
+────────────────────────────────────────────
+
+                          │
+
+                          ▼
+
+                 Create Task
+
+                          │
+
+                          ▼
+
+                 Execute Work
+
+                          │
+
+                          ▼
+
+                 Return Result
+                 
+                 
+Step 17 – Why Not Hard Code Everything?:
+
+Without Agent Card   :
+Travel Agent
+
+↓
+
+Finance URL
+
+↓
+
+Finance APIs
+
+↓
+
+Finance Skills
+
+↓
+
+Finance Auth
+
+(All Hard Coded)   
+
+Every change
+
+requires
+
+code changes.
+
+With Agent Card:
+Travel Agent
+
+↓
+
+Read Agent Card
+
+↓
+
+Discover Everything
+
+↓
+
+Communicate           
+
+The system becomes:
+
+far more flexible.
+
+
+Step 18 – Relationship with Other A2A Components:
+
+The Agent Card doesn't perform work.
+
+Instead,
+
+it introduces the agent.
+Agent Card
+
+↓
+
+Discovery
+
+↓
+
+Task
+
+↓
+
+Executor
+
+↓
+
+Messages
+
+↓
+
+Artifacts
+
+↓
+
+Result
+
+So,
+
+Agent Card is the entry point into the A2A lifecycle.:
+
+
+Step 20 – Interview Questions:
+Q1. Why do we need an Agent Card?:
+
+Answer:
+
+The Agent Card allows other agents to discover an agent's identity, capabilities, supported skills, endpoint, authentication requirements, and protocol version before interacting with it. It reduces coupling and enables dynamic discovery.
+
+
+Q2. Is an Agent Card similar to Swagger/OpenAPI?:
+
+Partially.
+
+Swagger describes HTTP endpoints and request/response schemas.
+
+An Agent Card describes the agent itself—its purpose, skills, capabilities, authentication, and how to communicate with it. It is about agent discovery, not just API documentation.
+
+
+Q3. Does an Agent Card execute business logic?:
+
+No.
+
+The Agent Card is metadata. It does not process requests or execute tasks. Actual work is performed later by the agent's executor.
+
+
+Q4. Is the Agent Card mandatory?:
+
+For interoperable A2A systems, yes. Without it, other agents cannot reliably discover what the agent does or how to communicate with it.
+
+
+######################################################################

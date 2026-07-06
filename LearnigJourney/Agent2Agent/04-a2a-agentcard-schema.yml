@@ -1,0 +1,1019 @@
+Chapter 4 – Agent Card Schema (Every Field Explained):
+Step 1 – What is an Agent Card?:
+
+Think of an Agent Card as the metadata describing an AI Agent.
+
+Just like a Java class has
+class Employee {
+
+    String name;
+
+    String department;
+
+    String designation;
+
+}
+
+Similarly,
+
+every AI Agent has metadata.
+Name
+
+Description
+
+Skills
+
+Capabilities
+
+Authentication
+
+Version
+
+URL
+
+These together form
+
+the Agent Card.
+
+
+Step 2 – Complete Architecture:
+               Travel Agent
+
+                     │
+
+                     ▼
+
+         GET Agent Card
+
+                     │
+
+──────────────────────────────────────
+
+Finance Agent Card
+
+──────────────────────────────────────
+
+Name
+
+Description
+
+Version
+
+URL
+
+Provider
+
+Skills
+
+Capabilities
+
+Authentication
+
+Input Modes
+
+Output Modes
+
+──────────────────────────────────────
+
+                     │
+
+                     ▼
+
+Reads Card
+
+                     │
+
+                     ▼
+
+Creates Task
+
+Notice:
+
+Before sending a Task,:
+
+the client understands
+
+the Agent.
+
+
+Step 3 – Conceptual Agent Card:
+
+Imagine
+
+Finance Agent publishes
+
+--------------------------------------------------
+
+Name
+
+Finance Agent
+
+Description
+
+Enterprise Budget Approval Agent
+
+Version
+
+1.0
+
+URL
+
+https://finance.company.com
+
+Provider
+
+Finance Team
+
+Skills
+
+Approve Budget
+
+Expense Validation
+
+Invoice Generation
+
+Capabilities
+
+Streaming
+
+Push Notifications
+
+Authentication
+
+OAuth
+
+--------------------------------------------------
+Question:
+
+Did we execute anything?
+
+No.
+
+This is only
+
+metadata.
+
+
+
+Step 4 – Why So Many Fields?:
+
+Many beginners ask
+
+Why can't we just publish
+
+Finance Agent
+
+https://finance.company.com
+
+Because:
+
+another agent also needs to know
+
+What can you do?
+
+Do you support streaming?
+
+Do you need authentication?
+
+Which protocol version?
+
+Which input types?
+
+Which output types?
+
+Who owns you?
+
+That's why
+
+Agent Card
+
+contains
+
+multiple fields.
+
+
+Step 5 – Complete Agent Card:
+
+Conceptually
+
+an Agent Card contains
+AgentCard(
+
+    name,
+
+    description,
+
+    url,
+
+    version,
+
+    provider,
+
+    authentication,
+
+    skills,
+
+    capabilities,
+
+    defaultInputModes,
+
+    defaultOutputModes,
+
+    documentation,
+
+    icon,
+
+    tags
+
+)
+Note: The exact field names can vary slightly between A2A SDK versions and implementations. Here we're explaining the conceptual model used by the protocol.
+
+Now
+
+let's study
+
+every field.
+
+Parameter 1 – name:
+
+Example
+name="Finance Agent"
+
+Question
+
+Why?
+
+Suppose
+
+Company has
+
+Finance Agent
+
+HR Agent
+
+Travel Agent
+
+Legal Agent
+
+Client must know
+
+which Agent
+
+it is talking to.
+
+Think of
+
+Human Visiting Card
+
+Name
+
+↓
+
+Neeraj Vohra
+
+Exactly the same.
+
+
+Parameter 2 – description:
+
+Example
+
+description="Handles budget approval and expense validation."
+
+Question
+
+Why?:
+
+Suppose
+
+Travel Agent discovers
+
+20 agents.
+
+How does it know
+
+which one
+
+approves budgets?
+
+Description
+
+explains
+
+the purpose.
+
+Think
+
+LinkedIn
+
+About Section.
+
+
+Parameter 3 – url:
+
+Probably
+
+the most important field.
+
+Example
+
+url="https://finance.company.com"
+
+Question
+
+Why?:
+
+Because
+
+later
+
+Travel Agent
+
+must send
+
+Tasks
+
+to
+
+Finance Agent.
+
+Without URL
+
+communication
+
+cannot happen.
+
+Think
+
+Phone Number.
+
+
+
+Parameter 4 – version:
+
+Example
+
+version="1.0.0"
+
+Question
+
+Why?
+
+Suppose
+
+Finance Agent
+
+changes
+
+its protocol.
+
+Travel Agent
+
+must know
+
+which version
+
+is supported.
+
+Example
+
+Travel
+
+v1
+
+↓
+
+Finance
+
+v2
+
+Compatibility
+
+can be checked.
+
+
+Parameter 5 – provider:
+
+Example
+
+provider="Finance Department"
+
+Question
+
+Why?:
+
+Suppose
+
+company has
+
+multiple
+
+Finance Agents.
+
+Who owns
+
+this one?
+
+Provider
+
+identifies
+
+the owner.
+
+Think
+
+App Store
+
+Developer Name.
+
+
+
+Parameter 6 – authentication:
+
+Example
+
+authentication="OAuth"
+
+Question
+
+Should anyone
+
+access
+
+Payroll Agent?
+
+No.
+
+Authentication
+
+tells clients
+
+how
+
+to authenticate.
+
+Examples:
+
+Bearer Token
+
+OAuth
+
+API Key
+
+mTLS
+
+Client prepares:
+
+credentials
+
+before sending
+
+Task.
+
+
+Parameter 7 – skills:
+
+This is probably
+
+the MOST IMPORTANT field.
+
+Example:
+Approve Budget
+
+Generate Invoice
+
+Expense Validation
+
+Project Cost Analysis
+
+
+Question
+
+Why?:
+
+Suppose
+
+Travel Agent
+
+asks
+
+Book Flight
+
+Finance Agent
+
+doesn't support
+
+Book Flight.
+
+The client knows this:
+
+before
+
+creating
+
+the task.
+
+Skills define
+
+what the agent knows how to do.
+
+
+Step 8 – Skills vs Tools:
+
+This confuses
+
+everyone.
+
+Suppose
+
+Finance Agent
+
+uses
+SAP API
+
+Oracle Database
+
+Tax Calculator
+
+Exchange Rate API
+
+These are
+
+Tools.
+
+But
+
+Finance Agent
+
+publishes
+
+Approve Budget
+
+Expense Validation
+
+Generate Invoice
+
+These are
+
+Skills.
+
+Think
+
+Chef
+
+↓
+
+Skill
+
+Cook Pizza
+
+-----------------------
+
+Tool
+
+Oven
+
+Clients care about
+
+the chef's skills,
+
+not
+
+which oven
+
+the chef uses.
+
+
+Parameter 8 – capabilities:
+
+Another important field.
+
+Suppose
+
+Finance Agent
+
+supports
+
+Streaming
+
+Notifications
+
+Artifacts
+
+History
+
+Question:
+
+Why publish this?
+
+Because
+
+Travel Agent
+
+changes
+
+its behaviour.
+
+Example
+
+Streaming Supported
+
+↓
+
+Show progress bar
+
+Streaming Not Supported
+
+↓
+
+Wait
+
+for final response.
+
+
+Parameter 9 – defaultInputModes:
+
+Question
+
+What kind of input
+
+does the agent accept?
+
+Example:
+
+Text
+
+JSON
+
+Image
+
+Audio
+
+File
+
+Suppose:
+
+Travel Agent
+
+sends
+
+Image
+
+but
+
+Finance Agent
+
+accepts
+
+only Text.
+
+The request
+
+will fail.
+
+Therefore
+
+Agent Card
+
+publishes
+
+supported
+
+input modes.
+
+
+Parameter 10 – defaultOutputModes:
+
+Example
+Text
+
+JSON
+
+PDF
+
+CSV
+
+Image
+
+
+Question:
+
+Can
+
+Finance Agent
+
+generate
+
+PDF?
+
+If yes
+
+client knows
+
+beforehand.
+
+
+Parameter 11 – documentation:
+
+Example
+
+https://company/wiki/finance-agent
+
+Question
+
+Why?
+
+Developers
+
+may need
+
+detailed documentation.
+
+The Agent Card provides
+
+a link
+
+to additional information.
+
+
+
+Parameter 12 – icon:
+
+Example
+
+finance.png
+
+Useful
+
+for
+
+Agent Marketplace
+
+Dashboards
+
+Developer Portal
+
+Purely
+
+UI.
+
+
+Parameter 13 – tags:
+
+Example:
+
+Finance
+
+Budget
+
+Expense
+
+Accounting
+
+Useful:
+
+for
+
+search
+
+and
+
+categorization.
+
+
+
+Step 9 – Complete Agent Card Flow:
+Finance Agent Starts
+
+        │
+
+        ▼
+
+Creates Agent Card
+
+        │
+
+        ▼
+
+Publishes Card
+
+        │
+
+        ▼
+
+Travel Agent Downloads Card
+
+        │
+
+        ▼
+
+Reads Skills
+
+        │
+
+        ▼
+
+Reads Authentication
+
+        │
+
+        ▼
+
+Reads Capabilities
+
+        │
+
+        ▼
+
+Creates Task
+
+
+Notice:
+
+The Agent Card
+
+is usually read
+
+once
+
+and often cached,:
+
+rather than downloaded before every task.
+
+
+
+Step 10 – Enterprise Example:
+
+Suppose
+
+Company has
+
+
+HR Agent
+
+Travel Agent
+
+Finance Agent
+
+Legal Agent
+
+IT Agent
+
+Each publishes
+
+its own
+
+Agent Card.
+Agent Registry
+
+        │
+
+────────┼────────
+
+        │
+
+        ▼
+
+HR Card
+
+Finance Card
+
+Travel Card
+
+Legal Card
+
+
+Now
+
+any new Agent
+
+joining:
+
+the company
+
+can discover
+
+everyone.
+
+No hard coding.
+
+
+Step 11 – Human Analogy:
+you attend
+
+a conference.
+
+Before talking
+
+to someone
+
+you read
+
+their badge.
+Name
+
+Company
+
+Role
+
+Expertise
+
+Only then:
+
+do you decide
+
+whether
+
+to ask
+
+a Kubernetes question
+
+or
+
+a Finance question.
+
+Exactly
+
+what
+
+Agent Card does.
+
+
+Step 12 – Responsibilities of Each Field:
+| Field              | Purpose                                            |
+| ------------------ | -------------------------------------------------- |
+| name               | Identifies the agent                               |
+| description        | Explains what the agent does                       |
+| url                | Where requests should be sent                      |
+| version            | Protocol/application compatibility                 |
+| provider           | Owner or organization responsible                  |
+| authentication     | How clients authenticate                           |
+| skills             | Business capabilities exposed by the agent         |
+| capabilities       | Protocol features (streaming, notifications, etc.) |
+| defaultInputModes  | Supported input formats                            |
+| defaultOutputModes | Supported output formats                           |
+| documentation      | Developer documentation                            |
+| icon               | UI representation                                  |
+| tags               | Search and categorization                          |
+
+
+Interview Questions
+Q1. Why is url mandatory?:
+
+Without an endpoint, another agent has no way to communicate with the agent after discovery.
+
+Q2. What is the difference between skills and capabilities?:
+
+This is one of the most important interview questions.
+
+Skills describe business functions.
+
+Examples:
+
+Approve Budget
+
+Book Flight
+
+Generate Invoice
+
+Capabilities describe protocol features.
+
+Examples:
+
+Streaming
+
+Push Notifications
+
+Artifacts
+
+History
+
+Think of it this way:
+
+Chef
+
+↓
+
+Skill
+
+Cook Pizza
+
+---------------------
+
+Capability
+
+Home Delivery
+
+One is what the agent does.
+
+The other is how the agent communicates.
+
+
+
+Q3. Why publish authentication in the Agent Card?:
+
+So that clients know which authentication mechanism to use before sending requests, reducing negotiation failures and enabling interoperable communication.
+
+Q4. Are Agent Cards static?:
+
+Usually they change infrequently and can be cached, but they may evolve as an agent gains new skills, changes capabilities, or upgrades protocol versions.

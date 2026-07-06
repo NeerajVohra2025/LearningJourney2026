@@ -1,0 +1,1041 @@
+Chapter 9 – Vector Store (Vector Database):
+Step 1 – Why do we need a Vector Store?:
+
+Let's go back.
+
+Suppose we have
+
+Chunk 1
+
+Employees are entitled to 20 days annual leave.
+
+↓
+
+Embedding
+
+↓
+
+[0.12,0.56,-0.73.....]
+
+Question
+
+Where do we store
+
+[0.12,0.56,-0.73.....]
+
+Can we store
+
+inside MySQL?
+
+Technically
+
+Yes.
+
+Should we?
+
+No.
+
+Why?:
+
+Suppose
+
+Company has
+
+10 Million Chunks
+
+User asks
+
+Vacation Policy
+
+Question
+
+Can MySQL compare
+
+10 Million
+
+768-dimensional vectors
+
+efficiently?
+
+No.
+
+Very slow.
+
+Therefore
+
+we need
+
+a database
+
+specifically designed
+
+for vectors.
+
+This is called
+
+Vector Database
+
+
+Step 2 – Think Like Google Maps:
+
+Suppose Google stores
+
+Delhi
+
+↓
+
+(28.61,77.20)
+
+Mumbai
+
+↓
+
+(19.07,72.87)
+
+Question
+
+How does Google find
+
+nearest city?
+
+It calculates
+
+distance.
+
+Exactly the same.
+
+Instead of cities:
+
+we have
+
+Sentence
+
+↓
+
+Vector
+
+↓
+
+Coordinates
+
+
+Question:
+
+Which sentence
+
+is closest
+
+to the query?
+
+Vector Database calculates
+
+distance.
+
+
+Step 3 – Complete Architecture:
+Chunks
+
+↓
+
+Embedding Model
+
+↓
+
+Vectors
+
+↓
+
+Vector Database
+
+────────────────────────
+
+User Query
+
+↓
+
+Embedding
+
+↓
+
+Vector
+
+↓
+
+Similarity Search
+
+↓
+
+Top K Chunks
+
+Notice:
+
+Vector Database
+
+does NOT understand
+
+English.
+
+It understands
+
+Numbers
+
+Step 4 – Popular Vector Databases:
+
+Today
+
+most enterprises use
+| Database                    | Type                 |
+| --------------------------- | -------------------- |
+| Chroma                      | Local/Open Source    |
+| FAISS                       | Local Library        |
+| Pinecone                    | Managed Cloud        |
+| Qdrant                      | Open Source          |
+| Milvus                      | Enterprise           |
+| Weaviate                    | Enterprise           |
+| PGVector                    | PostgreSQL Extension |
+| MongoDB Atlas Vector Search | Cloud                |
+
+For learning
+
+we'll use
+
+Chroma
+
+because
+
+it runs locally.
+
+
+Step 5 – Install Packages:
+uv add chromadb
+
+uv add langchain-chroma
+
+Import
+
+from langchain_chroma import Chroma
+
+Question
+
+Why
+
+two packages?
+
+Because
+
+ChromaDB
+
+↓
+
+Actual Database
+
+--------------------
+
+LangChain-Chroma
+
+↓
+
+Connector
+
+Exactly like
+
+Oracle Database
+
+↓
+
+JDBC Driver
+
+
+Step 6 – Create Vector Store:
+from langchain_chroma import Chroma
+
+vector_store = Chroma(
+    collection_name="hr_policy",
+    embedding_function=embedding,
+    persist_directory="./chroma_db"
+)
+
+Question
+
+Did it store anything?
+
+No.
+
+Exactly like
+
+loader = PyPDFLoader(...)
+
+Nothing happens yet.
+
+Only
+
+a Vector Store object
+
+is created.
+
+
+Step 7 – Constructor Parameters:
+
+Let's understand every parameter.
+
+Chroma(
+
+    collection_name,
+
+    embedding_function,
+
+    persist_directory,
+
+    client,
+
+    collection_metadata
+)
+We'll study
+
+one by one.
+
+Parameter 1:
+collection_name
+
+Think of
+
+SQL
+
+Database
+
+↓
+
+Table
+
+Similarly
+
+Chroma
+
+Database
+
+↓
+
+Collection
+
+Example
+
+collection_name="hr_policy"
+
+Another collection
+
+collection_name="finance_policy"
+
+Question
+
+Why?
+
+Because
+
+we don't mix
+
+HR
+
+Finance
+
+Legal
+
+documents.
+
+
+Parameter 2:
+embedding_function
+
+This is
+
+the MOST IMPORTANT parameter.
+
+Example
+
+embedding_function=embedding
+
+where
+
+embedding = OllamaEmbeddings(...)
+
+Question
+
+Why does Chroma
+
+need embedding model?
+
+Suppose
+
+User asks
+
+Leave Policy
+
+Question
+
+Who converts
+
+query
+
+into
+
+vector?
+
+Answer
+
+Chroma calls
+
+embedding.embed_query(...)
+
+internally.
+
+Without
+
+embedding model
+
+search
+
+cannot happen.
+
+
+Parameter 3:
+
+persist_directory
+
+Example
+
+persist_directory="./chroma_db"
+
+Question
+
+Why?
+
+Suppose
+
+you ingest
+
+100000 PDFs.
+
+Tomorrow
+
+restart
+
+application.
+
+Should we
+
+re-embed
+
+everything?
+
+No.
+
+Chroma stores
+
+everything
+
+on disk.
+
+Example
+
+./chroma_db
+
+↓
+
+Vectors
+
+↓
+
+Metadata
+
+↓
+
+Indexes
+
+Restart
+
+↓
+
+Still available.
+
+
+
+Parameter 4:
+
+client
+
+Advanced.
+
+Suppose
+
+Chroma
+
+runs
+
+on another server.
+
+Python
+
+↓
+
+Remote Chroma
+
+Then
+
+client
+
+connects
+
+to remote server.
+
+Normally
+
+not required
+
+for beginners.
+
+Parameter 5:
+
+collection_metadata
+
+Stores
+
+information
+
+about collection.
+
+Example
+
+{
+"department":"HR",
+"version":"1.0"
+}
+
+Mostly
+
+used
+
+in enterprise.
+
+
+
+Step 8 – Store Documents:
+
+Suppose
+
+Splitter returned
+
+chunks
+
+Now
+
+store
+
+vector_store.add_documents(chunks)
+
+Question
+
+What happens?
+
+Let's see.
+
+Internal Lifecycle:
+Chunk 1
+
+↓
+
+page_content
+
+↓
+
+Embedding
+
+↓
+
+Vector
+
+↓
+
+Metadata
+
+↓
+
+Store
+
+-----------------------
+
+Chunk 2
+
+↓
+
+Embedding
+
+↓
+
+Store
+
+
+Notice:
+
+LangChain
+
+calls
+
+embed_documents()
+
+automatically.
+
+
+Complete Flow:
+Chunk
+
+↓
+
+page_content
+
+↓
+
+Embedding Model
+
+↓
+
+Vector
+
+↓
+
+Chroma Collection
+
+
+Step 9 – What Does Chroma Store?:
+
+Question
+
+Does Chroma store
+
+Document object?
+
+No.
+
+Internally
+
+Chunk Text
+
++
+
+Embedding Vector
+
++
+
+Metadata
+
++
+
+ID
+
+Example:
+ID
+
+123
+
+--------------------
+
+Vector
+
+[0.23,-0.66...]
+
+--------------------
+
+Text
+
+Employees are entitled...
+
+--------------------
+
+Metadata
+
+Page=10
+
+Source=HR.pdf
+
+
+Step 10 – Search:
+
+Suppose
+
+User asks
+
+How many vacation days?
+
+Python
+
+results = vector_store.similarity_search(
+    "How many vacation days?",
+    k=3
+)
+
+Question
+
+What happens internally?
+
+
+Phase 1:
+Question
+
+↓
+
+Embedding Model
+
+↓
+
+Query Vector
+
+Phase 2:
+Query Vector
+
+↓
+
+Chroma
+
+Phase 3:
+
+Compare
+
+with
+
+every stored vector.
+
+
+Phase 4:
+
+Calculate
+
+Similarity Score
+
+
+Phase 5:
+
+Return
+
+Top 3 Documents.
+
+Complete Lifecycle:
+
+Query
+
+↓
+
+embed_query()
+
+↓
+
+Query Vector
+
+↓
+
+Similarity Search
+
+↓
+
+Top K
+
+↓
+
+Document List
+
+
+Step 11 – similarity_search():
+
+Most common API.
+
+docs = vector_store.similarity_search(
+    "Leave Policy",
+    k=5
+)
+
+Returns
+
+List[Document]
+
+Notice
+
+Only
+
+Documents.
+
+No scores.
+
+
+Step 12 – similarity_search_with_score():
+
+Sometimes
+
+we need
+
+confidence.
+
+Example
+
+results = vector_store.similarity_search_with_score(
+    "Leave Policy",
+    k=5
+)
+
+Returns
+
+Document
+
++
+
+Similarity Score
+
+Example
+
+Leave Policy
+
+0.94
+
+--------------------
+
+Medical Policy
+
+0.81
+
+Useful
+
+for debugging.
+
+
+Step 13 – Metadata Filtering:
+
+Suppose
+
+Company has
+
+HR
+
+Finance
+
+Legal
+
+User asks
+
+Leave Policy
+
+Should we search
+
+Finance?
+
+No.
+
+Python
+
+results = vector_store.similarity_search(
+    query="Leave Policy",
+    filter={
+        "department":"HR"
+    }
+)
+
+Search becomes
+
+much faster.
+
+
+Step 14 – Delete Documents:
+
+Suppose
+
+HR uploads
+
+new policy.
+
+Delete
+
+vector_store.delete(
+    ids=["chunk-100"]
+)
+
+Only
+
+that chunk
+
+is removed.
+
+
+Step 15 – Update Documents:
+
+Some vector stores support
+
+update_documents()
+
+Otherwise
+
+common practice
+
+is
+
+Delete
+
+↓
+
+Insert Again
+
+
+Step 16 – as_retriever():
+
+This is
+
+one of
+
+the MOST IMPORTANT methods.
+
+Example
+
+retriever = vector_store.as_retriever(
+    search_kwargs={
+        "k":5
+    }
+)
+
+Question
+
+Why?
+
+Because
+
+LangChain Chains
+
+expect
+
+Retriever
+
+NOT
+
+Vector Store
+
+We'll understand
+
+Retriever
+
+in next chapter.
+
+
+Step 17 – Enterprise Architecture:
+                Documents
+
+                     │
+
+                     ▼
+
+               Embedding
+
+                     │
+
+                     ▼
+
+             Chroma Collection
+
+────────────────────────────────────
+
+               User Query
+
+                     │
+
+                     ▼
+
+              embed_query()
+
+                     │
+
+                     ▼
+
+             Similarity Search
+
+                     │
+
+                     ▼
+
+              Top 5 Chunks
+
+                     │
+
+                     ▼
+
+              Prompt Builder
+
+                     │
+
+                     ▼
+
+                  LLM
+                  
+                  
+Step 18 – Vector Store vs Vector Database:
+People often use the terms interchangeably, but they refer to different layers.
+
+Vector Database
+
+The actual storage engine.
+
+Examples:
+
+ChromaDB
+Pinecone
+Milvus
+Qdrant
+
+It stores vectors, metadata, and indexes.
+
+
+
+Vector Store (LangChain)
+
+A Python wrapper that provides a common interface.
+
+vector_store = Chroma(...)
+
+This object exposes methods like:
+
+add_documents()
+similarity_search()
+delete()
+as_retriever()
+
+It hides the implementation details of the underlying database.
+
+Think of it like:
+
+Java Application
+        │
+        ▼
+JDBC Driver
+        │
+        ▼
+Oracle Database
+
+Similarly:
+
+LangChain Application
+        │
+        ▼
+Vector Store
+        │
+        ▼
+ChromaDB                  
+
+
+Interview Questions:
+Q1. Why not use MySQL for vector search?:
+
+Relational databases are optimized for exact matching and relational queries. Semantic search requires efficient nearest-neighbor search in high-dimensional vector space, which vector databases are specifically designed for.
+
+Q2. Why does Chroma need the embedding model?:
+
+When a user submits a query, the query must first be converted into an embedding before similarity search can be performed. The vector store uses the configured embedding function to generate that query vector.
+
+Q3. What does persist_directory do?:
+
+It stores the collection, vectors, metadata, and indexes on disk so that data survives application restarts. Without persistence, you'd need to regenerate embeddings every time the application starts
+
+
+Q4. What is the difference between similarity_search() and similarity_search_with_score()?:
+similarity_search() returns only the matching Document objects.
+similarity_search_with_score() returns both the Document and its similarity score, which is useful for debugging, thresholding, and evaluating retrieval quality.

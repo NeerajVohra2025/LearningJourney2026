@@ -45,3 +45,54 @@ Example
 OLLAMA_BASE_URL=http://localhost:11434
 
 MODEL_NAME=llama3.2
+
+
+Step 10 – Verify Installation:
+
+Run
+uv pip list
+Expected packages
+a2a-sdk
+
+openai-agents
+
+langgraph
+
+langchain
+
+langchain-ollama
+
+fastapi
+
+uvicorn
+
+httpx
+
+
+What Each Package Will Do:
+a2a-sdk
+
+Provides:
+Agent Card
+
+↓
+
+Task
+
+↓
+
+Executor
+
+↓
+
+Client
+
+↓
+
+Server
+
+↓
+
+Streaming
+Implements the A2A protocol.:
+
