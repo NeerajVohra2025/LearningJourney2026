@@ -1,0 +1,534 @@
+1. Observability Philosophy:
+Observability is not a logging framework.
+
+In an Enterprise GenAI platform, observability provides complete visibility into every request, policy decision, AI interaction, external API call, and business outcome.
+
+What happened?
+Why did it happen?
+Where did it happen?
+Can it be reproduced and audited?
+
+The platform therefore treats Observability as a first-class architectural capability, not as an infrastructure concern.
+
+
+Observability Reference Architecture:
+Observability spans the entire request lifecycle.
+Request
+   │
+   ▼
+Distributed Trace
+   │
+   ▼
+Structured Logs
+   │
+   ▼
+Metrics
+   │
+   ▼
+Audit
+   │
+   ▼
+Evaluation
+   │
+   ▼
+Dashboards & Alerts
+
+Unlike traditional applications, AI systems require additional telemetry such as:
+
+Prompt safety
+Model safety
+Token usage
+Grounding confidence
+Hallucination risk
+AI evaluation metrics
+
+Enterprise Single Source of Truth:
+Every request generates exactly one business transaction.
+Everything else links back to that transaction.
+Business Request
+       │
+       ▼
+Incident ID
+       │
+       ▼
+Correlation ID
+       │
+       ▼
+OpenTelemetry Trace
+       │
+       ▼
+Child Spans
+       │
+       ▼
+Logs
+       │
+       ▼
+Metrics
+       │
+       ▼
+BigQuery Audit
+       │
+       ▼
+Vertex AI Evaluation
+This creates a single, auditable execution history for every request.
+
+Enterprise Telemetry Stack:
+| Capability          | Google Cloud Service        | Purpose                        |
+| ------------------- | --------------------------- | ------------------------------ |
+| Distributed Tracing | Cloud Trace + OpenTelemetry | End-to-end execution flow      |
+| Logging             | Cloud Logging               | Structured application logs    |
+| Metrics             | Cloud Monitoring            | Performance and SLOs           |
+| Audit               | BigQuery                    | Long-term audit and compliance |
+| AI Evaluation       | Vertex AI Evaluation        | Response quality and grounding |
+| Security Audit      | Cloud Audit Logs            | Platform activity              |
+| Dashboards          | Cloud Monitoring Dashboards | Operations and visualization   |
+| Alerting            | Cloud Monitoring Alerts     | Operational notifications      |
+
+Layer-by-Layer Observability Mapping:
+| Architecture Layer | Responsibility  | Telemetry Produced |
+| ------------------ | --------------- | ------------------ |
+| API Gateway        | Request entry   | Root Span          |
+| Policy Layer       | Governance      | Child Spans        |
+| Application Layer  | Workflow        | Execution Spans    |
+| Domain Layer       | AI reasoning    | AI Metrics         |
+| Ports              | Contracts       | No telemetry       |
+| Adapters           | GCP Integration | API Telemetry      |
+| Infrastructure     | Cloud Services  | Platform Metrics   |
+
+
+6. Span Naming Convention:
+Every span should follow a predictable format.
+
+layer.component.operation
+Examples:
+gateway.receive
+policy.dlp.inspect
+policy.modelarmor.prompt
+policy.token.count
+orchestrator.execute
+routing.decide
+log.search
+log.bigquery
+log.cloudlogging
+rca.grounding
+rca.generate
+rca.citation
+rca.output.modelarmor
+evaluation.vertex
+incident.create
+cache.redis
+trace.export
+
+
+8. GCP API Mapping:
+| Layer                 | GCP Service               | API / Method                               |
+| --------------------- | ------------------------- | ------------------------------------------ |
+| Gateway               | Cloud Run                 | HTTP Request                               |
+| DLP                   | Sensitive Data Protection | `DlpServiceClient.inspect_content()`       |
+| Prompt Safety         | Vertex AI Model Armor     | `sanitizeUserPrompt()`                     |
+| Token Counting        | Vertex AI Generative AI   | `countTokens()`                            |
+| Gemini Generation     | Vertex AI Gemini          | `generateContent()`                        |
+| Output Safety         | Vertex AI Model Armor     | `sanitizeModelResponse()`                  |
+| Grounding             | Vertex AI Search          | `search()`                                 |
+| Embeddings (optional) | Vertex AI                 | `embedContent()`                           |
+| Evaluation            | Vertex AI Evaluation      | `EvalTask.evaluate()`                      |
+| Logging               | Cloud Logging             | `logging.Client.write()`                   |
+| Trace                 | Cloud Trace               | `tracer.start_as_current_span()`           |
+| Metrics               | Cloud Monitoring          | `MetricServiceClient.create_time_series()` |
+| Audit                 | BigQuery                  | `insert_rows_json()`                       |
+| Cache                 | Memorystore (Redis)       | `redis.get()`, `redis.set()`               |
+| Secret Management     | Secret Manager            | `access_secret_version()`                  |
+| Incident Management   | ServiceNow                | `PATCH /api/now/table/incident`            |
+
+
+
+GCP Vertex AI API Mapping:
+| Architecture Component | Google Cloud Service      | SDK / Client                 | API / Method                    | Telemetry                         |
+| ---------------------- | ------------------------- | ---------------------------- | ------------------------------- | --------------------------------- |
+| Prompt Inspection      | Sensitive Data Protection | `DlpServiceClient`           | `inspect_content()`             | Findings Count                    |
+| Prompt Sanitization    | Vertex AI Model Armor     | REST / SDK                   | `sanitizeUserPrompt()`          | Blocked Rules                     |
+| Token Estimation       | Vertex AI Gemini          | `GenerativeModel`            | `countTokens()`                 | Input Tokens                      |
+| Prompt Generation      | Vertex AI Gemini          | `GenerativeModel`            | `generateContent()`             | Latency, Output Tokens            |
+| Embedding Generation   | Vertex AI Embeddings      | `TextEmbeddingModel`         | `get_embeddings()`              | Vector Dimensions                 |
+| Grounding Search       | Vertex AI Search          | `SearchServiceClient`        | `search()`                      | Retrieved Documents               |
+| Response Sanitization  | Vertex AI Model Armor     | REST / SDK                   | `sanitizeModelResponse()`       | Safety Score                      |
+| AI Evaluation          | Vertex AI Evaluation      | `EvalTask`                   | `evaluate()`                    | Grounding, Hallucination, Quality |
+| Logging                | Cloud Logging             | `logging.Client`             | `write()`                       | Structured Logs                   |
+| Distributed Trace      | Cloud Trace               | OpenTelemetry                | `start_as_current_span()`       | Trace Hierarchy                   |
+| Metrics                | Cloud Monitoring          | `MetricServiceClient`        | `create_time_series()`          | SLO Metrics                       |
+| Audit                  | BigQuery                  | `bigquery.Client`            | `insert_rows_json()`            | Audit Records                     |
+| Secrets                | Secret Manager            | `SecretManagerServiceClient` | `access_secret_version()`       | Secret Access Audit               |
+| Cache                  | Memorystore (Redis)       | Redis Client                 | `get() / set()`                 | Cache Hit Ratio                   |
+| Incident Management    | ServiceNow                | REST API                     | `PATCH /api/now/table/incident` | External API Metrics              |
+
+Standard Span Attributes:
+
+Every span should include a common set of attributes to ensure consistent analysis.
+| Category     | Attributes                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| Business     | `incident_id`, `correlation_id`, `tenant_id`, `user_id`                                         |
+| Architecture | `layer`, `component`, `agent`, `workflow`                                                       |
+| AI           | `model`, `temperature`, `token_input`, `token_output`, `grounding_score`, `hallucination_score` |
+| GCP          | `gcp.service`, `gcp.method`, `project_id`, `region`                                             |
+| Performance  | `latency_ms`, `retry_count`, `cache_hit`                                                        |
+| Security     | `policy_result`, `dlp_findings`, `model_armor_action`                                           |
+
+
+
+       
+##################################################################################################################
+
+Create the Root Span (Logical Gateway only)
+Inject the trace context into downstream headers (Logical Gateway only)
+Extract the parent context and create child spans (every downstream component)
+
+Correct Enterprise Flow:
+Client
+   │
+   │ traceparent
+   ▼
+API Gateway
+   │
+   ▼
+Cloud Run Logical Gateway
+   │
+   ├── Create Root Span
+   ├── Generate Correlation ID
+   ├── Generate Incident ID
+   ├── Inject traceparent
+   ├── Inject tracestate
+   ├── Inject x-correlation-id
+   ├── Inject x-incident-id
+   │
+   ▼
+Input Policy Pipeline
+   │
+   ▼
+Orchestrator
+   │
+   ▼
+Routing Engine
+   │
+   ▼
+Agents
+   │
+   ▼
+Adapters
+   │
+   ▼
+Vertex AI
+Notice:
+
+Only Gateway creates the Root Span.
+
+Everything else creates child spans.
+
+
+Split the Framework:
+observability/
+
+observer.py
+
+context.py
+
+headers.py
+
+otel_observer.py
+
+
+context.py:
+
+This is responsible for
+
+Root Span
+Header Injection
+Context Extraction
+
+
+Create Root Context:
+class TraceContext:
+
+    def create_headers(
+        self,
+        correlation_id,
+        incident_id,
+    ):
+
+        headers = {}
+
+        inject(headers)
+
+        headers["x-correlation-id"] = correlation_id
+
+        headers["x-incident-id"] = incident_id
+
+        return headers
+        
+Notice
+
+This is where:
+inject(headers)
+happens.
+
+
+Logical Gateway:
+This is the only place that creates Root Span.        
+with observer.span(
+    "gateway.root",
+    headers=incoming_headers,
+):
+
+    outgoing_headers = trace_context.create_headers(
+
+        correlation_id,
+
+        incident_id,
+
+    )
+
+    policy.execute(
+
+        payload,
+
+        outgoing_headers,
+
+    )
+    
+    
+Now:
+outgoing_headers contains    
+traceparent
+
+tracestate
+
+x-correlation-id
+
+x-incident-id
+
+
+Policy Pipeline:
+
+Policy does NOT create Root Span.
+
+It only extracts.
+with observer.span(
+
+    "policy.pipeline",
+
+    headers=headers,
+
+):
+
+Internally:
+
+Observer does
+parent = extract(headers)
+Then
+start_as_current_span(
+
+    context=parent
+
+)
+
+Now
+gateway.root
+
+↓
+
+policy.pipeline
+
+is maintained.
+
+
+Orchestrator:
+
+Receives same headers
+orchestrator.execute(
+
+    payload,
+
+    headers,
+
+)
+
+Internally
+extract(headers)
+
+creates:
+gateway.root
+
+↓
+
+policy.pipeline
+
+↓
+
+orchestrator.execute
+
+
+Agent:
+
+Same
+with observer.span(
+
+    "rca.generate",
+
+    headers=headers,
+
+)
+
+Again
+extract(headers)
+Parent
+orchestrator.execute
+
+Child
+rca.generate
+
+
+Adapter:
+
+Again
+with observer.span(
+
+    "vertex.generate",
+
+    headers=headers,
+
+)
+
+Parent:
+rca.generate
+
+Child:
+vertex.generate
+
+The Complete Parent Tree
+gateway.root
+
+│
+
+├── policy.pipeline
+
+│      ├── policy.dlp
+
+│      ├── policy.modelarmor
+
+│      └── policy.token
+
+│
+
+├── orchestrator.execute
+
+│
+
+├── routing.engine
+
+│
+
+├── rca.generate
+
+│      │
+
+│      └── vertex.generate
+
+│
+
+└── evaluation
+
+
+Where Does inject() Happen?:
+
+Exactly once.
+Logical Gateway
+
+Never inside
+
+Policy
+Orchestrator
+Agents
+Adapters
+
+Those components only
+extract(headers)
+
+
+Therefore I Recommend Three Classes:
+TraceContext
+Responsible for
+inject()
+Creates downstream headers.
+
+
+Observer:
+Responsible for
+extract()
+Creates child spans.
+
+OpenTelemetryObserver:
+Responsible for
+start_as_current_span()
+Records telemetry.
+
+Enterprise:
+                    HTTP Request
+
+                          │
+
+                          ▼
+
+                Logical Gateway
+
+          Create Root Span
+
+          inject(traceparent)
+
+          inject(tracestate)
+
+          create correlation-id
+
+          create incident-id
+
+                          │
+
+                          ▼
+
+──────────────────────────────────────────────
+
+Downstream Components
+
+      extract(headers)
+
+      create child span
+
+──────────────────────────────────────────────
+
+Policy
+
+↓
+
+Orchestrator
+
+↓
+
+Routing
+
+↓
+
+Agent
+
+↓
+
+Adapter
+
+↓
+
+Vertex AI
+
+
+My Recommendation
+
+I would not combine root-span creation, header injection, and child-span creation into a single utility. Instead, I would define two explicit responsibilities:
+
+TraceContext: owns trace creation and propagation. It creates the root span context at the Logical Gateway, injects traceparent, tracestate, x-correlation-id, and x-incident-id into the outgoing headers, and is used only at service boundaries.
+Observer: owns span lifecycle. It extracts the propagated context from headers, creates child spans, enriches them with attributes, records exceptions, and updates span status. It is injected into the Policy Pipeline, Application Layer, Domain Layer, Agents, and Adapters.

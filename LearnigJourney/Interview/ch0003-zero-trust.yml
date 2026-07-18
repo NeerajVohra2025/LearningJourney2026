@@ -1,0 +1,100 @@
+Chapter 5 – Identity, Zero Trust & Enterprise Security:
+5.1 Why Zero Trust for GenAI?
+
+Traditional enterprise applications authenticate users once and then implicitly trust subsequent requests. This approach is unsuitable for Generative AI because AI systems can access sensitive enterprise data, execute tools, invoke external APIs, retrieve confidential documents, and trigger automated workflows.
+
+A single compromised request could expose proprietary information or initiate unauthorized actions.
+
+For this reason, modern AI platforms adopt the Zero Trust principle:
+
+Never Trust. Always Verify.
+
+Every request, whether originating from a user, service, AI agent, or automation workflow, must be authenticated, authorized, validated, and continuously evaluated before accessing enterprise resources.
+
+Unlike conventional systems where security is often concentrated at the API Gateway, a Responsible AI platform enforces security throughout the complete request lifecycle.
+
+
+5.2 Zero Trust Architecture:
+                    ┌──────────────────────────────┐
+                    │        User / Service        │
+                    └──────────────┬───────────────┘
+                                   │
+                     OAuth2 / OIDC │ JWT / mTLS
+                                   ▼
+                    ┌──────────────────────────────┐
+                    │      Identity Provider       │
+                    │ IAM • STS • Workload Identity│
+                    └──────────────┬───────────────┘
+                                   │
+                                   ▼
+                    ┌──────────────────────────────┐
+                    │      API Security Gateway     │
+                    │ Auth • Rate Limit • WAF • TLS│
+                    └──────────────┬───────────────┘
+                                   │
+                                   ▼
+                    ┌──────────────────────────────┐
+                    │      Policy Engine            │
+                    │ Authentication               │
+                    │ Authorization                │
+                    │ RBAC / ABAC                  │
+                    │ Tenant Validation            │
+                    │ Policy Evaluation            │
+                    └──────────────┬───────────────┘
+                                   │
+                                   ▼
+                         Input Governance Pipeline
+                         
+5.3 Enterprise Security Principles:
+The platform follows several foundational security principles that apply to every layer of the architecture.
+| Principle               | Description                                                                                    |
+| ----------------------- | ---------------------------------------------------------------------------------------------- |
+| Verify Every Request    | Every API call, tool invocation, and AI request must be authenticated.                         |
+| Least Privilege         | Users, services, and AI agents receive only the permissions required for their task.           |
+| Short-Lived Credentials | Replace long-lived secrets with temporary access tokens.                                       |
+| Continuous Verification | Security checks occur throughout the request lifecycle, not only at login.                     |
+| Defense in Depth        | Multiple independent security layers reduce the impact of failures.                            |
+| Complete Auditability   | Every request, decision, and policy evaluation is logged for compliance and forensic analysis. |
+
+5.4 Authentication Flow:
+Authentication verifies the identity of the caller before any business processing begins.   
+Supported authentication mechanisms include:
+
+OAuth 2.0
+OpenID Connect (OIDC)
+JWT Bearer Tokens
+Mutual TLS (mTLS)
+Google Workload Identity Federation
+Service Accounts
+API Keys (for controlled machine-to-machine integrations)
+
+The result of successful authentication is a trusted identity represented by a security token containing user or service claims.
+
+5.6 Identity Propagation:
+
+Identity is propagated throughout the request lifecycle rather than re-created at each layer.
+
+The propagated security context typically includes:
+
+User ID
+Tenant ID
+Organization
+Roles
+Permissions
+Session ID
+Trace ID
+Correlation ID
+Token Expiration
+Risk Score
+
+Every downstream service consumes the same verified identity, ensuring consistent authorization decisions across the platform.  
+
+5.10 Clean Architecture Mapping:
+| Layer              | Responsibility                                                                           |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| **Domain**         | Security entities, identity models, access policies, and security rules.                 |
+| **Application**    | Coordinates authentication, authorization, and policy evaluation workflows.              |
+| **Ports**          | Defines interfaces for identity providers, authorization engines, and policy evaluators. |
+| **Adapters**       | Implements integrations with OIDC, IAM, JWT validation, mTLS, and Workload Identity.     |
+| **Infrastructure** | Provides cloud IAM, Kubernetes, certificates, and secret management.                     |
+                    

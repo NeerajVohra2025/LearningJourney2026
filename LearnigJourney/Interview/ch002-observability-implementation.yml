@@ -1,0 +1,216 @@
+Final SSOT Folder Structure:
+enterprise_observability/
+
+interfaces/
+
+    observer_interface.py
+
+    trace_manager_interface.py
+
+    logger_interface.py
+
+    metrics_interface.py
+
+    event_publisher_interface.py
+
+--------------------------------------------------
+
+infrastructure/
+
+    tracing/
+
+        otel_observer.py
+
+        otel_trace_manager.py
+
+        context_propagator.py
+
+        correlation_manager.py
+
+        baggage_manager.py
+
+    logging/
+
+        cloud_logger.py
+
+    metrics/
+
+        cloud_metrics.py
+
+    events/
+
+        cloud_event_publisher.py
+
+--------------------------------------------------
+
+observability_context.py
+
+bootstrap.py
+
+middleware/
+    
+Layer 1 — Interfaces (Ports):
+
+The interfaces package defines the contracts that the business layer depends on. These contracts contain no OpenTelemetry, no Google Cloud SDK, and no implementation logic.
+
+The five core interfaces are    
+| Interface          | Responsibility                  |
+| ------------------ | ------------------------------- |
+| `Observer`         | Create and manage child spans   |
+| `TraceManager`     | Create and manage the root span |
+| `StructuredLogger` | Write structured logs           |
+| `MetricsRecorder`  | Publish custom metrics          |
+| `EventPublisher`   | Publish business events         |
+These are the only observability abstractions that the application needs to know.
+
+Layer 2 — Infrastructure (Adapters):
+The infrastructure package contains the concrete implementations of those interfaces.
+These classes encapsulate all OpenTelemetry and Google Cloud specific logic.
+| Interface          | Implementation              |
+| ------------------ | --------------------------- |
+| `Observer`         | `OpenTelemetryObserver`     |
+| `TraceManager`     | `OpenTelemetryTraceManager` |
+| `StructuredLogger` | `CloudLogger`               |
+| `MetricsRecorder`  | `CloudMetricsRecorder`      |
+| `EventPublisher`   | `CloudEventPublisher`       |
+
+The tracing implementation also uses internal helper components:
+ContextPropagator
+CorrelationManager
+BaggageManager
+These are internal collaborators and are not exposed to the application.
+
+
+Layer 3 — ObservabilityContext:
+The application should never receive individual observability services.
+Instead, it receives a single object:
+class ObservabilityContext:
+    observer: Observer
+    trace_manager: TraceManager
+    logger: StructuredLogger
+    metrics: MetricsRecorder
+    events: EventPublisher
+    
+Layer 4 — Bootstrap (Composition Root):
+The bootstrap.py module is the only place where concrete implementations are created.
+
+Its responsibilities are:
+
+Instantiate infrastructure components.
+Wire implementations to interfaces.
+Create the ObservabilityContext.
+Inject the ObservabilityContext into the application.
+
+A simplified wiring sequence is:
+Create CorrelationManager
+        ↓
+Create BaggageManager
+        ↓
+Create ContextPropagator
+        ↓
+Create OpenTelemetryTraceManager
+        ↓
+Create OpenTelemetryObserver
+        ↓
+Create CloudLogger
+        ↓
+Create CloudMetricsRecorder
+        ↓
+Create CloudEventPublisher
+        ↓
+Create ObservabilityContext
+
+No other module should instantiate these classes.:
+
+Layer 5 — Dependency Injection:
+The dependency graph should always flow from abstractions to implementations.
+Application Layer
+        │
+        ▼
+ObservabilityContext
+        │
+        ▼
+Interfaces (Ports)
+        │
+        ▼
+Infrastructure (Adapters)
+        │
+        ▼
+OpenTelemetry SDK
+        │
+        ▼
+Google Cloud SDK
+
+This ensures that the business layer remains independent of any observability framework or cloud provider.
+    
+    
+Business Usage:
+Business components depend only on the ObservabilityContext.
+
+For example:    
+class Orchestrator:
+
+    def __init__(
+        self,
+        observability: ObservabilityContext,
+        routing_engine: RoutingEngine,
+    ):
+        self.obs = observability
+        self.routing = routing_engine
+        
+During execution:
+with self.obs.observer.span(
+    name="execute_rca",
+    attributes={
+        "workflow": "rca",
+        "component": "orchestrator",
+    },
+):
+    self.obs.logger.info("Starting RCA workflow")
+    self.obs.metrics.counter("rca.requests")
+    self.obs.events.publish("RCA_STARTED")        
+    
+Notice that the business code never imports:
+OpenTelemetry
+Google Cloud Logging
+Google Cloud Monitoring
+Cloud Trace APIs
+Those implementation details remain fully encapsulated within the infrastructure layer.    
+Implementation Order (Frozen)
+
+From this point onward, I would implement the framework in the following order:
+
+Interfaces (Ports) – Define all observability contracts.
+Infrastructure (Adapters) – Implement each contract using OpenTelemetry and Google Cloud SDKs.
+ObservabilityContext – Aggregate the services into a single application dependency.
+Bootstrap – Compose and inject the framework.
+FastAPI Middleware – Create the root span and initialize distributed tracing.
+Business Integration – Integrate the framework into the Policy Pipeline, Application Layer, Domain Layer, AI Agents, and infrastructure adapters.
+
+
+Final SSOT:
+Business code knows only
+ObserverInterface
+
+TraceManagerInterface
+
+LoggerInterface
+
+MetricsInterface
+
+EventPublisherInterface
+
+
+Everything else:
+OpenTelemetry
+
+Cloud Logging
+
+Cloud Monitoring
+
+Cloud Trace
+
+is hidden inside
+infrastructure/
+This is the cleanest implementation for an enterprise Python framework.
+

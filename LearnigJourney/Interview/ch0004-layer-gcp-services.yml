@@ -1,0 +1,609 @@
+# 2. LAYER-BY-LAYER WITH GCP APIs
+
+## Layer 1 — Input Policy
+
+### GCP APIs
+
+```python
+dlp.inspect_content()
+modelarmor.sanitizeUserPrompt()
+model.count_tokens()
+```
+
+---
+
+## Layer 2 — Evidence
+
+```python
+logging.Client().list_entries()
+search_client.search()
+bigquery.query()
+```
+
+---
+
+## Layer 3 — Grounding
+
+```python
+def build_prompt(evidence):
+    return f"""
+    Use ONLY this evidence:
+    {evidence}
+    """
+```
+
+---
+
+## Layer 4 — LLM
+
+```python
+model.generate_content(prompt)
+```
+
+---
+
+## Layer 5 — Output Safety (NEW)
+
+```python
+sanitizeModelResponse()
+dlp.inspect_content(response)
+```
+
+---
+
+## Layer 6 — Evaluation
+
+```python
+EvalTask(dataset, metrics).evaluate()
+```
+
+---
+
+## Layer 7 — Routing
+
+```python
+if grounding < 0.8:
+    return "human"
+```
+
+---
+
+## Layer 8 — Execution
+
+```python
+ActionAgent.execute()
+IncidentAgent.update()
+HITLTool.request()
+```
+
+# 3. Step-by-Step Layer-by-Layer Explanation with GCP APIs and Methods
+
+## 1. USER / EVENT LAYER
+
+### Purpose
+
+Trigger the system when something goes wrong.
+
+### What Happens
+
+- Monitoring detects an issue
+- Incident is created
+
+### APIs
+
+#### ServiceNow
+
+```http
+POST /api/now/table/incident
+```
+
+#### Monitoring
+
+- Grafana / Cloud Monitoring Alerts
+
+> ✅ **No GCP GenAI APIs are used in this layer.**
+
+---
+
+## 2. FEDERATED IDENTITY & ZERO TRUST LAYER
+
+### Purpose
+
+Secure access without static credentials.
+
+### Flow
+
+#### Step 1 — Get JWT from IdP
+
+```http
+POST /oauth/token
+```
+
+#### Step 2 — Exchange JWT with GCP STS
+
+```http
+POST https://sts.googleapis.com/v1/token
+```
+
+### GCP API
+
+**Security Token Service (STS)**
+
+```text
+sts.googleapis.com/v1/token
+```
+
+### Output
+
+- ✅ Short-lived access token
+
+---
+
+---
+
+## 3. EDGE / INBOUND LAYER
+
+### Purpose
+
+Entry point + Security + Tracing
+
+### What Happens
+
+- JWT validated
+- Trace started
+- Request passed to the system
+
+### GCP / APIs
+
+#### Apigee / API Gateway
+
+#### Cloud Run (FastAPI)
+
+### OpenTelemetry
+
+```python
+extract(headers)
+
+tracer.start_as_current_span()
+
+inject(headers)
+```
+
+---
+
+# 4. INPUT POLICY PIPELINE (INPUT GOVERNANCE)
+
+### Purpose
+
+Make input safe before AI touches it.
+
+### GCP APIs
+
+#### 1. DLP (Sensitive Data Protection)
+
+```python
+from google.cloud import dlp_v2
+
+client.inspect_content()
+```
+
+#### 2. Model Armor (Prompt Safety)
+
+```http
+POST ...:sanitizeUserPrompt
+```
+
+#### 3. Token Count (Cost Control)
+
+```python
+model.count_tokens(text)
+```
+
+#### 4. Context Cache (Vertex AI)
+
+- Vertex AI Context Caching
+
+### Output
+
+- ✅ Safe, sanitized input
+
+---
+
+---
+
+# 5. APPLICATION LAYER (CORE – FLOW CONTROL)
+
+## Purpose
+
+Control workflow (WHEN things happen)
+
+### Components
+
+- Orchestrator
+- RoutingEngine
+
+### APIs
+
+- ❌ No GCP APIs
+- ✅ Pure business logic
+
+### Example
+
+```python
+logs = log_agent.analyze()
+
+if routing.after_logs(logs) == "rca":
+    rca = rca_agent.execute()
+```
+
+---
+
+# 6. LOG ANALYZER AGENT
+
+## Purpose
+
+Fetch system logs
+
+### GCP API
+
+```python
+from google.cloud import logging
+
+logging.Client().list_entries()
+```
+
+### Or REST
+
+```text
+logging.googleapis.com/v2/entries:list
+```
+
+### Output
+
+- ✅ Structured logs
+
+---
+
+---
+
+# 7. RCA AGENT (DOMAIN – INTELLIGENCE PIPELINE)
+
+> This is the heart of the system.
+
+## 7.1 Evidence Layer
+
+### Purpose
+
+Collect all facts.
+
+### GCP APIs
+
+#### Cloud Logging *(for runtime logs)*
+
+```python
+logging.Client().list_entries()
+```
+
+#### Vertex AI Search *(for runbooks and documents)*
+
+```python
+search_client.search(query)
+```
+
+#### BigQuery *(for historical RCA)*
+
+```python
+bigquery.Client().query(sql)
+```
+
+### Output
+
+```text
+evidence = logs + docs + history
+```
+
+---
+
+## 7.2 Grounding (PRE-LLM)
+
+### Purpose
+
+Prevent hallucination.
+
+### What Happens
+
+```text
+prompt = "Use ONLY this evidence: {evidence}"
+```
+
+### APIs
+
+- ❌ No GCP API
+- ✅ Pure domain logic
+
+---
+
+## 7.3 LLM (VERTEX AI GEMINI)
+
+### Purpose
+
+Generate RCA.
+
+### GCP API
+
+```python
+from vertexai.generative_models import GenerativeModel
+
+model.generate_content(prompt)
+```
+
+### Output
+
+- ❌ Raw LLM response
+
+---
+
+---
+
+## 7.4 OUTPUT SAFETY PIPELINE (CRITICAL)
+
+### Purpose
+
+Make output safe.
+
+### GCP APIs
+
+#### Model Armor (Response)
+
+```http
+POST ...:sanitizeModelResponse
+```
+
+#### Optional DLP
+
+```python
+dlp.inspect_content()
+```
+
+### Output
+
+- ✅ Safe response
+
+---
+
+## 7.5 CITATION
+
+### Purpose
+
+Attach evidence references.
+
+Every output must reference **logs, documents, and history**. Citation makes the RCA explainable by attaching evidence.
+
+### APIs
+
+- ❌ No GCP API
+- ✅ Domain logic
+
+---
+
+## 7.6 EVALUATION (VERTEX AI EVALTASK)
+
+### Purpose
+
+Validate correctness.
+
+### Steps + APIs
+
+#### Build Dataset
+
+```python
+pandas.DataFrame([...])
+```
+
+#### Define Metrics
+
+```python
+PointwiseMetric(...)
+```
+
+#### Run EvalTask
+
+```python
+from vertexai.evaluation import EvalTask
+
+eval_task = EvalTask(dataset, metrics)
+eval_task.evaluate()
+```
+
+### Output
+
+```json
+{
+  "grounding_score": 0.9,
+  "hallucination_risk": 0.1,
+  "actionability_score": 0.85
+}
+```
+
+---
+
+---
+
+# 8. ROUTING ENGINE (DECISION)
+
+## Purpose
+
+Decide the next step.
+
+### Example
+
+```python
+if grounding < 0.8:
+    return "human"
+```
+
+### Notes
+
+- ❌ No GCP API
+- ✅ Uses evaluation results
+
+---
+
+# 9. EXECUTION LAYER
+
+## Components
+
+### ActionAgent
+
+- Executes automation
+
+### IncidentAgent
+
+```http
+PATCH /api/now/table/incident
+```
+
+### HITL Tool
+
+- Human approval
+- ✅ Mostly external APIs (ServiceNow)
+
+---
+
+# 10. CACHING LAYER
+
+## Purpose
+
+Reduce cost and latency.
+
+### GCP / APIs
+
+#### Redis / Memorystore
+
+```python
+redis.get()
+redis.set()
+```
+
+#### Vertex AI Context Cache
+
+- Implicit caching in model context
+
+---
+
+---
+
+# 11. OBSERVABILITY + AUDIT
+
+## Purpose
+
+Trace + Debug + Audit
+
+### GCP APIs
+
+#### Cloud Trace
+
+```python
+tracer.start_as_current_span()
+```
+
+#### Cloud Logging
+
+```python
+logging.Client().write()
+```
+
+#### Cloud Monitoring
+
+- Metrics
+- Dashboards
+
+#### BigQuery (Audit)
+
+```python
+bigquery.insert_rows_json()
+```
+
+#### Cloud Audit Logs
+
+- Auto-enabled
+
+---
+
+# 🎯 FINAL PRINCIPAL INSIGHT
+
+- ✅ Every layer has a clear responsibility + API
+
+---
+
+# ✅ CLEAN MAPPING
+
+| Responsibility | GCP Service / Component |
+|----------------|-------------------------|
+| Input Safety | DLP + Model Armor |
+| Reasoning | Vertex AI Gemini |
+| Output Safety | Model Armor |
+| Validation | EvalTask |
+| Decision | RoutingEngine |
+| Execution | Agents |
+
+---
+
+# Final Normalized Sequence (SSOT)
+
+1. **User/Event**
+   - Grafana / ServiceNow incident creation
+
+2. **Identity**
+   - JWT + GCP STS short-lived token
+
+3. **Edge / Inbound**
+   - API Gateway + Cloud Run Gateway
+
+4. **Input Policy Pipeline**
+   - DLP
+   - `sanitizeUserPrompt`
+   - `count_tokens`
+   - Context Cache
+
+5. **Orchestrator**
+   - Start workflow
+
+6. **RoutingEngine**
+   - `after_logs()`
+
+7. **LogAnalyzerAgent**
+   - Cloud Logging
+
+8. **RCAAgent**
+   1. **Evidence**
+      - Cloud Logging
+      - Vertex AI Search
+      - BigQuery
+   2. **Grounding**
+      - Build evidence-only prompt
+   3. **LLM**
+      - `generate_content()`
+   4. **Output Safety**
+      - `sanitizeModelResponse`
+      - Optional DLP output scan
+   5. **Citation**
+      - Attach evidence sources
+   6. **Evaluation**
+      - `EvalTask.evaluate()`
+
+9. **RoutingEngine**
+   - `after_rca()`
+
+10. **Execution**
+    - ActionAgent
+    - IncidentAgent
+    - HITL Tool
+
+11. **Observability + Audit**
+    - Cloud Trace
+    - Cloud Logging
+    - Monitoring
+    - BigQuery
+    
+    

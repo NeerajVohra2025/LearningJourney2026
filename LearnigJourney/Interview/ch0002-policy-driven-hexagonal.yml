@@ -1,0 +1,311 @@
+Architecture Principles:
+| Principle              | Description                                       |
+| ---------------------- | ------------------------------------------------- |
+| Separation of Concerns | Business logic separated from infrastructure      |
+| Dependency Inversion   | Core depends only on Ports                        |
+| Cloud Independence     | Infrastructure is replaceable                     |
+| Policy Driven          | AI Governance outside business logic              |
+| Testability            | Infrastructure can be mocked                      |
+| Replaceability         | Swap AI providers without changing business logic |
+
+The proposed architecture addresses this by combining:
+
+Hexagonal Architecture (Ports & Adapters)
+Clean Architecture
+Policy-Driven Design
+Responsible AI Guardrails
+Zero Trust Security
+
+
+
+High-Level Architecture:
+                User
+                  │
+                  ▼
+           API Gateway
+                  │
+                  ▼
+        Input Policy Pipeline
+                  │
+                  ▼
+          Hexagonal Core
+        ┌─────────────────┐
+        │ Application      │
+        │ Domain           │
+        └─────────────────┘
+                  │
+             Ports (Interfaces)
+                  │
+             Adapters
+                  │
+       GCP / External Services
+       
+       
+Chapter 2 — Enterprise Package Structure:
+Here I'd build a complete enterprise package tree.  
+
+enterprise_genai/
+
+├── core/
+│
+│   ├── domain/
+│   │      entities/
+│   │      value_objects/
+│   │      policies/
+│   │      events/
+│   │
+│   ├── application/
+│   │      orchestrators/
+│   │      services/
+│   │      workflows/
+│   │
+│   ├── ports/
+│   │      llm_port.py
+│   │      embedding_port.py
+│   │      policy_port.py
+│   │      cache_port.py
+│   │      evidence_port.py
+│   │      evaluation_port.py
+│   │
+│   └── usecases/
+│
+├── policies/
+│
+│   ├── input/
+│   ├── output/
+│   ├── security/
+│   ├── compliance/
+│   ├── routing/
+│   ├── evaluation/
+│   └── governance/
+│
+├── adapters/
+│
+│   ├── llm/
+│   ├── vectorstore/
+│   ├── cache/
+│   ├── observability/
+│   ├── evidence/
+│   ├── gateway/
+│   ├── auth/
+│   ├── storage/
+│   └── tools/
+│
+├── infrastructure/
+│
+│   ├── gcp/
+│   ├── kubernetes/
+│   ├── terraform/
+│   ├── monitoring/
+│   └── deployment/
+│
+└── api/
+
+
+
+Chapter 3 — Enterprise End-to-End Lifecycle:
+Now show the architecture.    
+User
+
+↓
+
+Identity
+
+↓
+
+Zero Trust
+
+↓
+
+Gateway
+
+↓
+
+Logical Gateway
+
+↓
+
+Policy Engine
+
+↓
+
+Input Pipeline
+
+↓
+
+Orchestrator
+
+↓
+
+Evidence
+
+↓
+
+Grounding
+
+↓
+
+LLM
+
+↓
+
+Output Pipeline
+
+↓
+
+Evaluation
+
+↓
+
+Decision
+
+↓
+
+Automation
+
+↓
+
+Observability 
+
+Technology Stack:
+| Category   | Technology                       |
+| ---------- | -------------------------------- |
+| Language   | Python                           |
+| Framework  | FastAPI                          |
+| AI         | Vertex AI Gemini                 |
+| Security   | Model Armor                      |
+| DLP        | Google Sensitive Data Protection |
+| Search     | Vertex AI Search                 |
+| Database   | BigQuery                         |
+| Cache      | Redis / Memorystore              |
+| Monitoring | Cloud Logging, Cloud Trace       |
+| Deployment | Cloud Run                        |
+
+Architecture Layers:
+| Layer          | Responsibility            |
+| -------------- | ------------------------- |
+| User Layer     | Incident Creation         |
+| Identity Layer | Zero Trust Authentication |
+| Edge Layer     | Gateway, JWT Validation   |
+| Input Policy   | DLP, Model Armor          |
+| Application    | Workflow Orchestration    |
+| Domain         | RCA Intelligence          |
+| Output Policy  | Safety Validation         |
+| Evaluation     | AI Quality Assessment     |
+| Execution      | Automation                |
+| Observability  | Logs, Metrics, Trace      |
+
+Hexagonal Architecture:
+Core:
+Application Layer:
+| Component      | Responsibility     |
+| -------------- | ------------------ |
+| Orchestrator   | Workflow execution |
+| Routing Engine | Dynamic routing    |
+Domain Layer:
+| Component  | Responsibility      |
+| ---------- | ------------------- |
+| RCA Agent  | Root Cause Analysis |
+| Grounding  | Evidence validation |
+| Citation   | Source references   |
+| Evaluation | AI Quality          |
+
+Ports:
+| Port           | Purpose        |
+| -------------- | -------------- |
+| LLMPort        | AI Model       |
+| LoggingPort    | Logs           |
+| SearchPort     | Search         |
+| CachePort      | Cache          |
+| IncidentPort   | ServiceNow     |
+| DLPPort        | Sensitive Data |
+| EvaluationPort | EvalTask       |
+
+Adapters:
+| Adapter            | Implementation            |
+| ------------------ | ------------------------- |
+| Vertex AI Adapter  | Gemini                    |
+| Logging Adapter    | Cloud Logging             |
+| Search Adapter     | Vertex AI Search          |
+| BigQuery Adapter   | BigQuery                  |
+| DLP Adapter        | Sensitive Data Protection |
+| Redis Adapter      | Memorystore               |
+| ServiceNow Adapter | Incident API              |
+
+
+genai-rca-platform/
+├── config/           # External configuration (TOML files, environment overrides)
+├── src/genai_rca/
+│   ├── main.py       # Entry point (FastAPI app on Cloud Run)
+│   ├── bootstrap.py  # Application assembly (Dependency Injection)
+│   │
+│   ├── core/         # Pure core (no cloud dependencies)
+│   │   ├── application/   # Orchestrator, routing engine, use-case coordinators
+│   │   └── domain/        # Business logic: agents, grounding, citation, filters, evaluation
+│   │
+│   ├── ports/        # Boundary interfaces (Inbound & Outbound contracts)
+│   │   ├── inbound/      # e.g. api_port.py (defines request models)
+│   │   └── outbound/     # llm_port.py, logging_port.py, search_port.py, etc.
+│   │
+│   ├── adapters/     # Infrastructure implementations of ports
+│   │   ├── inbound/      # FastAPI routes, middleware
+│   │   └── outbound/     # GCP and external adapters:
+│   │       ├── gcp/          
+│   │       │   ├── vertex_ai/ (llm_adapter.py, eval_adapter.py, token_adapter.py)
+│   │       │   ├── dlp_adapter.py
+│   │       │   ├── model_armor_adapter.py
+│   │       │   ├── logging_adapter.py
+│   │       │   ├── bigquery_adapter.py
+│   │       │   ├── search_adapter.py
+│   │       │   └── secret_manager_adapter.py
+│   │       ├── cache/ (redis_adapter.py)
+│   │       └── external/ (servicenow_adapter.py)
+│   │
+│   ├── policy/       # Governance pipelines (input_policy_pipeline, output_policy_pipeline)
+│   ├── observability/# Telemetry tools (tracing.py, metrics.py, logging.py wrappers)
+│   ├── shared/       # Common utilities (constants.py, exceptions.py, utils.py)
+│   └── tests/        # Unit and integration tests (core and adapters)
+│
+└── infra/           # Infrastructure as Code (Terraform for Cloud Run, IAM, Vertex, Monitoring)
+
+
+Why This Architecture?:
+| Capability           | Benefit                     |
+| -------------------- | --------------------------- |
+| Clean Architecture   | Business logic isolation    |
+| Hexagonal            | Infrastructure independence |
+| Dependency Injection | Easy testing                |
+| Ports                | Technology abstraction      |
+| Adapters             | Replaceable implementations |
+| Policy Pipelines     | Enterprise AI Governance    |
+| Evaluation           | Responsible AI              |
+| Observability        | Production monitoring       |
+
+Key Design Decisions:
+| Decision                                | Rationale                               |
+| --------------------------------------- | --------------------------------------- |
+| Core has no GCP SDK                     | Maintain cloud independence             |
+| Ports define contracts                  | Enable abstraction                      |
+| Adapters implement infrastructure       | Improve replaceability                  |
+| Bootstrap performs dependency injection | Centralized wiring                      |
+| Policy layer outside core               | Separate governance from business logic |
+| Evaluation after LLM                    | Ensure output quality                   |
+| Observability as cross-cutting concern  | Full traceability                       |
+
+Enterprise Mental Model:
+                  Business
+                     │
+         ┌───────────▼───────────┐
+         │        Core           │
+         │  Application + Domain │
+         └───────────┬───────────┘
+                     │
+                 Interfaces
+                  (Ports)
+                     │
+                     ▼
+              Infrastructure
+                (Adapters)
+                     │
+                     ▼
+      Google Cloud / External Services

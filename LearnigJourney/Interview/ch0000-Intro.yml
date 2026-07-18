@@ -1,0 +1,117 @@
+Intro:
+Hi, I'm Neeraj Vohra.
+1. I have more than 20 years of experience in software architecture, cloud-native platforms, Kubernetes, infrastructure automation using Terraform, and now Generative AI.
+
+2. My career started with Java development and evolved into solution architecture, cloud modernization, platform engineering, and now GenAI architecture.
+
+3. Currently, I work as a Solutions Architect, leading the design and development of enterprise GenAI platforms and multi-agent solutions on Google Vertex AI.
+
+4. I consider myself a hands-on architect. I strongly believe that an architect should not only design solutions but also build and validate critical components. Staying close to the code helps me make better architectural decisions, understand implementation challenges early, and provide effective technical leadership.
+
+5. Over the last few years, I have focused on Agentic AI, Multi-Agent Systems, RAG, MCP (Model Context Protocol), Responsible AI, AI Governance, DLP, Model Armor, Guardrails, Context Caching, Evaluation Frameworks, and AI Cost Optimization.
+
+6. I am also AWS Solutions Architect, AWS AI Practitioner, CKA, and CKAD certified, which complements my hands-on experience in cloud and AI platforms.
+
+7. One of my key achievements was architecting a secure and governed AI platform on Google Vertex AI, where we built reusable AI platform services including DLP, Model Armor, Evaluation, Guardrails, and Cost Optimization.
+
+8. From a business impact perspective, we reduced MTTR through AI-driven incident management and autonomous RCA, and reduced AI operational costs by approximately 35–45% using context caching, evaluation, guardrails, and cost optimization.
+
+9. As a GenAI Architect, my passion is not just building intelligent agents; it's building secure, responsible, observable, and cost-optimized AI platforms that enterprises can confidently run in production at scale.
+
+---
+## Situation (Story Format)
+
+"Let me walk you through the existing scenario."
+Monitoring systems such as **Sumo Logic** and **Grafana** continuously monitored logs across multiple applications.
+
+Whenever there was an anomaly—such as:
+
+- CPU spike
+- Sharp increase in error rates
+- Slower response times
+- Unexpected traffic spikes
+
+Sumo Logic automatically generated an alert and created a ServiceNow incident.
+
+The L1.5 support team monitored ServiceNow tickets, reviewed alert details, and attempted to understand the issue. Since the alerts did not provide sufficient context, most incidents were escalated to the L2 team.
+
+The L2 engineers then logged into multiple systems, manually collected logs, analyzed the issue, identified the root cause, and updated the incident ticket.
+
+This manual process typically required **6–8 hours** and created a significant dependency on the L2 team, even for repetitive incidents.
+
+---
+
+## Task
+
+The primary objectives were:
+
+- MTTR.
+- Cost 
+    -  reduce eliminate L1.5 
+    - reduce L2
+- Automate Root Cause Analysis (RCA).
+- Improve the speed, accuracy, and consistency of incident resolution.
+
+---
+
+## Action
+
+I designed and implemented a **GenAI-driven intelligent incident management platform** on top of the existing **Sumo Logic** and **ServiceNow** integration.
+
+### The solution works as follows:
+# Final Normalized Sequence (SSOT)
+
+1. **User/Event**
+   - Grafana / ServiceNow incident creation
+
+2. **Identity**
+   - JWT + GCP STS short-lived token
+
+3. **Edge / Inbound**
+   - API Gateway + Cloud Run Gateway
+
+4. **Input Policy Pipeline**
+   - DLP
+   - `sanitizeUserPrompt`
+   - `count_tokens`
+   - Context Cache
+
+5. **Orchestrator**
+   - Start workflow
+
+6. **RoutingEngine**
+   - `after_logs()`
+
+7. **LogAnalyzerAgent**
+   - Cloud Logging
+
+8. **RCAAgent**
+   1. **Evidence**
+      - Cloud Logging
+      - Vertex AI Search
+      - BigQuery
+   2. **Grounding**
+      - Build evidence-only prompt
+   3. **LLM**
+      - `generate_content()`
+   4. **Output Safety**
+      - `sanitizeModelResponse`
+      - Optional DLP output scan
+   5. **Citation**
+      - Attach evidence sources
+   6. **Evaluation**
+      - `EvalTask.evaluate()`
+
+9. **RoutingEngine**
+   - `after_rca()`
+
+10. **Execution**
+    - ActionAgent
+    - IncidentAgent
+    - HITL Tool
+
+11. **Observability + Audit**
+    - Cloud Trace
+    - Cloud Logging
+    - Monitoring
+    - BigQuery

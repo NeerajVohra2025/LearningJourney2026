@@ -1,0 +1,444 @@
+Architecture Flow:
+Instead of jumping directly into Responsible AI, start from the architectural foundation.
+
+Part 1
+Enterprise Policy-Driven Hexagonal Clean Architecture
+
+↓
+
+Part 2
+How Responsible AI fits into Hexagonal Architecture
+
+↓
+
+Part 3
+Package Structure
+
+↓
+
+Part 4
+Enterprise Request Lifecycle
+
+↓
+
+Part 5
+Responsible AI Pipeline
+
+↓
+
+Part 6
+Implementation (Python)
+
+↓
+
+Part 7
+Deployment on GKE
+
+↓
+
+Part 8
+Observability
+
+↓
+
+Part 9
+Production Best Practices
+
+
+
+User / Event
+      │
+      ▼
+Identity & Zero Trust
+      │
+      ▼
+API Security Gateway
+      │
+      ▼
+GenAI Logical Gateway
+      │
+      ▼
+Input Governance Pipeline
+      │
+      ▼
+AI Orchestrator
+      │
+      ▼
+Evidence Collection
+      │
+      ▼
+Grounding (RAG)
+      │
+      ▼
+LLM Reasoning
+      │
+      ▼
+Output Governance Pipeline
+      │
+      ▼
+Evaluation
+      │
+      ▼
+Human Approval / Automation
+      │
+      ▼
+Observability & Audit
+
+overview:
+This chapter explains how an incident travels through the entire Enterprise GenAI RCA Platform—from detection to automated resolution.
+The platform is designed around security, governance, explainability, observability, and modularity. Every request passes through a well-defined sequence of architectural layers, ensuring that AI responses are secure, evidence-based, policy-compliant, and fully traceable.
+
+## 1.. Incident Detection:
+Monitoring systems such as **Sumo Logic** and **Grafana** continuously monitored logs across multiple applications.
+
+Whenever there was an anomaly—such as:
+
+- CPU spike
+- Sharp increase in error rates
+- Slower response times
+- Unexpected traffic spikes
+
+Sumo Logic automatically generated an alert and created a ServiceNow incident.
+### Grafana / Cloud Monitoring
+- Alert Trigger
+### ServiceNow
+- Incident Created
+- `POST /api/now/table/incident`
+
+---
+
+## 2. IDENTITY & ZERO TRUST LAYER
+
+### ServiceNow
+- `POST /oauth/token`
+- JWT Token (IdP)
+
+### GCP Security Token Service (STS)
+- `POST https://sts.googleapis.com/v1/token`
+- Short-lived access token
+
+### Purpose
+
+- ✅ No static credentials
+- ✅ Federated identity
+- ✅ IAM-bound access
+---
+## 3. EDGE GATEWAY LAYER
+
+### Apigee / Google API Gateway
+
+#### Responsibilities
+
+- ✅ JWT validation
+- ✅ IAM authorization
+- ✅ Rate limiting
+- ✅ Quota control
+- ✅ Threat protection
+
+#### Important
+
+- ❌ No GenAI business logic here
+- ❌ No DLP orchestration here
+- ❌ No RCA logic here
+
+
+---
+## 4. LOGICAL GATEWAY LAYER
+
+### Cloud Run Service: `genai-gateway`
+
+### Responsibilities
+
+- ✅ Receive request from Apigee
+- ✅ Extract parent trace context
+- ✅ Create gateway root span
+- ✅ Generate correlation ID
+- ✅ Inject `traceparent` downstream
+- ✅ Invoke Policy Pipeline
+- ✅ Forward sanitized payload to Orchestrator
+---
+### OpenTelemetry Rule
+
+```text
+extract(headers)
+    ↓
+tracer.start_as_current_span(
+    "gateway-root",
+    context=parent_context
+)
+    ↓
+inject(outgoing_headers)
+```
+## 5. INPUT POLICY PIPELINE (INPUT GOVERNANCE)
+
+### Purpose
+
+Sanitize → Validate → Govern → Optimize
+
+### GCP Services / Methods
+
+- DLP → `inspect_content()`
+- Model Armor → `sanitizeUserPrompt`
+- Vertex AI Gemini → `count_tokens()`
+- Vertex AI Context Caching
+
+### Output
+
+- ✅ Safe Input
+
+### Runs Inside
+
+Cloud Run Logical Gateway
+
+### Pattern
+
+Thin adapters around GCP managed services
+
+### Pipeline
+
+#### 1. DLPAdapter
+
+- GCP Sensitive Data Protection
+- `google-cloud-dlp`
+- `DlpServiceClient.inspect_content()`
+
+#### 2. ModelArmorAdapter
+
+- Google Cloud Model Armor
+- `sanitizeUserPrompt`
+- `sanitizeModelResponse`
+
+#### 3. TokenGovernanceAdapter
+
+- Vertex AI Gemini
+- `GenerativeModel.count_tokens()`
+
+#### 4. ContextCacheAdapter
+
+- Vertex AI Context Caching
+- Implicit / Explicit Context Caching
+
+### Purpose
+
+- ✅ Detect sensitive data
+- ✅ Sanitize unsafe prompts
+- ✅ Prevent prompt injection
+- ✅ Estimate token cost
+- ✅ Optimize repeated context usage
+
+### Important
+
+- ❌ We do **not** create our own DLP engine
+- ❌ We do **not** create our own Model Armor engine
+- ❌ We do **not** create our own token counter
+- ❌ We only create adapters that call GCP APIs
+
+---
+# 6. HEXAGONAL CORE
+
+## Application Layer
+
+- **Orchestrator** *(workflow executor)*
+- **RoutingEngine** *(decision maker)*
+
+## Domain Layer
+
+- RCA reasoning logic
+- Grounding logic
+- Citation logic
+- Output filtering logic
+- Evaluation use case logic
+
+## Boundary Ports
+
+- `LLMPort`
+- `EvaluationPort`
+- `DLPPort`
+- `ModelArmorPort`
+- `LoggingPort`
+- `SearchPort`
+- `BigQueryPort`
+- `CachePort`
+- `IncidentPort`
+
+
+## 6.1 ORCHESTRATOR LAYER
+
+### Cloud Run Private Service / Internal Application Module
+
+**Service:** `genai-orchestrator`
+
+### Responsibilities
+
+- ✅ Workflow execution
+- ✅ Call `RoutingEngine` for decisions
+- ✅ Invoke selected agents
+- ✅ Aggregate all agent/tool responses
+- ✅ Maintain incident-level cache
+- ✅ Return final response
+
+### Important
+
+- ❌ Orchestrator does **not** contain business rules directly
+- ❌ Orchestrator does **not** perform RCA itself
+- ❌ Orchestrator does **not** run HITL as an agent
+
+
+
+## 6.2 ROUTING ENGINE LAYER
+
+## Application Layer
+
+**Component:** `RoutingEngine`
+
+### Responsibilities
+
+- ✅ Use business rules
+- ✅ Inspect agent outputs
+- ✅ Decide next step dynamically
+
+### Example Decisions
+
+#### After `LogAnalyzerAgent`
+
+- Call `RCAAgent`
+- Or call `ActionAgent`
+
+#### After `RCAAgent`
+
+- Call `ActionAgent`
+- Or call `IncidentAgent`
+- Or call `HITL` tool
+
+### Important
+
+- ✅ `RoutingEngine` is the **decision maker**
+- ✅ `Orchestrator` is the **workflow executor**
+
+---
+
+
+# 7. LOG ANALYZER AGENT
+
+## GCP Service / Method
+
+- Cloud Logging API
+- `logging.Client().list_entries()`
+
+### Output
+
+- ✅ Structured log evidence
+
+---
+
+# 8. RCA AGENT (INTELLIGENCE PIPELINE)
+
+## 8.1 Evidence Layer
+
+- Logs *(Cloud Logging)*
+- Docs *(Vertex AI Search → `search()` )*
+- History *(BigQuery → `query()` )*
+
+---
+
+## 8.2 Grounding (PRE-LLM)
+
+- Build factual context using only evidence
+
+---
+
+## 8.3 LLM (Vertex AI Gemini)
+
+- `generate_content()`
+
+---
+
+## 8.4 Output Safety Pipeline (POST-LLM, PRE-EVALUATION)
+
+- Model Armor → `sanitizeModelResponse`
+- Optional DLP output scan → `inspect_content()`
+
+---
+
+## 8.5 Citation Layer
+
+- Attach sources from logs, docs, and history
+
+---
+
+## 8.6 Evaluation Layer
+
+- Build evaluation dataset
+- Define metrics
+- Vertex AI EvalTask → `evaluate()`
+- Normalize and persist scores
+
+---
+
+### Output
+
+- ✅ RCA Output + Citations + Evaluation Scores
+
+---
+
+# 9. ROUTING ENGINE (DECISION LAYER)
+
+## Uses
+
+- `grounding_score`
+- `hallucination_risk`
+- `actionability_score`
+
+## Decides
+
+- `ActionAgent`
+- `IncidentAgent`
+- `HITL Tool`
+
+---
+
+
+# 10. EXECUTION LAYER
+
+## ActionAgent
+
+- Automation / Remediation
+
+## IncidentAgent
+
+- ServiceNow update  
+  `PATCH /api/now/table/incident`
+
+## HITL Tool
+
+- Human approval workflow
+
+---
+
+# 11. CACHING LAYER
+
+| Cache | Used By |
+|--------|---------|
+| Incident Cache | Orchestrator |
+| Log Cache | LogAnalyzerAgent |
+| Retrieval Cache | RCAAgent |
+| LLM Cache | RCAAgent |
+| Context Cache | Vertex AI |
+
+### Purpose
+
+- ✅ Skip duplicate work
+- ✅ Reduce token cost
+- ✅ Reduce latency
+
+---
+
+# 11. OBSERVABILITY + AUDIT
+
+## Services
+
+- Cloud Trace
+- Cloud Logging
+- Cloud Monitoring
+- BigQuery *(Evaluation Audit)*
+- Cloud Audit Logs
