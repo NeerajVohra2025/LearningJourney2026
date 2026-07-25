@@ -1,18 +1,30 @@
 Dear Hiring Manager,
 
-I am applying for the GenAI Architect position. I bring over 20 years of experience in cloud-native architecture, distributed systems, and DevOps, with recent specialization in Generative AI, Agentic AI, and multi-agent systems.
+I am excited to apply for the **Ai Solutions Architect** position. Here's a brief overview of my profile:
 
-In my current role at HCL Technologies, I designed and implemented a production-grade AI-driven incident management platform using LangGraph, OpenAI Agents SDK, Model Context Protocol (MCP), and Retrieval-Augmented Generation (RAG). This solution automates the entire incident lifecycle—from ingestion and analysis to root cause identification and remediation—resulting in a 40% reduction in MTTR and eliminating dependency on manual L1/L2 operations.
+* **20+ years** of experience in Solution Architecture, Enterprise Applications, Cloud Platforms, and Distributed Systems.
+* **2+ years** of specialized experience in **Enterprise AI Platform Engineering** and **Responsible AI**.
+* Expertise in **Google Vertex AI, Google ADK, OpenAI Agents SDK, LangGraph, MCP, A2A, RAG, and Multi-Agent Systems**.
+* Strong background in **AWS, GCP, Kubernetes, Docker, Terraform, Helm, Istio, and DevSecOps**.
+* Architected enterprise AI platforms with a focus on **AI Governance, AI Guardrails, AI Security, and AI Observability**.
+* Reduced **MTTR by 40%** through AI-powered Incident Management and Root Cause Analysis.
+* Reduced **cloud infrastructure costs by 35%** through cloud optimization and Infrastructure as Code.
+* Improved **developer productivity by 50–60%** by delivering reusable AI platform services and automation.
+* Hands-on architect with experience in **Python, FastAPI, Java, Spring Boot, REST APIs, and enterprise solution delivery**.
+* Passionate about designing secure, scalable, and business-driven technology solutions.
 
-I have extensive experience building scalable, cloud-native platforms across AWS and GCP, including ECS, EKS, Fargate, and GKE. I have delivered measurable business impact by reducing cloud infrastructure costs by 35% through Terraform-based Infrastructure as Code and workload optimization. My expertise also includes Kubernetes, Helm, Istio, CI/CD pipelines (GitLab, Jenkins), and observability frameworks such as OpenTelemetry and CloudWatch.
-
-What differentiates my profile is the combination of deep experience in distributed systems and modern GenAI architectures. I focus on building enterprise-grade AI systems that integrate reasoning, memory, and tool execution at scale, ensuring they are production-ready, scalable, and cost-efficient.
-
-I would welcome the opportunity to contribute to your organization by designing and delivering next-generation AI platforms. I am open to opportunities in the United States and remote roles.
+I have attached my resume for your review and would welcome the opportunity to discuss how my experience aligns with your requirements.
 
 Thank you for your time and consideration.
 
-Sincerely,
-Neeraj Vohra
-Email: [vohraaneeraj@gmail.com](mailto:vohraaneeraj@gmail.com)
-Phone: +91-9871037773
+Kind regards,
+
+**Neeraj Vohra**
+Greater Noida, India
+H1B Visa Holder | Authorized to Work in the U.S.
+📧 [vohraaneeraj@gmail.com](mailto:vohraaneeraj@gmail.com)
+📱 +91-9871037773
+
+
+
+S1346184191130

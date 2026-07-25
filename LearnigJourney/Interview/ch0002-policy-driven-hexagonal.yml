@@ -1,3 +1,19 @@
+Enterprise Challenges Addressed:
+
+The architecture is designed to address common enterprise AI challenges:
+| Challenge               | Architectural Response                                                   |
+| ----------------------- | ------------------------------------------------------------------------ |
+| Hallucinations          | Evidence collection, grounding, and evaluation                           |
+| Prompt Injection        | Input governance and security policies                                   |
+| Sensitive Data Exposure | DLP, PII detection, and output filtering                                 |
+| High Latency            | Context caching, intelligent routing, and scalable orchestration         |
+| High Token Costs        | Prompt optimization, caching, and model selection                        |
+| Vendor Lock-in          | Hexagonal architecture with abstract ports and adapters                  |
+| Limited Scalability     | Cloud-native deployment with Kubernetes and horizontal scaling           |
+| Operational Complexity  | Centralized observability, automation, and platform engineering          |
+| Governance & Compliance | Policy engine, audit trails, explainability, and Responsible AI controls |
+
+
 Architecture Principles:
 | Principle              | Description                                       |
 | ---------------------- | ------------------------------------------------- |
