@@ -1,0 +1,242 @@
+assume a role of principle GenAI architect review ""services\snow_service"" advice If its follow "policy driven hexagonal enterprise clean architecture also explain each layer of follow "policy driven hexagonal enterprise clean architecture
+
+---
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end logging framework for the application
+1) review the services\snow_service  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI as a reference
+2) It must be fully configurable
+3) follow "policy driven hexagonal enterprise clean architecture"
+assume a role of senior principle genAI architect implement as suggested
+
+agent_incident/
+├── core/
+│   ├── domain/
+│   ├── application/
+│   └── ports/
+│       ├── inbound.py
+│       └── outbound.py
+├── adapters/
+│   ├── inbound/
+│   └── outbound/
+├── configuration/
+├── observability/
+├── bootstrap.py
+├── app_factory.py
+└── __main__.py
+
+without changing the run time behavior
+capabilities:
+
+1. Answer general questions using Google ADK with OpenAI.
+2. Execute approved incident actions through `tool-servicenow` after deterministic
+   policy checks.
+3) review
+4) share your feedback
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end logging framework for the application
+---
+
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end logging framework for the application
+
+1) review the services\snow_service  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI
+2) It must be fully configurable
+3) Observability Injected from ( moved from shared\utils\genai-observability to platform_sdk\src\platform_sdk\observability)
+4) share your feedback
+# Principal recommendations   Implement without Impacting the Business Run Time Behavior
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end logging framework for the application
+---
+
+
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end logging framework for the application
+
+1) review the services\snow_service  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI as a reference
+2) It must be fully configurable
+3) review the /docs as a and updates as per curent implementationand
+4) remove duplicate and unused documents or merged don't need unnecessary documents
+3) All documents must be SSOT
+a) step by step in sequece
+b) user friendly manner
+c) polished version
+d) board room presentable
+e) No powershell command in runbook replace complex shell logic with checked-in Python validation helpers plus plain uv and podman commands, so team members only copy and run simple commands.
+I think minimum documents required
+a) stakeholder summary
+a) architecture and end to end flow diagram and sequence diagram visible (package, class , method and service name)
+b) unit testing run book from /tests
+c) step by step testing runbook using postman and uv run command means local testing using uv package manager (with Observability)
+d) step by step testing runbook using postman and podman run command means testing using podman image and container (with Observability)
+e) step by step gcloud commands to push the image in artifactory, deploy on cloud run , I think we have to create a service account also and default no-one can access , It should be accessed by agent-incident means we have to allow to access it step by step as a senior principle GenAI architect
+f) step by step testing agent-incodent->tool-serviceNow runbook using postman and uv run command e.g first start tool-serviceNow start agent-inciedent
+g) step by step testing agent-incodent->tool-serviceNow runbook using postman and podman run command means testing using podman image and container e.g run compose.yml run both services in sequence
+
+Output: SSOT documents each document step by step in user friendly and board room presentable format
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+---
+
+
+
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+Assume a role of senior principle principle microservice architect ,deployed many microservices in Google Cloud Run means first create a Image Using Podman deployed on artifacts and deployed on Cloud Run follow "policy driven hexagonal enterprise clean architecture"
+1)review the  services\snow_service  package follow "policy driven hexagonal enterprise clean architecture"
+2) services\snow_service  package as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI
+3) review the /postman collection
+4) ensure /postman collection is as per current implementation all the endpoints are valid
+Assume a role of senior principle principle microservice architect ,deployed many microservices in Google Cloud Run means first create a Image Using Podman deployed on artifacts and deployed on Cloud Run follow "policy driven hexagonal enterprise clean architecture"
+
+output:
+polished SSOT postman collection handover to team member they just import and test end points
+Assume a role of senior principle principle microservice architect ,deployed many microservices in Google Cloud Run means first create a Image Using Podman deployed on artifacts and deployed on Cloud Run follow "policy driven hexagonal enterprise clean architecture"
+---
+
+
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+
+1)review the  services\snow_service  package follow "policy driven hexagonal enterprise clean architecture"
+2) services\snow_service  package package  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI
+3)remove duplicate and unused code, documents,files, folders e.g .tmp , .ruff, /scripts
+4)do the user friendly enterprise level comments (docstring ) in each class, method and config file
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+---
+
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+1)review the  services\snow_service package follow "policy driven hexagonal enterprise clean architecture"
+2) services\snow_service  package  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI
+3) review the /docs/02-unit-testing-runbook.md
+4) follow step by step of the /docs/02-unit-testing-runbook.md to test each scenerio  step by step
+5) do it step by step to avoid the hanging situation        
+6) If any step is fail
+      a) solve the Issue
+      b) update the  /docs/02-unit-testing-runbook.md
+      c) agin follow the step by step
+      d) repeat till Its tested completely all the scenerios of  /services\snow_service package
+output:
+polished SSOT run book handover to team member they have to just follow the instruction copy paste
+Assume a role of senior principle principle microservice architect ,deployed many microservices in Google Cloud Run means first create a Image Using Podman deployed on artifacts and deployed on Cloud Run follow "policy driven hexagonal enterprise clean architecture"
+---
+
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+1)review the  services\snow_service package follow "policy driven hexagonal enterprise clean architecture"
+2) services\snow_service  package  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI
+3) review the /docs/03-local-uv-postman-runbook.md
+4) follow step by step of the /docs/03-local-uv-postman-runbook.md to test each scenerio  step by step
+5) do it step by step to avoid the hanging situation        
+6) If any step is fail
+      a) solve the Issue
+      b) update the  /docs/03-local-uv-postman-runbook.md
+      c) agin follow the step by step
+      d) repeat till Its tested completely all the scenerios of  /services\snow_service  package
+output:
+polished SSOT run book handover to team member they have to just follow the instruction copy paste
+Assume a role of senior principle principle microservice architect ,deployed many microservices in Google Cloud Run means first create a Image Using Podman deployed on artifacts and deployed on Cloud Run follow "policy driven hexagonal enterprise clean architecture"
+---
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+
+
+1)review the  services\snow_service package follow "policy driven hexagonal enterprise clean architecture"
+2) services\snow_service  package  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI
+3) review the /docs/04-local-agent-tool-uv-postman-runbook.md
+4) follow step by step of the /docs/04-local-agent-tool-uv-postman-runbook.md to test each scenerio  step by step with observability life cycle (Cloud Log , Cloud Trace)
+5) do it step by step to avoid the hanging situation        
+6) If any step is fail
+      a) solve the Issue
+      b) update the  /docs/04-local-agent-tool-uv-postman-runbook.md
+      c) agin follow the step by step
+      d) repeat till Its tested completely all the scenerios of  /services\snow_service  package
+output:
+polished SSOT run book handover to team member they have to just follow the instruction copy paste
+Assume a role of senior principle principle microservice architect ,deployed many microservices in Google Cloud Run means first create a Image Using Podman deployed on artifacts and deployed on Cloud Run follow "policy driven hexagonal enterprise clean architecture"
+---
+
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+1)review the  services\snow_service package follow "policy driven hexagonal enterprise clean architecture"
+2) services\snow_service  package  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI
+3) review the /docs/05-podman-postman-runbook.md
+4) follow step by step of the /docs/05-podman-postman-runbook.md to test each scenerio  step by step
+5) do it step by step to avoid the hanging situation        
+6) If any step is fail
+      a) solve the Issue
+      b) update the  /docs/05-podman-postman-runbook.md
+      c) agin follow the step by step
+      d) repeat till Its tested completely all the scenerios of  /services\snow_service  package
+output:
+polished SSOT run book handover to team member they have to just follow the instruction copy paste
+Assume a role of senior principle principle microservice architect ,deployed many microservices in Google Cloud Run means first create a Image Using Podman deployed on artifacts and deployed on Cloud Run follow "policy driven hexagonal enterprise clean architecture"
+---
+
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+
+1)review the  services\snow_service package follow "policy driven hexagonal enterprise clean architecture"
+2) services\snow_service  package  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI
+3) review the /docs/06-podman-compose-agent-tool-postman-runbook.md
+4) follow step by step of the /docs/06-podman-compose-agent-tool-postman-runbook.md to test each scenerio  step by step
+5) do it step by step to avoid the hanging situation        
+6) If any step is fail
+      a) solve the Issue
+      b) update the  /docs/06-podman-compose-agent-tool-postman-runbook.md
+      c) agin follow the step by step
+      d) repeat till Its tested completely all the scenerios of  /services\snow_service  package
+output:
+polished SSOT run book handover to team member they have to just follow the instruction copy paste
+Assume a role of senior principle principle microservice architect ,deployed many microservices in Google Cloud Run means first create a Image Using Podman deployed on artifacts and deployed on Cloud Run follow "policy driven hexagonal enterprise clean architecture"
+---
+
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+
+1)review the  services\snow_service  package follow "policy driven hexagonal enterprise clean architecture"
+2) services\snow_service  package package  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI
+3)remove duplicate and unused code, documents,files, folders e.g .tmp , .ruff, /scripts,.venv,.uv_cache
+4)do the user friendly enterprise level comments (docstring ) in each class, method and config file for push to Gitlab
+5) No Chnage in run time behavior
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+---
+
+
+Assume a role of senior principle GenAI Architect,have experience in developing the responsible agents using multiple frameworks e.g CrewAI, OpenAI Agent SDK, LangGraph , Google ADK, Vertex AI and using the google enterprise platform services APIs and method follow "policy driven hexagonal enterprise clean architecture", you have also implement the end to end observability/logging framework for the application. you have also created many technical documents/runbook to handover to the team.
+
+
+1) review the shared\utils\genai-observability
+
+1)review the  services\snow_service package follow "policy driven hexagonal enterprise clean architecture"
+2) services\snow_service  package  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI
+2) It must be fully configurable
+capabilities:
+
+1. Answer general questions using Google ADK with OpenAI without calling an incident tool.
+2. Execute an approved incident action through `tool-servicenow` after deterministic policy checks.
+
+Supported actions are `CREATE_INCIDENT`, `RETRIEVE_INCIDENT`, `UPDATE_INCIDENT`,
+and `ASSIGN_RESOLVER_GROUP`
+
+
+1) review the services\tool-servicenow  as an indepenedent python package injected at run time as a cross cutting concern also deployed as an indepent reusable service running on Uvicorn and access through the FastAPI as a reference
+2) It must be fully configurable
+3) follow "policy driven hexagonal enterprise clean architecture"
+4) No change in businee run time and behavior
+tool-servicenow` turns direct ServiceNow integration into a reusable,
+governed enterprise capability. Responsible agents request business operations;
+they do not receive ServiceNow credentials, choose arbitrary URLs, or bypass
+policy. The package creates one controlled boundary that works with CrewAI,
+OpenAI Agents SDK, LangGraph, Google ADK, Vertex AI and conventional services.
+Supported actions are `CREATE_INCIDENT`, `RETRIEVE_INCIDENT`, `UPDATE_INCIDENT`,
+and `ASSIGN_RESOLVER_GROUP
+
+5) No change in Runtime behaivior just for testing the Observability Injection
+I have injected the shared\utils\genai-observability in
+services\snow_service
+services\tool-servicenow
+Implemented flow
+services\snow_service-> services\tool-servicenow (means ObservabilityContext Created at services\snow_service and pass to services\tool-servicenow
+
+We have to do
+create a document services\snow_service-> services\tool-servicenow  step by step
+1) local-uv-postman-agent-tool-runbook with step by step how to test observability life cycle
+2) podman-postman-agent-tool-runbook  with step by step how to test observability life cycle

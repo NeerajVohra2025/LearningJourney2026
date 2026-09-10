@@ -1,0 +1,345 @@
+meta:
+  name: rca-service
+  purpose: "Regenerate the minimum production service that creates deterministic, structured root-cause analyses from incident and log evidence."
+  domain: "Incident root-cause analysis and historical-resolution enrichment"
+  description: "Production-code SSOT. Tests, fixtures, runbooks, generated files, alternate packaging drafts, and unused references are excluded."
+
+replication_profile:
+  language: {name: Python, version: ">=3.11,<3.14; container uses 3.12"}
+  agent_frameworks:
+    - {name: Google ADK, version: "provided transitively by platform-sdk", role: "Agent runtime, runner, in-memory sessions, final events, function tools"}
+    - {name: platform-sdk, version: "workspace dependency; unspecified", role: "LLM generation, safety, token usage, request context, observability, and FastAPI foundation"}
+    - {name: FastAPI, version: ">=0.115.0", role: "HTTP ingress"}
+    - {name: Pydantic, version: ">=2.8.0", role: "Configuration, request, response, tool, and event validation"}
+    - {name: LiteLLM, version: ">=1.75,<1.92", role: "Provider-neutral model access through platform-sdk/ADK"}
+  orchestration:
+    topology: pipeline
+    description: "Validate request -> governed context -> ADK session -> deterministic LLM JSON generation -> optional mandatory vector-search tool attempt -> replace remediation recommendations with valid historical resolutions -> return RCAReport."
+  model_provider: "OPENAI or GEMINI through platform-sdk Google ADK generation runtime"
+  models:
+    - {role: "Structured RCA JSON generation", provider: OpenAI, model_id: "gpt-4.1-mini (checked-in default; normalized to openai/gpt-4.1-mini for ADK)", context_window: "not specified"}
+    - {role: "Supported alternative", provider: Gemini, model_id: "gemini-1.5-pro-001 (model default/commented baseline)", context_window: "not specified"}
+  runtime: {type: "Async FastAPI service with custom Google ADK BaseAgent", description: "One isolated in-memory session per /rca request; tool and generation adapters are composed once"}
+  hosting_platform: {type: "Google Cloud Run compatible OCI container", description: "Fedora Python 3.12, UID 1001, port 8082, Uvicorn"}
+  vector_store: "External resolution-store-service accessed through POST /resolutions/search; storage engine is not visible here"
+  secrets_management: "YAML plus environment/dotenv overrides loaded by platform-sdk; model keys, bearer tokens, collector endpoints, and Google credentials are secrets."
+  supporting_services:
+    - {name: resolution-store-service, type: "HTTP vector-search service", purpose: "Find similar historical incident resolutions"}
+    - {name: Google Cloud DLP/Model Armor, type: safety, purpose: "Filter model input/output"}
+    - {name: Google Cloud Logging/Trace, type: observability, purpose: "DLP-protected correlated telemetry"}
+    - {name: Sumo Logic, type: observability, purpose: "Optional protected log export"}
+  presentation_layer: {framework: none, type: none, backend_binding: none, description: "No UI; POST /rca only"}
+
+source_structure:
+  tree: |
+    services/rca_service/
+    |-- .env.example
+    |-- Containerfile
+    |-- pyproject.toml
+    |-- uv.lock
+    `-- src/rca_service/
+        |-- __init__.py
+        |-- main.py
+        |-- application/
+        |   |-- __init__.py
+        |   |-- mappers/{__init__.py,rca_mapper.py}
+        |   |-- ports/
+        |   |   |-- __init__.py
+        |   |   |-- inbound/{__init__.py,rca_use_case.py}
+        |   |   `-- outbound/{__init__.py,rca_generation_port.py,resolution_store_port.py}
+        |   `-- services/{__init__.py,rca_service.py}
+        |-- domain/
+        |   |-- __init__.py
+        |   |-- exceptions/__init__.py
+        |   `-- agent/{__init__.py,agent.py,config.py,constants.py,observability.py,prompts.py,tools.py}
+        `-- platform/
+            |-- __init__.py
+            |-- config/{__init__.py,config.yaml,di_container.py,settings.py}
+            `-- adapters/
+                |-- __init__.py
+                |-- inbound/{__init__.py,routes.py}
+                `-- outbound/
+                    |-- __init__.py
+                    |-- rca_generation/{__init__.py,client.py}
+                    `-- resolution_store/{__init__.py,auth.py,client.py}
+  entry_points:
+    - {path: src/rca_service/main.py, purpose: "Loads .env and exports app=create_app() for Uvicorn"}
+    - {path: src/rca_service/platform/adapters/inbound/routes.py, purpose: "FastAPI app and POST /rca composition"}
+    - {path: src/rca_service/platform/config/di_container.py, purpose: "Agent, adapters, tools, safety, observability, sessions, runner, and service composition"}
+    - {path: src/rca_service/domain/agent/agent.py, purpose: "Core RCA orchestration"}
+  modules:
+    - {path: application/mappers/rca_mapper.py, role: response mapper, key_responsibilities: ["RCAReport to alias-preserving JSON"]}
+    - {path: application/ports/inbound/rca_use_case.py, role: inbound port, key_responsibilities: ["analyze_rca contract"]}
+    - {path: application/ports/outbound/rca_generation_port.py, role: generation port, key_responsibilities: ["prompt to JSON text"]}
+    - {path: application/ports/outbound/resolution_store_port.py, role: vector port/models, key_responsibilities: ["search contract", "resolution schemas"]}
+    - {path: application/services/rca_service.py, role: use-case facade, key_responsibilities: ["delegate to analysis runner"]}
+    - {path: domain/agent/agent.py, role: orchestrator, key_responsibilities: ["validate", "generate", "search", "enrich", "events"]}
+    - {path: domain/agent/prompts.py, role: prompt builder, key_responsibilities: ["embed output schema", "evidence/determinism rules", "prompt-type routing"]}
+    - {path: domain/agent/tools.py, role: tool registry, key_responsibilities: ["vector_search_tool", "input/output validation"]}
+    - {path: domain/agent/observability.py, role: safe telemetry, key_responsibilities: ["agent/tool event normalization"]}
+    - {path: platform/adapters/outbound/rca_generation/client.py, role: model adapter, key_responsibilities: ["timeout", "retry", "generation runtime"]}
+    - {path: platform/adapters/outbound/resolution_store/client.py, role: vector adapter, key_responsibilities: ["auth/context propagation", "retry", "response parsing"]}
+    - {path: platform/adapters/inbound/routes.py, role: HTTP adapter, key_responsibilities: ["context", "safety/error responses", "lifecycle"]}
+    - {path: platform/config/settings.py, role: validated configuration, key_responsibilities: ["normalization", "production hardening"]}
+  config_files:
+    - {path: src/rca_service/platform/config/config.yaml, purpose: "Runtime model, tool, retry, observability, and safety defaults"}
+    - {path: .env.example, purpose: "Non-secret environment shape"}
+    - {path: pyproject.toml, purpose: "Minimum build/runtime dependencies"}
+    - {path: Containerfile, purpose: "Non-root OCI deployment"}
+  notable_conventions: ["Hexagonal ports/adapters", "temperature fixed at zero", "structured schema-constrained JSON", "one session per request", "optional best-effort historical enrichment", "bounded retries", "no durable local state"]
+
+architecture:
+  pattern: hybrid
+  components:
+    - {name: RCA HTTP adapter, role: inbound, description: "Validates RcaRequest and establishes enterprise context", inputs: [RcaRequest, headers], outputs: [RCAReport or error JSON]}
+    - {name: RCAAgent, role: orchestrator, description: "Runs generation then optional historical search", inputs: [structured request, trace_id], outputs: [RCAReport]}
+    - {name: RCAGenerationAdapter, role: model gateway, description: "Calls safety-enabled deterministic generation runtime with retry", inputs: [prompt, TokenUsageContext], outputs: [JSON text]}
+    - {name: vector_search_tool, role: tool, description: "Searches similar historical resolutions", inputs: [description, error, top_k], outputs: [VectorSearchResult mapping]}
+    - {name: ResolutionStoreHttpAdapter, role: external tool adapter, description: "POST search with auth, lineage, and retry", inputs: [search payload], outputs: [ResolutionRecord list]}
+    - {name: ADK runner/session service, role: runtime, description: "Unique in-memory session and state keys per invocation", inputs: [request state], outputs: [final typed report event]}
+  data_flows:
+    - {from: caller, to: POST /rca, data_type: RcaRequest, description: "Incident details and analyzed logs"}
+    - {from: RCAAgent, to: LLM runtime, data_type: "schema-bearing prompt", description: "Generate complete RCA JSON"}
+    - {from: RCAAgent, to: resolution-store-service, data_type: "description/error/top_k", description: "Optional similarity search"}
+    - {from: resolution records, to: RCAReport, data_type: "list[ResolutionRecord]", description: "Replace generated remediation recommendations with historical descriptions"}
+  state_schema:
+    session: {service: InMemorySessionService, id: "random UUID per request", keys: {rca_input: RcaRequest, trace_id: str, rca_report: RCAReport}, persistence: none}
+    request_context: {request_id: str, trace_id: str, incident_number: "str|null"}
+  entry_point: "uvicorn rca_service.main:app --host 0.0.0.0 --port ${PORT:-8082}"
+  terminal_conditions: ["valid enriched or generated RCAReport", "input validation error", "safety rejection/failure", "LLM gateway/parse failure", "unexpected internal failure"]
+
+api_contracts:
+  entry_points:
+    - {name: "POST /rca", invocation_style: HTTP JSON, signature: "run_rca(payload: RcaRequest, request: Request) -> JSONResponse", inputs: [RcaRequest, enterprise/request headers], outputs: [RCAReport], description: "Only service business route; framework foundation may also supply standard health/docs routes"}
+    - {name: RCAUseCase.analyze_rca, invocation_style: Python port, signature: "async (input_data: dict[str,Any], trace_id: str) -> RCAReport", inputs: [dict, trace_id], outputs: [RCAReport], description: application contract}
+    - {name: RCAAgent.process, invocation_style: Python, signature: "async (input_data: Mapping[str,Any], trace_id: str='') -> RCAReport", inputs: [mapping, trace_id], outputs: [RCAReport], description: core orchestration}
+  internal_interfaces:
+    - {name: RCAAnalysisRunnerPort, signature: "run_analysis(input_data,trace_id)->RCAReport", description: ADK runtime boundary}
+    - {name: RCAGenerationPort, signature: "generate_rca(*,prompt,usage_context)->str", description: model boundary}
+    - {name: ResolutionStorePort, signature: "search_resolutions(*,description,error,top_k)->VectorSearchResult", description: vector boundary}
+    - {name: ToolInvoker, signature: "invoke_tool(tool_name,arguments)->Mapping", description: named tool boundary}
+
+business_logic:
+  intent: "Create evidence-grounded deterministic RCA reports, optionally replacing speculative remediations with descriptions of similar resolved incidents."
+  rules:
+    - "Validate incoming mapping as RcaRequest; translate Pydantic validation failure to ValidationException (HTTP 400, VALIDATION_ERROR)."
+    - "Require RFC3339 timestamps with a time component and Z or numeric timezone; parse them as ISO-8601."
+    - "Resolve request ID from middleware context or a new UUID."
+    - "Build model prompt from the full request except prompt_type, with JSON keys sorted and indented."
+    - "Only the default blank prompt_type is supported because the specialized builder map is empty; any nonblank prompt_type is rejected."
+    - "Prompt embeds the complete RCAReport JSON Schema and demands JSON only, no Markdown/comments/explanations."
+    - "Model conclusions must use provided incident details/logs/stats; it has no historical incidents in the prompt."
+    - "Use Unclassified when evidence cannot support a category; never invent IDs, timestamps, or unsupported facts."
+    - "Do not emit null optional text/arrays according to prompt; use evidence-limited statements and empty arrays only when justified."
+    - "Include at least one Timeline item when timestamped logs exist; FiveWhy and Dependencies must remain evidence-limited."
+    - "Temperature must equal exactly 0.0; any other configured value fails validation."
+    - "Normalize llm_provider uppercase and environment/runtime/auth mode lowercase; blank optional credential/URL/project fields become null."
+    - "For OpenAI, prefix model with openai/ for ADK unless already prefixed; Gemini model is unchanged."
+    - "Apply model credential to OPENAI_API_KEY and optional OPENAI_BASE_URL, or GOOGLE_API_KEY, during container composition."
+    - "Call LLM within llm_timeout_seconds; empty text is LLM_GATEWAY_FAILURE."
+    - "Retry model failures up to outbound_retry_max_attempts except SafetyError and exceptions exposing HTTP 4xx status."
+    - "Model retry delay is capped exponential base*2^(attempt-1) plus uniform random jitter from 0 through base delay."
+    - "Parse returned text directly as RCAReport JSON; empty output is RCAParseError, schema/JSON failure is LLM_OUTPUT_PARSE_FAILURE."
+    - "Historical search occurs after successful generation and only when historical_resolution_search_enabled=true."
+    - "Build search description as short_description newline description."
+    - "Build search error by flattening every log entry as timestamp | source_system | source | severity | message and optional payload.error."
+    - "vector_search_tool requires at least one nonblank description or error; top_k must be 1..20."
+    - "The enabled historical search tool is required to be invoked exactly once by deterministic orchestration, not selected by the LLM."
+    - "Historical tool failure is logged and swallowed; return the model-generated RCA unchanged."
+    - "Validate each returned resolution record independently; skip malformed records with warning rather than failing the RCA."
+    - "If at least one valid record exists, replace (not append to) remediation_recommendations with nonblank record descriptions in response order."
+    - "If valid records exist but every description is blank, replacement becomes an empty recommendation list."
+    - "Resolution search payload contains top_k plus only nonblank description/error and fails if both absent."
+    - "Resolution store retries network errors and HTTP 429/500/502/503/504 up to configured attempts; returns all other responses immediately."
+    - "Honor numeric or HTTP-date Retry-After exactly; otherwise use capped exponential delay plus configured jitter."
+    - "After retries, raise the final request error or return final response and raise_for_status."
+    - "Resolution response expects resolution_records; each record requires id, incident_id, similarity_score and accepts description falling back to resolution_text then empty."
+    - "ResolutionRecord similarity_score must be 0..1."
+    - "Resolution store auth modes are none, static_bearer, or google_id_token; required token/audience must exist."
+    - "Propagate enterprise carrier headers when governed context exists; otherwise propagate traceparent, X-Cloud-Trace-Context, X-Correlation-Id, and X-Request-Id from context variables. Auth headers win via setdefault semantics."
+    - "Production requires llm_api_key and gcp_project_id."
+    - "Production with historical search forbids resolution-store auth none; Google ID mode requires audience; static bearer requires token."
+    - "If enterprise header is absent and context generation is disabled, execute directly without downstream context pipeline."
+    - "If generation is enabled and header absent, synthesize enterprise headers using correlation/request/tenant/incident data and fixed policy/version/parent/current-service values."
+    - "Invalid enterprise context maps to HTTP 400 code RCA_SERVICE_INVALID_ENTERPRISE_CONTEXT."
+    - "SafetyError returns platform safety business response and outcome rejected for SAFETY_INPUT_BLOCKED/SAFETY_OUTPUT_BLOCKED, otherwise failure."
+    - "AgentException returns its HTTP status/error code/detail and optional tool_name; unknown exception returns HTTP 500 INTERNAL_ERROR."
+    - "SafetyError is never wrapped as LLMGatewayError and is never retried."
+    - "The ADK final event stores alias-form RCAReport JSON in state delta under rca_report."
+    - "Shutdown drains downstream observability; adapters use request-scoped HTTP clients and in-memory session state only."
+  constraints: ["One /rca operation", "No free-form output", "No nonzero temperature", "No durable memory", "top_k 1..20", "historical search cannot block successful generation", "production safety/auth configuration fails closed"]
+  assumptions: ["shared package contracts are copied into standalone regeneration", "platform-sdk provides Google ADK, safety, token usage, observability, and standard FastAPI behavior", "resolution-store storage engine and embedding model are external/unknown"]
+  domain_terms: {RCA: "Root Cause Analysis", historical_resolution: "Similar resolved incident returned by vector service", deterministic: "temperature zero plus schema-only JSON and stable input serialization", evidence: "incident details, analyzed logs, and optional historical statistics present in input"}
+
+tool_inventory:
+  tools:
+    - {name: vector_search_tool, type: deterministic function tool, description: "Search historical resolutions after model generation", inputs: ["description:str|null", "error:str|null", "top_k:int=5"], outputs: [VectorSearchResult]}
+  mcps: []
+  external_services:
+    - {name: OpenAI API, type: model API, purpose: RCA JSON generation, auth_method: "OPENAI_API_KEY bearer through LiteLLM"}
+    - {name: Gemini API, type: model API, purpose: supported alternative generation, auth_method: GOOGLE_API_KEY}
+    - {name: resolution-store-service, type: vector search REST, purpose: historical remediation lookup, auth_method: "none, static Bearer, or Google ID token"}
+    - {name: Google Cloud DLP/Model Armor, type: safety API, purpose: model I/O filtering, auth_method: ADC/runtime identity}
+    - {name: Google Cloud Logging/Trace, type: observability, purpose: correlated protected telemetry, auth_method: ADC/runtime identity}
+    - {name: Sumo Logic, type: observability, purpose: optional protected collector, auth_method: secret endpoint}
+  databases: [{name: resolution-store backing store, engine: "unknown/external", purpose: "vector similarity search over resolved incidents"}]
+
+prompt_patterns:
+  system_prompts:
+    - name: RCA_SYSTEM_PROMPT
+      purpose: "Constrain structured evidence-grounded RCA generation"
+      template: |
+        You are a deterministic root cause analysis agent.
+        Using the provided logs, and recent change records, generate a structured Root Cause Analysis (RCA) report.
+        You do not have access to historical incidents; rely solely on the provided logs.
+        Return only valid JSON that conforms exactly to this RCAReport JSON Schema:
+        {{rca_report_json_schema}}
+        Rules:
+        - Return JSON only; no Markdown, comments, code fences, or external explanation.
+        - Base conclusions only on {{incident_details}}, {{log_analysis_results}}, and available historical statistics.
+        - Use Unclassified when evidence is insufficient.
+        - Populate every field; use concise evidence-unavailable text instead of null text.
+        - Use an empty array only when no evidence-backed array items exist.
+        - Include a Timeline item when timestamped logs exist.
+        - Keep FiveWhy and Dependencies evidence-limited and remediations actionable.
+        - Never invent identifiers, timestamps, or facts.
+      variables: [rca_report_json_schema, incident_details, log_analysis_results]
+  user_prompt_templates:
+    - name: default_rca_request
+      template: |
+        {{RCA_SYSTEM_PROMPT}}
+
+        Perform root cause analysis for this incident payload. Use the logs and historical statistics, when present, as evidence.
+
+        {{sorted_indented_request_json_without_prompt_type}}
+      variables: [RCA_SYSTEM_PROMPT, sorted_indented_request_json_without_prompt_type]
+    - {name: ADK_session_message, template: "Generate the RCA report for the structured incident input in session state.", variables: []}
+    - {name: generation_runtime_instruction, template: "Return only the RCA JSON requested by the user prompt.", variables: []}
+  chains:
+    - {name: rca_analysis, steps: ["validate RcaRequest", "build schema prompt", "safe deterministic model generation with retry", "parse RCAReport", "optional required vector tool call", "skip invalid records", "replace remediations when records exist", "emit completion", "return alias JSON"]}
+  evaluation_criteria: ["Valid RCAReport schema", "JSON only", "temperature 0", "evidence-grounded", "no invented IDs/timestamps", "Unclassified when uncertain", "historical lookup cannot fail the base RCA"]
+
+config_schema:
+  env_vars:
+    - {name: ENVIRONMENT, purpose: deployment posture, required: false, example_format: "local|test|production"}
+    - {name: AGENT_RUNTIME, purpose: agent runtime, required: false, example_format: google_adk}
+    - {name: LLM_GENERATION_RUNTIME, purpose: generation runtime, required: false, example_format: google_adk}
+    - {name: LLM_PROVIDER, purpose: provider, required: false, example_format: "OPENAI|GEMINI"}
+    - {name: LLM_MODEL_NAME, purpose: model ID, required: false, example_format: gpt-4.1-mini}
+    - {name: LLM_API_KEY, purpose: provider secret, required: production, example_format: "<secret>"}
+    - {name: OPENAI_BASE_URL, purpose: compatible endpoint, required: false, example_format: "https://host/v1"}
+    - {name: LLM_TEMPERATURE, purpose: deterministic temperature, required: false, example_format: "0.0"}
+    - {name: LLM_MAX_OUTPUT_TOKENS, purpose: output bound, required: false, example_format: "10000"}
+    - {name: LLM_TIMEOUT_SECONDS, purpose: generation timeout, required: false, example_format: "120"}
+    - {name: HISTORICAL_RESOLUTION_SEARCH_ENABLED, purpose: vector enrichment, required: false, example_format: "false"}
+    - {name: VECTOR_SEARCH_TOP_K, purpose: result count, required: false, example_format: "5"}
+    - {name: TOOL_TIMEOUT_SECONDS, purpose: resolution HTTP timeout, required: false, example_format: "120"}
+    - {name: RESOLUTION_STORE_SERVICE_URL, purpose: vector service URL, required: "when search enabled", example_format: "http://resolution-store-service"}
+    - {name: RESOLUTION_STORE_AUTH_MODE, purpose: auth strategy, required: production_search, example_format: "none|static_bearer|google_id_token"}
+    - {name: RESOLUTION_STORE_AUTH_TOKEN, purpose: static bearer secret, required: static_bearer, example_format: "<secret>"}
+    - {name: RESOLUTION_STORE_AUDIENCE, purpose: Google ID audience, required: google_id_token, example_format: "https://resolution-store"}
+    - {name: OUTBOUND_RETRY_MAX_ATTEMPTS, purpose: model/tool attempts, required: false, example_format: "3"}
+    - {name: OUTBOUND_RETRY_BASE_DELAY_SECONDS, purpose: retry base, required: false, example_format: "0.1"}
+    - {name: OUTBOUND_RETRY_MAX_DELAY_SECONDS, purpose: retry cap, required: false, example_format: "2.0"}
+    - {name: GCP_PROJECT_ID, purpose: production project, required: production, example_format: project-id}
+    - {name: PORT, purpose: HTTP port, required: false, example_format: "8082"}
+    - {name: OBSERVABILITY__CONTEXT_ENABLED, purpose: governed context, required: false, example_format: "true"}
+    - {name: OBSERVABILITY__CLOUD_LOGGING, purpose: cloud export, required: false, example_format: "true"}
+    - {name: SUMO_LOGIC_ENABLED, purpose: Sumo export, required: false, example_format: "true"}
+    - {name: SUMO_LOGIC_ENDPOINT, purpose: collector secret URL, required: "if enabled", example_format: "<secret>"}
+    - {name: SUMO_LOGIC_TIMEOUT_SECONDS, purpose: delivery timeout, required: false, example_format: "2"}
+  parameters:
+    - {name: environment, type: enum, default: local, description: hardening posture}
+    - {name: llm_provider/model, type: strings, default: "OPENAI/gpt-4.1-mini in YAML", description: generation model}
+    - {name: llm_temperature, type: float, default: 0.0, description: immutable determinism}
+    - {name: llm_max_output_tokens, type: int, default: 10000, description: YAML output limit}
+    - {name: historical_resolution_search_enabled, type: bool, default: false, description: enrichment toggle}
+    - {name: vector_search_top_k, type: int, default: 5, description: 1..20}
+    - {name: outbound_retry, type: object, default: "attempts=3, base=.1s, cap=2s", description: shared model/tool retry values}
+    - {name: observability, type: platform_sdk.ObservabilitySettings, default: "context/cloud/generation true, INFO", description: telemetry}
+    - {name: safety, type: platform_sdk.SafetyConfig, default: "enabled; model I/O filtering; DLP Model Armor us-central1", description: guardrails}
+  warnings:
+    - "All API keys, bearer tokens, collector endpoints, and credential documents are <secret>."
+    - "pyproject_use.toml is an alternate packaging draft and is excluded."
+    - "The tracked README is copied by Containerfile only for build metadata; a minimum regeneration may remove the pyproject readme reference and omit README."
+
+component_manifest:
+  files:
+    - {path: src/rca_service/main.py, language: Python, classes: [], functions: []}
+    - {path: application/mappers/rca_mapper.py, language: Python, classes: [], functions: [{name: report_to_response_data, signature: "(RCAReport)->dict[str,Any]"}]}
+    - {path: application/ports/inbound/rca_use_case.py, language: Python, classes: [{name: RCAUseCase, kind: Protocol, properties: [], methods: [{name: analyze_rca, signature: "async (dict,trace_id)->RCAReport"}]}], functions: []}
+    - {path: application/ports/outbound/rca_generation_port.py, language: Python, classes: [{name: RCAGenerationPort, kind: Protocol, properties: [], methods: [{name: generate_rca, signature: "async (*,prompt,usage_context)->str"}]}], functions: []}
+    - {path: application/ports/outbound/resolution_store_port.py, language: Python, classes: [{name: ResolutionRecord, kind: Pydantic_model, properties: [{name: id, type: str}, {name: incident_id, type: str}, {name: description, type: str}, {name: resolved_at, type: "str|null"}, {name: similarity_score, type: "float 0..1"}], methods: []}, {name: VectorSearchResult, kind: Pydantic_model, properties: [{name: resolution_records, type: "list[ResolutionRecord]"}], methods: []}, {name: ResolutionStorePort, kind: ABC, properties: [], methods: [{name: search_resolutions, signature: "async (*,description,error,top_k)->VectorSearchResult"}]}], functions: []}
+    - {path: application/services/rca_service.py, language: Python, classes: [{name: RCAService, kind: application_service, properties: [{name: _runner, type: RCAAnalysisRunnerPort}], methods: [{name: __init__, signature: "(runner)->None"}, {name: analyze_rca, signature: "async (dict,trace_id)->RCAReport"}]}], functions: []}
+    - {path: domain/agent/agent.py, language: Python, classes: [{name: ToolInvoker, kind: Protocol, properties: [], methods: [{name: invoke_tool, signature: "async (name,args)->Mapping"}]}, {name: MappingToolInvoker, kind: adapter, properties: [{name: _tools, type: dict}], methods: [{name: __init__, signature: "(tools)->None"}, {name: invoke_tool, signature: "async (name,args)->Mapping"}]}, {name: RCAAgent, kind: Google_ADK_BaseAgent, properties: [{name: config, type: AgentConfig}, {name: rca_generator, type: RCAGenerationPort}, {name: tool_invoker, type: ToolInvoker}, {name: tools, type: list}], methods: [{name: __init__, signature: "(*,config,rca_generator,tool_invoker,tools=None,name='rca_agent')"}, {name: process, signature: "async (input_data,trace_id='')->RCAReport"}, {name: _run_async_impl, signature: "async generator (ctx)"}]}], functions: [{name: handle_request, signature: "async (input_data,trace_id,config,rca_generator,tool_invoker)->RCAReport"}, {name: build_search_description, signature: "(RcaRequest)->str"}, {name: build_search_error, signature: "(RcaRequest)->str|null"}, {name: parse_rca_report, signature: "(str)->RCAReport"}, {name: enrich_with_historical_resolutions, signature: "(RCAReport,list[ResolutionRecord])->RCAReport"}, {name: _generate_rca_report, signature: async}, {name: _search_historical_resolutions, signature: async}, {name: _invoke_required_tool, signature: async}, {name: _failed_component, signature: "(Exception)->str"}, {name: _build_final_event, signature: "(author,report)->Event"}]}
+    - {path: domain/agent/config.py, language: Python, classes: [{name: AgentModelConfig, kind: Protocol, properties: [{name: llm_provider, type: str}, {name: llm_model_name, type: str}], methods: []}], functions: [{name: resolve_adk_model_name, signature: "(config)->str"}]}
+    - {path: domain/agent/observability.py, language: Python, classes: [{name: AgentEventContext, kind: dataclass, properties: [{name: service_name, type: str}, {name: request_id, type: str}, {name: trace_id, type: str}, {name: incident_number, type: "str|null"}], methods: []}], functions: [{name: log_agent_event, signature: "(logger,severity,*,event_name,log_context,operation=None,...)->None"}, {name: log_tool_event, signature: "(logger,severity,*,event_name,log_context,tool_name,...)->None"}, {name: _base_extra, signature: "(**fields)->dict"}, {name: _severity, signature: "(str)->str"}, {name: _outcome, signature: "(raw,severity,payload)->str"}, {name: _level, signature: "(severity)->int"}, {name: _optional_string, signature: "(Any)->str|null"}, {name: _safe_extra, signature: "(Mapping)->dict"}]}
+    - {path: domain/agent/prompts.py, language: Python, classes: [], functions: [{name: build_rca_prompt, signature: "(RcaRequest)->str"}, {name: _build_default_rca_prompt, signature: "(dict)->str"}]}
+    - {path: domain/agent/tools.py, language: Python, classes: [], functions: [{name: build_agent_tools, signature: "(*,search_resolutions)->list[FunctionTool]"}, {name: build_tool_functions, signature: "(*,search_resolutions)->dict"}, {name: build_agent_tools_from_functions, signature: "(Mapping)->list[FunctionTool]"}, {name: _validate_top_k, signature: "(int)->int"}, {name: _normalize_optional_text, signature: "(str|null)->str|null"}, {name: _ensure_mapping, signature: "(value,tool_name)->Mapping"}]}
+    - {path: domain/exceptions/__init__.py, language: Python, classes: [{name: AgentException, kind: exception, properties: [{name: http_status, type: "ClassVar[int]"}, {name: error_code, type: "ClassVar[str]"}, {name: detail, type: str}, {name: tool_name, type: "str|null"}], methods: [{name: __init__, signature: "(detail)->None"}]}, {name: ValidationException, kind: exception, properties: [{name: http_status, type: "400"}, {name: error_code, type: VALIDATION_ERROR}], methods: []}, {name: ToolException, kind: exception, properties: [{name: http_status, type: "502"}, {name: error_code, type: TOOL_FAILURE}], methods: [{name: __init__, signature: "(tool_name,detail)->None"}]}, {name: LLMGatewayError, kind: exception, properties: [{name: http_status, type: "502"}, {name: error_code, type: LLM_GATEWAY_FAILURE}], methods: []}, {name: RCAParseError, kind: exception, properties: [{name: http_status, type: "500"}, {name: error_code, type: LLM_OUTPUT_PARSE_FAILURE}], methods: []}], functions: []}
+    - {path: platform/adapters/inbound/routes.py, language: Python, classes: [], functions: [{name: create_app, signature: "(container=None)->FastAPI"}, {name: _lifespan, signature: "async context manager (FastAPI)"}, {name: _execute_governed, signature: "async (Request,*,payload,operation_name,coordinate)->Any"}, {name: _error_details, signature: "(tool_name)->dict"}]}
+    - {path: platform/adapters/outbound/rca_generation/client.py, language: Python, classes: [{name: RCAGenerationAdapter, kind: adapter, properties: [{name: _config, type: AgentConfig}, {name: _runtime, type: LLMGenerationRuntime}], methods: [{name: __init__, signature: "(*,config,runtime=None)"}, {name: generate_rca, signature: "async (*,prompt,usage_context)->str"}, {name: _generate_rca_once, signature: "async (*,prompt,usage_context)->str"}]}], functions: [{name: _is_permanent_failure, signature: "(Exception)->bool"}, {name: _retry_delay_seconds, signature: "(config,attempt)->float"}, {name: build_rca_generation_adapter, signature: "(config)->adapter"}, {name: _build_default_generation_runtime, signature: "(config)->runtime"}]}
+    - {path: platform/adapters/outbound/resolution_store/auth.py, language: Python, classes: [{name: GoogleIDTokenAuthProvider, kind: auth_adapter, properties: [{name: _audience, type: str}, {name: _token_fetcher, type: Callable}], methods: [{name: __init__, signature: "(*,audience,token_fetcher=None)"}, {name: auth_headers, signature: "()->dict[str,str]"}]}], functions: [{name: _fetch_google_id_token, signature: "(audience)->str"}]}
+    - {path: platform/adapters/outbound/resolution_store/client.py, language: Python, classes: [{name: RetryConfig, kind: frozen_dataclass, properties: [{name: max_attempts, type: int}, {name: base_delay_seconds, type: float}, {name: max_delay_seconds, type: float}], methods: []}, {name: ResolutionStoreHttpAdapter, kind: adapter, properties: [{name: _base_url, type: str}, {name: _timeout, type: int}, {name: _retry_config, type: RetryConfig}, {name: _auth_headers_provider, type: Callable}], methods: [{name: search_resolutions, signature: "async (*,description,error,top_k)->VectorSearchResult"}, {name: search_resolutions_tool, signature: "async (...)->Mapping"}, {name: _post_with_retries, signature: "async (*,client,payload)->Response"}]}], functions: [{name: _request_headers, signature: "(auth_headers)->dict"}, {name: _build_resolution_search_payload, signature: "(*,description,error,top_k)->dict"}, {name: _is_retryable_response, signature: "(Response)->bool"}, {name: _retry_delay_seconds, signature: "(response,attempt,config,jitter)->float"}, {name: _parse_retry_after, signature: "(str|null)->float|null"}, {name: _parse_resolution_search_response, signature: "(dict)->VectorSearchResult"}]}
+    - {path: platform/config/di_container.py, language: Python, classes: [{name: RCAContainer, kind: composition_root, properties: [{name: config, type: AgentConfig}, {name: observability_utility, type: GenAIObservabilityUtility}, {name: rca_generation_adapter, type: RCAGenerationAdapter}, {name: vector_store, type: ResolutionStoreHttpAdapter}, {name: tool_functions, type: dict}, {name: tool_invoker, type: MappingToolInvoker}, {name: agent_tools, type: list}, {name: agent, type: RCAAgent}, {name: session_service, type: InMemorySessionService}, {name: runner, type: ADK_Runner}, {name: rca_service, type: RCAService}], methods: [{name: __init__, signature: "(AgentConfig)->None"}, {name: run_analysis, signature: "async (dict,trace_id)->RCAReport"}]}], functions: [{name: build_container, signature: "(config_path=None)->RCAContainer"}, {name: _apply_llm_credentials, signature: "(config)->None"}, {name: _resolution_store_auth_headers_provider, signature: "(config)->Callable"}, {name: _empty_auth_headers, signature: "()->Mapping"}]}
+    - {path: platform/config/settings.py, language: Python, classes: [{name: AgentConfig, kind: Pydantic_model_extra_forbid, properties: [{name: environment, type: "local|test|production"}, {name: agent_runtime, type: "literal google_adk"}, {name: llm_generation_runtime, type: "literal google_adk"}, {name: llm_provider, type: "GEMINI|OPENAI"}, {name: llm_model_name, type: str}, {name: llm_api_key, type: "str|null"}, {name: openai_base_url, type: "str|null"}, {name: llm_temperature, type: "float=0"}, {name: llm_max_output_tokens, type: "int>0"}, {name: llm_timeout_seconds, type: "float>0"}, {name: historical_resolution_search_enabled, type: bool}, {name: vector_search_top_k, type: "int 1..20"}, {name: tool_timeout_seconds, type: "int>0"}, {name: resolution_store_service_url, type: str}, {name: resolution_store_auth_mode, type: "none|static_bearer|google_id_token"}, {name: resolution_store_auth_token, type: "str|null"}, {name: resolution_store_audience, type: "str|null"}, {name: outbound_retry_max_attempts, type: "int>=1"}, {name: outbound_retry_base_delay_seconds, type: "float>=0"}, {name: outbound_retry_max_delay_seconds, type: "float>=0"}, {name: gcp_project_id, type: "str|null"}, {name: app_name, type: str}, {name: agent_name, type: str}, {name: user_id, type: str}, {name: observability, type: ObservabilitySettings}, {name: safety, type: SafetyConfig}], methods: [{name: normalize_llm_provider, signature: "field_validator"}, {name: normalize_lowercase_config, signature: "field_validator"}, {name: blank_optional_config_is_unset, signature: "field_validator"}, {name: require_deterministic_temperature, signature: "field_validator"}, {name: production_config_must_be_hardened, signature: "model_validator"}]}], functions: [{name: load_agent_config, signature: "(config_path=None,env_path=None)->AgentConfig"}, {name: resolve_adk_model_name, signature: "(config)->str"}]}
+    - {path: "all __init__.py files", language: Python, classes: [], functions: []}
+  config_keys:
+    - {name: "environment,agent_runtime,llm_generation_runtime,llm_provider,llm_model_name,llm_api_key,openai_base_url,llm_temperature,llm_max_output_tokens,llm_timeout_seconds", purpose: model runtime, source_file: config.yaml}
+    - {name: "historical_resolution_search_enabled,vector_search_top_k,tool_timeout_seconds,resolution_store_service_url,resolution_store_auth_mode,resolution_store_auth_token,resolution_store_audience", purpose: vector tool, source_file: config.yaml}
+    - {name: "outbound_retry_max_attempts,outbound_retry_base_delay_seconds,outbound_retry_max_delay_seconds", purpose: retry, source_file: config.yaml}
+    - {name: "gcp_project_id,app_name,agent_name,user_id,observability.*,safety.*", purpose: identity/telemetry/safety, source_file: config.yaml}
+  config_artifacts:
+    - {path: src/rca_service/platform/config/config.yaml, format: YAML, purpose: runtime SSOT, keys: [environment, agent_runtime, llm_provider, llm_model_name, llm_api_key, openai_base_url, llm_temperature, llm_max_output_tokens, llm_timeout_seconds, historical_resolution_search_enabled, vector_search_top_k, tool_timeout_seconds, resolution_store_service_url, resolution_store_auth_mode, resolution_store_auth_token, resolution_store_audience, outbound_retry_max_attempts, outbound_retry_base_delay_seconds, outbound_retry_max_delay_seconds, gcp_project_id, app_name, agent_name, user_id, observability.context_enabled, observability.cloud_logging, observability.log_level, observability.log_name, observability.project_id, observability.generate_context_when_missing, safety.enabled, safety.filter_agent_io, safety.filter_llm_io, safety.provider, safety.project_id, safety.location, safety.model_armor_template_id, safety.inspect_template_id, safety.deidentify_template_id], structure: "Full non-secret defaults recorded in config_schema; llm_api_key/resolution_store_auth_token=<secret>."}
+    - {path: pyproject.toml, format: TOML, purpose: minimum runtime build, keys: [project.name, project.version, project.description, project.requires-python, project.dependencies, tool.uv.sources.platform-sdk, tool.uv.sources.shared, build-system.requires, build-system.build-backend, tool.hatch.build.targets.wheel.packages], structure: "Exclude optional dev dependencies and pyproject_use.toml."}
+    - {path: Containerfile, format: Containerfile, purpose: OCI build, keys: [builder_image, runtime_image, labels, environment, workdir, user, expose, stopsignal, command], structure: "Fedora python-312; UID 1001; port 8082; Uvicorn rca_service.main:app."}
+  payload_schemas:
+    - {name: RcaRequest, fields: [{name: incident_details, type: IncidentDetails}, {name: log_analysis_results, type: "list[LogAnalysis]"}, {name: prompt_type, type: "str|null"}], used_by: "/rca and RCAAgent"}
+    - {name: IncidentDetails, fields: [{name: incident_number, type: str}, {name: short_description, type: str}, {name: description, type: str}], used_by: RcaRequest}
+    - {name: LogAnalysis, fields: [{name: source_system, type: str}, {name: log_entries, type: "list[LogEntry]"}], used_by: RcaRequest}
+    - {name: LogEntry, fields: [{name: timestamp, type: "RFC3339 str"}, {name: source, type: str}, {name: severity, type: str}, {name: message, type: str}, {name: payload, type: "dict[str,Any]|null"}], used_by: LogAnalysis}
+    - {name: RCAReport, fields: [{name: RCATitle, type: str}, {name: RCASummary, type: RCASummary}, {name: RCAReasoning, type: RCAReasoning}, {name: FiveWhy, type: "list[FiveWhyItem]|null"}, {name: Dependencies, type: "Dependencies|null"}, {name: RootCause, type: RootCause}], used_by: model/output}
+    - {name: RCASummary, fields: [{name: IncidentDescription, type: "str|null"}, {name: ImpactAssessment, type: "str|null"}, {name: Timeline, type: "list[TimelineEvent]|null"}], used_by: RCAReport}
+    - {name: TimelineEvent, fields: [{name: Timestamp, type: "str|null"}, {name: Description, type: "str|null"}], used_by: RCASummary}
+    - {name: RCAReasoning, fields: [{name: ObserverBehavior, type: "str|null"}, {name: ExpectedBehavior, type: "str|null"}, {name: AnalysisSummary, type: "str|null"}], used_by: RCAReport}
+    - {name: FiveWhyItem, fields: [{name: Why, type: "str|null"}, {name: Evidence, type: "str|null"}], used_by: RCAReport}
+    - {name: Dependencies, fields: [{name: HighlightDependencies, type: "str|null"}, {name: DependenciesSummary, type: "str|null"}, {name: CascadingFailures, type: "str|null"}, {name: CascadingFailuresChain, type: "list[str]|null"}], used_by: RCAReport}
+    - {name: RootCause, fields: [{name: Category, type: "Infrastructure|Configuration|Application|External Services|Unclassified"}, {name: Description, type: "str|null"}, {name: RemediationRecommendations, type: "list[str]"}], used_by: RCAReport}
+    - {name: ResolutionSearchRequest, fields: [{name: description, type: "str optional"}, {name: error, type: "str optional"}, {name: top_k, type: int}], used_by: "POST /resolutions/search"}
+    - {name: ResolutionRecord, fields: [{name: id, type: str}, {name: incident_id, type: str}, {name: description, type: str}, {name: resolved_at, type: "str|null"}, {name: similarity_score, type: "float 0..1"}], used_by: VectorSearchResult}
+  messaging:
+    - {channel: "HTTP POST /rca", direction: request-response, message_shape: "RcaRequest -> RCAReport"}
+    - {channel: "HTTP POST /resolutions/search", direction: outbound, message_shape: "ResolutionSearchRequest -> VectorSearchResult"}
+    - {channel: "queues/topics", direction: none, message_shape: none}
+  deploy_resources:
+    - {type: OCI_image, name: rca-service, file: Containerfile}
+    - {type: Cloud_Run_service, name: rca-service, file: "compatible target; no IaC in service"}
+    - {type: Model_Armor_template, name: mattel-armor-guardrail, file: config.yaml}
+    - {type: DLP_templates, name: "mattel-inspect-template and mattel-de-identity-template", file: config.yaml}
+
+behavioral_tests:
+  scenarios: []
+  edge_cases: []
+
+adr:
+  - {id: ADR-001, decision: "Schema-constrained JSON generation at temperature zero", context: "RCA must be machine-consumable and repeatable", rationale: "Reject prose and minimize nondeterminism", alternatives_considered: ["free-form Markdown", "nonzero sampling"], consequences: "Model output failing schema becomes a service error"}
+  - {id: ADR-002, decision: "Generate before historical lookup", context: "Vector service is optional and fallible", rationale: "Base RCA remains available without external history", alternatives_considered: ["RAG before generation"], consequences: "History changes remediations only, not analysis reasoning"}
+  - {id: ADR-003, decision: "Historical descriptions replace generated remediations", context: "Resolved incidents provide operationally grounded actions", rationale: "Prefer known resolutions", alternatives_considered: ["append", "model synthesis over results"], consequences: "Generated recommendations are discarded whenever valid records exist"}
+  - {id: ADR-004, decision: "Best-effort historical tool", context: "RCA availability is more important than enrichment", rationale: "Tool errors do not fail successful generation", alternatives_considered: ["fail whole request"], consequences: "Clients may receive unenriched RCA without explicit response flag"}
+  - {id: ADR-005, decision: "Unique in-memory ADK session per request", context: "RCA requests are independent", rationale: "Prevent cross-incident state leakage", alternatives_considered: ["persistent conversational memory"], consequences: "Stateless scaling and no history between calls"}
+  - {id: ADR-006, decision: "Production requires authenticated resolution search and safety/project credentials", context: "Incident content is sensitive", rationale: "Fail closed in hosted deployments", alternatives_considered: ["anonymous vector calls"], consequences: "More deployment configuration"}
+
+abom:
+  frameworks: ["Google ADK via platform-sdk", "FastAPI >=0.115", "Pydantic >=2.8", "LiteLLM >=1.75,<1.92", "httpx >=0.27", "Uvicorn >=0.30", "platform-sdk workspace", "shared workspace"]
+  models: ["OpenAI gpt-4.1-mini default", "Gemini gemini-1.5-pro-001 supported baseline"]
+  tools: [vector_search_tool]
+  mcps: []
+  platforms: ["Python 3.12", "OCI/Podman", "Google Cloud Run", "OpenAI", "Gemini", "resolution-store-service", "Google Cloud Model Armor/DLP/Logging/Trace", "optional Sumo Logic"]
+  data_classification: "Sensitive operational data: incident numbers/descriptions, timestamped logs, errors, dependency evidence, RCA conclusions, and historical resolution text. Secrets: provider keys, resolution-store bearer tokens, collector endpoints, and cloud credentials."
+  estimated_cost_profile: "Moderate and usage-based: one model generation per RCA, up to configured generation retries; optional vector HTTP search up to configured retries; safety inspection, Cloud Logging/Trace, and Sumo delivery may add charges. No local database cost."
+
+# Extraction notes
+# overall_confidence: high for service behavior, prompts, configuration, and shared RCA schemas; medium for platform-sdk runtime internals and external vector-store implementation.
+# inferred_sections: provider mechanics, standard health routes, Cloud Run deployment, safety APIs, and resolution-store engine are outside this service. The requested services/rca/_service path was interpreted as the existing services/rca_service directory.
+# excluded_from_generation: all tests/fixtures, docs/runbook, README, pyproject_use.toml, optional dev dependencies, caches, and generated/local environment files.
+# redactions: LLM API key, OpenAI-compatible URL when secret-bearing, resolution-store token, Sumo endpoint, and cloud credentials; no values copied.

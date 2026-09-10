@@ -1,0 +1,1023 @@
+Chapter 3 Enterprise AI Gateway:
+Introduction:
+
+In every enterprise AI platform, requests originate from external systems such as ServiceNow, web applications, mobile applications, REST APIs, or other enterprise services. Before these requests can interact with AI models, they must be transformed into trusted enterprise requests that contain the information required for secure, observable, and governed execution.
+
+This transformation is the responsibility of the Enterprise AI Gateway.
+
+The Enterprise AI Gateway is the first application-owned component of the Enterprise AI Platform. It sits immediately after the infrastructure gateway and before any application or AI processing begins. Its purpose is not to execute business logic, orchestrate AI agents, or invoke Large Language Models (LLMs). Instead, it establishes a standardized enterprise execution environment by validating incoming requests, initializing observability, creating enterprise contexts, resolving policies, and producing a canonical RequestContext that every downstream component can trust.
+
+The runtime lifecycle includes:
+
+Receive HTTP Request
+Extract Distributed Trace Context
+Create Root Application Span
+Build ObservabilityContext
+Build ExecutionContext
+Build SecurityContext
+Resolve PolicyContext
+Build BusinessContext
+Aggregate RequestContext
+Validate Enterprise Request
+Perform Structured Logging
+Propagate Distributed Trace
+Inject Enterprise Headers
+Forward Request to the Responsible AI Pipeline
+
+Enterprise Reference Model:
+| Reference Card               | Purpose                                                                                                                 |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Business Card**            | Explains why the capability exists and the business problem it solves.                                                  |
+| **Architecture Card**        | Describes where the capability fits within the PD-HECA architecture.                                                    |
+| **Ownership Card**           | Identifies who creates, owns, updates, and consumes the capability.                                                     |
+| **Technology Card**          | Documents the cloud services, SDKs, packages, modules, classes, methods, and APIs involved.                             |
+| **Runtime Card**             | Explains the runtime inputs, processing steps, and outputs.                                                             |
+| **Implementation Card**      | Maps the capability to the project structure, files, classes, and methods.                                              |
+| **Sequence Card**            | Shows where the capability fits within the overall runtime execution sequence.                                          |
+| **Testing Card**             | Describes the unit, integration, and validation strategy.                                                               |
+| **Production Card**          | Covers operational considerations such as scalability, observability, resilience, and security.                         |
+| **Principal Architect Card** | Explains the design rationale, common implementation mistakes, architectural trade-offs, and enterprise best practices. |
+---
+Chapter 3.1:
+What is the Enterprise AI Gateway?
+Defining the Enterprise Ingress Layer
+
+Architecture Principle:
+The Enterprise AI Gateway is the first application-owned component that receives requests from external systems and transforms them into standardized enterprise requests before any business or AI processing begins.
+This definition is the foundation of the entire Enterprise AI Platform.
+
+Introduction:
+Every enterprise AI platform begins with an incoming request.
+
+That request may originate from:
+
+ServiceNow
+A Web Application
+A Mobile Application
+Another Microservice
+A REST API
+An Event-Driven System
+A Batch Process
+
+Although these requests come from different sources, they all have one thing in common:
+They are external requests entering the enterprise platform.
+Before these requests can interact with business logic, AI agents, or Large Language Models (LLMs), they must first become trusted enterprise requests.
+This transformation is performed by the Enterprise AI Gateway.
+
+
+What is the Enterprise AI Gateway?:
+The Enterprise AI Gateway is an application-owned ingress component responsible for receiving authenticated requests from the infrastructure gateway, establishing the enterprise execution environment, and forwarding a standardized request to downstream services.
+
+Unlike traditional API gateways, the Enterprise AI Gateway is not responsible for routing network traffic or enforcing infrastructure policies. Instead, it focuses exclusively on application-level enterprise concerns such as request validation, observability initialization, context creation, policy resolution, and enterprise request standardization.
+
+Because it is the first component owned by the application, it establishes the execution contract that every downstream service depends upon.
+
+Enterprise Request Flow:
+The following diagram illustrates the transition from infrastructure-managed services to application-owned components.
+
+                   Enterprise AI Platform
+
+External Systems
+(ServiceNow, Web, Mobile, APIs)
+              │
+              ▼
+──────────────────────────────────────────────
+Infrastructure Boundary
+──────────────────────────────────────────────
+
+Google API Gateway
+(Google Managed Service)
+
+              │
+              ▼
+
+══════════════════════════════════════════════
+Application Boundary
+══════════════════════════════════════════════
+
+Enterprise AI Gateway
+(Enterprise Ingress Layer)
+
+              │
+              ▼
+
+Responsible AI Input Pipeline
+
+              │
+              ▼
+
+AI Orchestrator
+
+              │
+              ▼
+
+Agent Runtime
+
+              │
+              ▼
+
+Vertex AI Adapter
+
+              │
+              ▼
+
+Vertex AI
+
+The most important transition occurs at the Application Boundary.:
+Everything above the boundary belongs to platform infrastructure or external systems.
+Everything below the boundary belongs to the Enterprise AI Platform.
+The Enterprise AI Gateway is the bridge between these two worlds.
+
+Why Is It Called the Enterprise Ingress Layer?:
+The term ingress means the point where something enters a system.
+In networking, ingress refers to packets entering a network.
+In Kubernetes, an Ingress manages incoming traffic.
+In PD-HECA, the Enterprise Ingress Layer represents the point where external requests first enter the enterprise application.
+This layer is responsible for converting an external HTTP request into a standardized enterprise request.
+It is not responsible for business processing or AI execution.
+
+Enterprise AI Gateway vs Google API Gateway:
+These two components are often confused because both receive incoming requests.
+However, they solve completely different problems.
+| Google API Gateway                | Enterprise AI Gateway                      |
+| --------------------------------- | ------------------------------------------ |
+| Infrastructure-managed service    | Application-owned component                |
+| Receives external HTTP traffic    | Receives authenticated enterprise requests |
+| Routing and API exposure          | Enterprise request initialization          |
+| Authentication and API protection | Enterprise context creation                |
+| Rate limiting and quotas          | Policy resolution                          |
+| API key and OAuth validation      | Request standardization                    |
+| Network boundary                  | Application boundary                       |
+
+
+Principal Architect Rule:
+Google API Gateway protects the platform. The Enterprise AI Gateway prepares the request for the platform.
+These responsibilities complement each other rather than overlap.
+
+What Does the Enterprise AI Gateway Produce?:
+The gateway does not produce business results.
+It produces a standardized Enterprise Request.
+Conceptually, the transformation looks like this:
+Incoming HTTP Request
+
+        │
+
+        ▼
+
+Enterprise AI Gateway
+
+        │
+
+        ▼
+
+Enterprise Request
+(RequestContext)
+
+        │
+
+        ▼
+
+Responsible AI Pipeline
+
+Every downstream component receives the same trusted request format.
+This consistency eliminates duplicated initialization logic across the platform.
+
+Enterprise Reference Card:
+Business Card
+| Property           | Description                                                     |
+| ------------------ | --------------------------------------------------------------- |
+| Component          | Enterprise AI Gateway                                           |
+| Category           | Application-Owned Enterprise Component                          |
+| Primary Capability | Enterprise Request Initialization                               |
+| Business Purpose   | Convert external requests into standardized enterprise requests |
+| Upstream           | Google API Gateway                                              |
+| Downstream         | Responsible AI Input Pipeline                                   |
+| Primary Output     | RequestContext                                                  |
+
+Enterprise Reference Card
+Architecture Card:
+| Property         | Description                                                     |
+| ---------------- | --------------------------------------------------------------- |
+| Architecture     | Policy-Driven Hexagonal Enterprise Clean Architecture (PD-HECA) |
+| Layer            | Enterprise Ingress Layer                                        |
+| Component Type   | Inbound Application Component                                   |
+| Runtime          | Google Cloud Run                                                |
+| Framework        | FastAPI                                                         |
+| Deployment Model | Stateless Microservice                                          |
+| Design Principle | Single Entry Point for Enterprise Initialization                |
+
+---
+Chapter 3.2:
+Why Does the Enterprise AI Gateway Exist?
+Solving Enterprise Problems Before AI Processing Begins
+Architecture Principle:
+Infrastructure gateways secure and route requests. Enterprise gateways prepare requests for enterprise execution.
+This distinction is fundamental to the architecture.
+Google API Gateway and the Enterprise AI Gateway are complementary components with different responsibilities.
+
+Introduction:
+At first glance, adding an Enterprise AI Gateway after Google API Gateway may appear redundant.
+After all, Google API Gateway already performs several important tasks:
+
+Receives incoming HTTP requests.
+Authenticates clients.
+Validates OAuth or JWT tokens.
+Applies API quotas and rate limits.
+Routes requests to backend services.
+Terminates TLS connections.
+
+If these capabilities already exist, a natural question arises:
+Why introduce another gateway?
+The answer lies in understanding the difference between infrastructure responsibilities and enterprise application responsibilities.
+
+Google API Gateway prepares the request for the platform.:
+
+The Enterprise AI Gateway prepares the request for the application.:
+
+These are fundamentally different concerns.
+
+
+The Enterprise Request Journey:
+An incoming request passes through two distinct boundaries before reaching AI services.
+
+External System
+(ServiceNow, Web, Mobile)
+
+        │
+        ▼
+
+Google API Gateway
+──────────────────────────────
+Infrastructure Boundary
+──────────────────────────────
+
+        │
+        ▼
+
+Enterprise AI Gateway
+──────────────────────────────
+Application Boundary
+──────────────────────────────
+
+        │
+        ▼
+
+Responsible AI Pipeline
+
+        │
+        ▼
+
+AI Orchestrator
+
+        │
+        ▼
+
+LLM Adapter
+
+        │
+        ▼
+
+Vertex AI
+
+The first boundary secures the platform.
+
+The second boundary prepares the application.
+
+This separation allows infrastructure and application concerns to evolve independently.
+
+What Google API Gateway Does:
+Google API Gateway is responsible for infrastructure-level capabilities.
+
+Typical responsibilities include:
+
+Receiving HTTP traffic.
+TLS termination.
+OAuth and JWT validation.
+API key validation.
+Request routing.
+Quotas and rate limiting.
+Basic request filtering.
+
+These capabilities protect the platform but do not establish the enterprise execution environment required by the application
+
+
+What Google API Gateway Does Not Do:
+
+After the request reaches your application, many enterprise concerns are still unresolved.
+
+For example:
+
+Which business unit owns this request?
+Which tenant is being served?
+What correlation ID should be used across all services?
+What trace should downstream components join?
+Which enterprise policies apply?
+Which governance rules are active?
+Which business metadata should accompany the request?
+What execution context should every downstream component receive?
+
+These questions cannot be answered by an infrastructure gateway because they depend on application-specific knowledge.
+
+
+
+Life Without an Enterprise AI Gateway:
+Without a dedicated Enterprise AI Gateway, the first application service must perform all enterprise initialization.
+Google API Gateway
+        │
+        ▼
+Responsible AI Pipeline
+
+        ├── Parse Enterprise Headers
+        ├── Initialize Tracing
+        ├── Create Correlation ID
+        ├── Build Security Context
+        ├── Build Business Context
+        ├── Resolve Policies
+        ├── Validate Request
+        └── Continue Processing
+        
+Initially, this approach appears acceptable.
+However, as the platform grows, every additional service begins to duplicate the same initialization logic.
+Soon the AI Orchestrator, Agent Runtime, Prompt Service, Evaluation Service, and RAG Service all implement nearly identical enterprise initialization.
+The result is duplicated code, inconsistent governance, fragmented observability, and higher maintenance costs. 
+
+
+The Enterprise AI Gateway Solution:
+Instead of distributing enterprise responsibilities across multiple services, PD-HECA centralizes them in a single application entry point.       
+Google API Gateway
+
+        │
+
+        ▼
+
+Enterprise AI Gateway
+
+        ├── Validate Enterprise Request
+        ├── Initialize Observability
+        ├── Resolve Security
+        ├── Resolve Policies
+        ├── Build Enterprise Contexts
+        ├── Create RequestContext
+
+        │
+
+        ▼
+
+Responsible AI Pipeline
+
+        │
+
+        ▼
+
+AI Orchestrator
+
+        │
+
+        ▼
+
+Agent Runtime
+
+Every downstream component receives the same standardized RequestContext and focuses only on its own responsibility.
+This eliminates duplicated enterprise initialization across the platform.
+
+Enterprise Reference Card
+Business Card:
+| Property           | Description                                                         |
+| ------------------ | ------------------------------------------------------------------- |
+| Business Problem   | Enterprise initialization duplicated across multiple services       |
+| Business Goal      | Centralize enterprise initialization                                |
+| Primary Capability | Enterprise Request Standardization                                  |
+| Business Value     | Consistent governance, security, observability, and maintainability |
+| Enterprise Owner   | Enterprise AI Platform Team                                         |
+
+Enterprise Reference Card
+Architecture Card:
+| Property                 | Description                             |
+| ------------------------ | --------------------------------------- |
+| Infrastructure Component | Google API Gateway                      |
+| Application Component    | Enterprise AI Gateway                   |
+| Architectural Boundary   | Infrastructure → Enterprise Application |
+| Enterprise Role          | Enterprise Ingress Layer                |
+| Primary Output           | Canonical `RequestContext`              |
+| Downstream Consumers     | All Enterprise AI Platform Services     |
+
+Chapter Summary:
+
+In this section, we answered why the Enterprise AI Gateway exists.
+
+We learned that:
+
+Google API Gateway and the Enterprise AI Gateway solve different problems.
+Infrastructure security and routing are separate from enterprise request preparation.
+Enterprise initialization should occur once at the application boundary.
+Centralizing enterprise concerns produces a consistent RequestContext that every downstream service can trust.
+This approach reduces duplication, improves governance, and simplifies the evolution of the platform.
+
+
+---
+Chapter 3.3:
+Where Does the Enterprise AI Gateway Fit in the Enterprise AI Platform?
+Defining the Architectural Boundaries
+
+Architecture Principle:
+
+Every enterprise component must have a clearly defined architectural boundary, ownership, and responsibility. Components should collaborate through well-defined contracts rather than overlapping responsibilities.
+
+The Enterprise AI Gateway exists because it occupies a unique position within the Enterprise AI Platform. It is the transition point between platform infrastructure and enterprise application services.
+
+Understanding this boundary is essential before discussing implementation.
+
+Introduction:
+
+An enterprise platform is not a collection of independent services.
+It is a collection of services connected through well-defined architectural boundaries.
+One of the most common design mistakes is allowing these boundaries to become blurred.
+
+For example:
+
+Infrastructure services begin implementing business logic.
+Business services perform infrastructure initialization.
+AI services resolve enterprise security.
+Orchestrators become responsible for request validation.
+
+When responsibilities overlap, components become tightly coupled, difficult to maintain, and expensive to evolve.
+The Enterprise AI Gateway prevents this by establishing a clear boundary between infrastructure-managed services and application-owned services.
+
+Enterprise AI Platform Architecture:
+The following diagram shows the logical organization of the Enterprise AI Platform.
+                           Enterprise AI Platform
+
+┌───────────────────────────────────────────────────────────────┐
+│                    External Systems                           │
+│                                                               │
+│ ServiceNow │ Web │ Mobile │ REST APIs │ Other Applications    │
+└───────────────────────────────┬───────────────────────────────┘
+                                │
+                                ▼
+┌───────────────────────────────────────────────────────────────┐
+│                 Infrastructure Layer                          │
+│                                                               │
+│ Google API Gateway                                            │
+│ • Authentication                                              │
+│ • Authorization                                               │
+│ • Routing                                                     │
+│ • Rate Limiting                                               │
+│ • TLS Termination                                             │
+└───────────────────────────────┬───────────────────────────────┘
+                                │
+                                ▼
+═══════════════════════════════════════════════════════════════════
+                Application Boundary
+═══════════════════════════════════════════════════════════════════
+                                │
+                                ▼
+┌───────────────────────────────────────────────────────────────┐
+│                 Enterprise Ingress Layer                      │
+│                                                               │
+│ Enterprise AI Gateway                                         │
+│ • Enterprise Request Initialization                           │
+│ • Context Creation                                            │
+│ • Observability Initialization                                │
+│ • Policy Resolution                                           │
+│ • Request Standardization                                     │
+└───────────────────────────────┬───────────────────────────────┘
+                                │
+                                ▼
+┌───────────────────────────────────────────────────────────────┐
+│               Enterprise Application Layer                    │
+│                                                               │
+│ Responsible AI Pipeline                                       │
+│ AI Orchestrator                                               │
+│ Agent Runtime                                                 │
+│ Tool Execution                                                │
+└───────────────────────────────┬───────────────────────────────┘
+                                │
+                                ▼
+┌───────────────────────────────────────────────────────────────┐
+│                 Integration Layer                             │
+│                                                               │
+│ Vertex AI Adapter                                             │
+│ Cloud Storage Adapter                                         │
+│ Secret Manager Adapter                                        │
+│ Cloud Logging Adapter                                         │
+└───────────────────────────────┬───────────────────────────────┘
+                                │
+                                ▼
+┌───────────────────────────────────────────────────────────────┐
+│                External Cloud Services                        │
+│                                                               │
+│ Vertex AI │ Cloud Storage │ Cloud Logging │ Secret Manager    │
+└───────────────────────────────────────────────────────────────┘
+
+
+Understanding the Application Boundary:
+The Application Boundary separates responsibilities.
+Everything above this boundary is responsible for transporting and protecting requests.
+Everything below this boundary is responsible for processing enterprise requests.
+The Enterprise AI Gateway sits exactly on this boundary because it performs the transition between these two worlds.
+
+This transition has two important effects:
+
+It converts an authenticated HTTP request into a standardized enterprise request.
+It establishes the enterprise execution environment before any application service executes.
+
+Without this boundary, downstream services would have to interpret infrastructure-level information themselves, leading to duplicated logic and inconsistent behavior
+
+Upstream and Downstream Relationships:
+Every enterprise component should have clearly defined upstream and downstream dependencies.
+
+For the Enterprise AI Gateway:
+
+Upstream Components:
+The gateway receives requests from infrastructure-managed services.
+
+These include:
+
+Google API Gateway
+Internal API Gateways
+Service Mesh Gateways (if applicable)
+Other enterprise edge services
+
+The gateway assumes these services have already handled transport-level concerns such as authentication, TLS, and routing.
+
+Downstream Components:
+After standardizing the request, the gateway forwards it to application-owned services.
+
+Typical downstream consumers include:
+
+Responsible AI Input Pipeline
+AI Orchestrator
+Agent Runtime
+Policy Engine
+Prompt Management
+Other enterprise application services
+
+These services no longer need to initialize enterprise context because they receive a fully prepared RequestContext.
+
+
+Enterprise Reference Card
+Architecture Card:
+| Property               | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
+| Component              | Enterprise AI Gateway                                        |
+| Architectural Layer    | Enterprise Ingress Layer                                     |
+| Position               | First application-owned component                            |
+| Upstream               | Google API Gateway and other infrastructure ingress services |
+| Downstream             | Responsible AI Input Pipeline                                |
+| Primary Input          | Authenticated HTTP Request                                   |
+| Primary Output         | Standardized `RequestContext`                                |
+| Primary Responsibility | Establish the Enterprise Execution Contract                  |
+
+Enterprise Reference Card
+Dependency Card:
+| Relationship      | Component               | Responsibility                          |
+| ----------------- | ----------------------- | --------------------------------------- |
+| Upstream          | Google API Gateway      | Secure and route requests               |
+| Current Component | Enterprise AI Gateway   | Standardize enterprise requests         |
+| Downstream        | Responsible AI Pipeline | Begin enterprise application processing |
+| Next Stage        | AI Orchestrator         | Coordinate AI workflow                  |
+| Integration       | Vertex AI Adapter       | Connect to AI services                  |
+
+Principal Architect Insight:
+
+A useful way to think about the Enterprise AI Gateway is as the border control of the Enterprise AI Platform.
+An international airport does not decide where a traveler will ultimately go or what business they will conduct. Instead, border control verifies identity, establishes legal entry, records the arrival, and ensures that every traveler enters the country in a standardized and governed manner.
+
+The Enterprise AI Gateway plays the same role for the platform.
+
+It does not execute AI workflows or business logic. Instead, it verifies that the request is ready to enter the enterprise application, enriches it with the required enterprise metadata, and issues a standardized execution contract (RequestContext). From that point onward, every downstream service can focus exclusively on its own responsibility.
+
+This separation of concerns is one of the core principles of the Policy-Driven Hexagonal Enterprise Clean Architecture (PD-HECA).
+
+Chapter Summary:
+
+In this section, we established the architectural position of the Enterprise AI Gateway.
+
+We learned:
+
+It sits at the Application Boundary between infrastructure and enterprise application services.
+It is the first application-owned component in the platform.
+Its upstream dependencies are infrastructure-managed ingress services such as Google API Gateway.
+Its downstream dependency is the Responsible AI Input Pipeline, which begins enterprise application processing.
+Its primary responsibility is to transform an authenticated HTTP request into a standardized enterprise request represented by a RequestContext.
+
+At this point, the reader understands what the Enterprise AI Gateway is, why it exists, and where it fits.
+
+---
+    
+    
+Chapter 3.4:
+Enterprise AI Gateway Responsibilities
+Defining the Responsibilities of the Enterprise Ingress Layer    
+
+Architecture Principle:
+A well-designed component owns a single set of cohesive responsibilities. It should perform those responsibilities completely and never assume responsibilities that belong to another component.
+
+In the Policy-Driven Hexagonal Enterprise Clean Architecture (PD-HECA), every component has a clearly defined purpose. The Enterprise AI Gateway is no exception.
+
+Its role is not to execute AI workflows or business logic. Instead, it is responsible for preparing every incoming request so that downstream components receive a trusted, standardized, and enterprise-ready execution context.
+
+
+Everything the gateway does can be summarized in one sentence:
+
+Prepare the request for enterprise execution—nothing more, nothing less.
+Core Responsibilities of the Enterprise AI Gateway
+
+The Enterprise AI Gateway owns the following responsibilities:
+| Responsibility              | Purpose                                                                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Receive Request             | Accept authenticated HTTP requests from the infrastructure gateway.                                                             |
+| Validate Request            | Ensure mandatory headers, payload, and request metadata are present and valid.                                                  |
+| Initialize Observability    | Create or continue distributed tracing, initialize structured logging, and establish correlation identifiers.                   |
+| Build Enterprise Contexts   | Create the execution, security, business, and observability contexts required by downstream services.                           |
+| Resolve Enterprise Policies | Determine the policies that apply to the current request, such as governance, AI safety, compliance, and tenant-specific rules. |
+| Standardize Request         | Aggregate all enterprise metadata into a canonical `RequestContext`.                                                            |
+| Propagate Metadata          | Inject trace identifiers, correlation IDs, and enterprise headers for downstream services.                                      |
+| Forward Request             | Pass the standardized request to the Responsible AI Input Pipeline.                                                             |
+
+These responsibilities are performed once for every incoming request.
+Responsibilities in Context:
+
+The following diagram illustrates how the gateway transforms an authenticated request into a standardized enterprise request.
+Authenticated HTTP Request
+           │
+           ▼
+┌────────────────────────────────────────────┐
+│ Enterprise AI Gateway                      │
+│                                            │
+│ • Validate Request                         │
+│ • Initialize Observability                 │
+│ • Build SecurityContext                    │
+│ • Build ExecutionContext                   │
+│ • Build BusinessContext                    │
+│ • Resolve PolicyContext                    │
+│ • Aggregate RequestContext                 │
+│ • Propagate Enterprise Metadata            │
+└────────────────────────────────────────────┘
+           │
+           ▼
+Standardized Enterprise Request
+(RequestContext)
+           │
+           ▼
+Responsible AI Input Pipeline
+
+The output of the gateway is not a business response. It is a trusted execution contract that every downstream service understands.
+
+What the Enterprise AI Gateway Does Not Do:
+
+Understanding a component's boundaries is just as important as understanding its responsibilities.
+
+The Enterprise AI Gateway deliberately does not perform the following:
+| Responsibility                | Owned By                      |
+| ----------------------------- | ----------------------------- |
+| Execute business rules        | Business Services             |
+| Orchestrate AI workflows      | AI Orchestrator               |
+| Invoke Large Language Models  | Vertex AI Adapter             |
+| Execute AI agents             | Agent Runtime                 |
+| Retrieve enterprise knowledge | RAG Services                  |
+| Persist business data         | Domain or Repository Adapters |
+| Make business decisions       | Domain Layer                  |
+By excluding these responsibilities, the gateway remains lightweight, reusable, and focused on enterprise request preparation.
+
+
+Responsibility Ownership Matrix:
+The following matrix shows how responsibilities are distributed across the platform.
+| Component                     | Primary Responsibility                                       |
+| ----------------------------- | ------------------------------------------------------------ |
+| Google API Gateway            | Secure and route external traffic                            |
+| Enterprise AI Gateway         | Prepare enterprise requests                                  |
+| Responsible AI Input Pipeline | Validate AI-specific input and apply responsible AI controls |
+| AI Orchestrator               | Coordinate AI workflows                                      |
+| Agent Runtime                 | Execute agents and tools                                     |
+| Vertex AI Adapter             | Communicate with Vertex AI                                   |
+| Domain Services               | Execute business logic                                       |
+Each component has a unique purpose, reducing duplication and simplifying maintenance.
+
+Enterprise Reference Card
+Responsibility Card:
+| Property            | Description                       |
+| ------------------- | --------------------------------- |
+| Component           | Enterprise AI Gateway             |
+| Responsibility Type | Enterprise Request Initialization |
+| Primary Input       | Authenticated HTTP Request        |
+| Primary Output      | Standardized `RequestContext`     |
+| Owned By            | Enterprise Ingress Layer          |
+| Consumed By         | Responsible AI Input Pipeline     |
+
+Enterprise Reference Card
+Runtime Card:
+| Stage      | Description                                                                        |
+| ---------- | ---------------------------------------------------------------------------------- |
+| Input      | Authenticated request received from Google API Gateway                             |
+| Processing | Validate, enrich, create enterprise contexts, resolve policies, aggregate metadata |
+| Output     | Trusted `RequestContext` forwarded to downstream services                          |
+
+A well-designed Enterprise AI Gateway has a single mission:
+Establish the enterprise execution environment and produce a standardized RequestContext.
+
+
+Chapter Summary:
+
+In this section, we defined the responsibilities of the Enterprise AI Gateway.
+
+We learned that the gateway is responsible for:
+
+Receiving authenticated requests.
+Validating enterprise request metadata.
+Initializing observability and distributed tracing.
+Building enterprise execution contexts.
+Resolving enterprise policies.
+Creating a canonical RequestContext.
+Propagating enterprise metadata.
+Forwarding standardized requests to the Responsible AI Input Pipeline.
+
+We also identified the responsibilities that intentionally belong to other components, preserving clear architectural boundaries and preventing unnecessary coupling.
+
+---
+Chapter 3.5:
+Internal Component Decomposition
+Designing the Enterprise AI Gateway from Cohesive Components
+
+Architecture Principle:
+A component should own one responsibility. A system should be composed of cohesive components that collaborate through well-defined contracts.
+
+Rather than implementing the Enterprise AI Gateway as one large class, PD-HECA decomposes it into specialized components. Each component performs a single responsibility and collaborates with others through clear interfaces.
+
+This approach improves readability, testability, maintainability, and extensibility.
+
+Introduction:
+Although we refer to the Enterprise AI Gateway as a single component, it is actually a collection of smaller components working together to prepare an enterprise request.
+
+Each component is responsible for one part of the request lifecycle.
+
+This decomposition follows the Single Responsibility Principle (SRP) and aligns with the Ports and Adapters philosophy of PD-HECA.
+
+Instead of building a monolithic gateway, we build an orchestration of focused components.
+
+
+Enterprise AI Gateway Component Model:
+The Enterprise AI Gateway is composed of the following logical components.
+                    Enterprise AI Gateway
+
+        ┌──────────────────────────────────────┐
+        │          Request Receiver            │
+        └──────────────────────────────────────┘
+                         │
+                         ▼
+        ┌──────────────────────────────────────┐
+        │         Request Validator            │
+        └──────────────────────────────────────┘
+                         │
+                         ▼
+        ┌──────────────────────────────────────┐
+        │          Trace Manager               │
+        └──────────────────────────────────────┘
+                         │
+                         ▼
+        ┌──────────────────────────────────────┐
+        │         Context Builder              │
+        └──────────────────────────────────────┘
+                         │
+                         ▼
+        ┌──────────────────────────────────────┐
+        │         Policy Resolver              │
+        └──────────────────────────────────────┘
+                         │
+                         ▼
+        ┌──────────────────────────────────────┐
+        │      RequestContext Builder          │
+        └──────────────────────────────────────┘
+                         │
+                         ▼
+        ┌──────────────────────────────────────┐
+        │      Enterprise Logger               │
+        └──────────────────────────────────────┘
+                         │
+                         ▼
+        ┌──────────────────────────────────────┐
+        │      Header Propagator               │
+        └──────────────────────────────────────┘
+                         │
+                         ▼
+        ┌──────────────────────────────────────┐
+        │         Request Forwarder            │
+        └──────────────────────────────────────┘
+        
+        
+Component Responsibilities:
+1. Request Receiver:
+Purpose:
+
+Acts as the entry point into the Enterprise AI Platform.
+
+Responsibilities
+Accept HTTP requests.
+Deserialize request payloads.
+Capture HTTP headers.
+Create the initial request object.
+Transfer control to the gateway pipeline.
+Does Not
+Validate business data.
+Create contexts.
+Resolve policies.        
+
+
+2. Request Validator:
+Purpose:
+
+Ensures that every request satisfies enterprise requirements before processing begins.
+
+Responsibilities
+Validate mandatory headers.
+Validate request format.
+Validate API version.
+Validate enterprise metadata.
+Reject malformed requests.
+Does Not
+Authenticate users.
+Execute business validation.
+Invoke AI services.
+
+
+3. Trace Manager:
+Purpose:
+
+Establishes distributed observability.
+
+Responsibilities
+Extract W3C Trace Context.
+Continue existing traces.
+Create new traces when required.
+Generate Correlation IDs.
+Initialize OpenTelemetry spans.
+Does Not
+Write business logs.
+Resolve enterprise policies.
+
+
+4. Context Builder:
+Purpose:
+
+Creates the execution environment for downstream services.
+
+Responsibilities
+
+Build:
+
+SecurityContext
+ExecutionContext
+BusinessContext
+ObservabilityContext
+
+These contexts are later combined into a single enterprise request.
+
+5. Policy Resolver:
+Purpose:
+
+Determines which enterprise policies apply to the request.
+
+Responsibilities
+
+Resolve:
+
+AI Governance Policies
+Security Policies
+Tenant Policies
+Data Classification Policies
+Responsible AI Policies
+
+The gateway resolves references to policies, while detailed enforcement occurs in later platform components.
+
+
+6. RequestContext Builder:
+Purpose:
+
+Aggregates all enterprise metadata into one canonical object.
+
+Responsibilities
+
+Combine:
+
+HTTP Request
+SecurityContext
+BusinessContext
+ExecutionContext
+ObservabilityContext
+PolicyContext
+
+Result:
+RequestContext
+This becomes the standard contract for the remainder of the platform.
+
+7. Enterprise Logger:
+Purpose:
+
+Creates consistent enterprise logs.
+
+Responsibilities
+Structured logging.
+Correlation ID logging.
+Trace ID logging.
+Request lifecycle events.
+Error logging.
+
+It records what happened without changing request processing.
+
+8. Header Propagator:
+Purpose:
+
+Ensures downstream services receive the metadata they require.
+
+Responsibilities
+
+Propagate:
+
+Trace IDs
+Correlation IDs
+Tenant IDs
+Security Tokens
+Enterprise Metadata
+Request Identifiers
+
+This preserves context across service boundaries.
+
+
+9. Request Forwarder:
+Purpose
+
+Transfers the standardized request to the next stage.
+
+Responsibilities
+Send the completed RequestContext.
+Preserve enterprise headers.
+Preserve tracing information.
+Forward to the Responsible AI Input Pipeline.
+
+Its role is purely transport—it performs no additional processing.
+
+
+Collaboration Diagram:
+
+The components collaborate in a fixed sequence.
+
+Request Receiver
+        │
+        ▼
+Request Validator
+        │
+        ▼
+Trace Manager
+        │
+        ▼
+Context Builder
+        │
+        ▼
+Policy Resolver
+        │
+        ▼
+RequestContext Builder
+        │
+        ▼
+Enterprise Logger
+        │
+        ▼
+Header Propagator
+        │
+        ▼
+Request Forwarder
+
+This sequence mirrors the runtime lifecycle that will be explored in the next part of the chapter.
+Enterprise Reference Card
+Component Card:
+| Component              | Primary Responsibility        | Output               |
+| ---------------------- | ----------------------------- | -------------------- |
+| Request Receiver       | Accept incoming HTTP requests | Initial Request      |
+| Request Validator      | Validate enterprise request   | Validated Request    |
+| Trace Manager          | Initialize observability      | Trace Context        |
+| Context Builder        | Build enterprise contexts     | Context Objects      |
+| Policy Resolver        | Resolve enterprise policies   | PolicyContext        |
+| RequestContext Builder | Aggregate all contexts        | RequestContext       |
+| Enterprise Logger      | Record request lifecycle      | Structured Logs      |
+| Header Propagator      | Propagate enterprise metadata | Enriched Headers     |
+| Request Forwarder      | Send request downstream       | Standardized Request |
+
+Principal Architect Insight:
+
+Many implementations collapse all gateway logic into a single controller or middleware. While this may seem simpler initially, it creates large, tightly coupled classes that are difficult to understand, test, and extend.
+
+By decomposing the Enterprise AI Gateway into focused components, each capability can evolve independently. For example, tracing can adopt a new OpenTelemetry standard without affecting policy resolution, and policy logic can evolve without changing request validation.
+
+This modular design also makes unit testing straightforward, as each component can be verified in isolation before validating the complete request pipeline through integration tests.
+
+Chapter Summary
+
+In this chapter, we decomposed the Enterprise AI Gateway into nine cohesive components, each with a clearly defined responsibility. Together, these components transform an authenticated HTTP request into a standardized RequestContext ready for enterprise processing.
+
+With the architecture now fully defined, the next part of the chapter shifts from static design to dynamic behavior.
+
+Instead of asking "What components exist?", we now ask:
+
+"How do these components collaborate when a real HTTP request enters the platform?"
+
+########################################################################################################################################################

@@ -1,0 +1,401 @@
+meta:
+  name: agent-action
+  purpose: "Regenerate the minimum production utility for policy-governed Kafka Connect actions and tool-free general operational answers."
+  domain: "Enterprise incident remediation and Kafka Connect operations"
+  description: "A portable production-code SSOT. Tests, test fixtures, Postman collections, runbooks, generated files, and unused configuration references are intentionally out of scope."
+
+replication_profile:
+  language: {name: Python, version: ">=3.12"}
+  agent_frameworks:
+    - {name: Google ADK, version: ">=1.11.0,<2.0.0", role: "Tool-free general-query agent, runner, and in-memory sessions"}
+    - {name: LiteLLM, version: ">=1.83.7,<=1.83.14", role: "ADK adapter for OpenAI-compatible inference"}
+    - {name: FastAPI, version: ">=0.115.0", role: "HTTP and S2S inbound transport"}
+    - {name: Pydantic, version: ">=2.10.0 (protocol package >=2.12.5)", role: "HTTP DTO and S2S contract validation"}
+  orchestration:
+    topology: pipeline
+    description: "Inbound authentication/context pipeline -> deterministic policy classification -> exactly one reasoner or Kafka Connect adapter call -> bounded response."
+  model_provider: OpenAI via Google ADK LiteLLM
+  models:
+    - {role: "General operational question answering only", provider: OpenAI, model_id: "openai/gpt-4o", context_window: "not specified in source"}
+  runtime: {type: "Async Python service or embedded package", description: "Uvicorn/FastAPI service with an equivalent ActionAgent Python API"}
+  hosting_platform: {type: "Google Cloud Run compatible OCI container", description: "Private authenticated Cloud Run is the documented production target; Fedora Python 3.12 multi-stage image runs as UID 1001"}
+  vector_store: none
+  secrets_management: "Environment variables locally; Google Secret Manager injection is prescribed for Cloud Run. Values are resolved lazily and never stored in TOML."
+  supporting_services:
+    - {name: Kafka Connect, type: "HTTP REST service", purpose: "Connector status, pause, resume, and restart"}
+    - {name: Google Cloud Logging/Trace, type: observability, purpose: "DLP-protected correlated agent/tool telemetry"}
+    - {name: Sumo Logic, type: observability, purpose: "Optional HTTP collector configured by environment; implemented in platform-sdk, not this service"}
+  presentation_layer: {framework: none, type: none, backend_binding: none, description: "No UI; Python and HTTP APIs only"}
+
+source_structure:
+  tree: |
+    services/action_service/
+    |-- .containerignore
+    |-- .env.cloud-run.example
+    |-- .env.example
+    |-- .gitignore
+    |-- agent.toml
+    |-- Containerfile
+    |-- pyproject.toml
+    |-- uv.lock
+    |-- shared-contracts/platform-protocol/
+    |   |-- pyproject.toml
+    |   `-- src/platform_protocol/
+    |       |-- __init__.py
+    |       |-- __main__.py
+    |       |-- application/message_validator.py
+    |       `-- domain/{message_type.py,service_message.py,service_metadata.py,service_type.py}
+    |-- src/agent_action/
+    |   |-- __init__.py
+    |   |-- __main__.py
+    |   |-- app_factory.py
+    |   |-- application.py
+    |   |-- bootstrap.py
+    |   |-- client.py
+    |   |-- config.py
+    |   |-- adapters/
+    |   |   |-- __init__.py
+    |   |   |-- inbound/{__init__.py,api.py,identity.py,request_limits.py}
+    |   |   `-- outbound/{__init__.py,adk_openai.py,kafka_connect.py}
+    |   |-- configuration/{__init__.py,settings.py}
+    |   |-- core/
+    |   |   |-- __init__.py
+    |   |   |-- application/{__init__.py,service.py}
+    |   |   |-- domain/{__init__.py,models.py,policy.py}
+    |   |   `-- ports/{__init__.py,inbound.py,outbound.py}
+    |   `-- observability/__init__.py
+  entry_points:
+    - {path: src/agent_action/__main__.py, purpose: "agent-action console command; loads settings and starts Uvicorn factory"}
+    - {path: src/agent_action/app_factory.py, purpose: "FastAPI composition and lifecycle root"}
+    - {path: src/agent_action/bootstrap.py, purpose: "Embedded/runtime dependency composition"}
+    - {path: src/agent_action/application.py, purpose: "Stable embedded Python API"}
+    - {path: shared-contracts/platform-protocol/src/platform_protocol/__main__.py, purpose: "Diagnostic protocol-package CLI"}
+  modules:
+    - {path: src/agent_action/application.py, role: public facade, key_responsibilities: ["invoke use case", "readiness", "lifecycle"]}
+    - {path: src/agent_action/bootstrap.py, role: composition root, key_responsibilities: ["load config", "construct adapters", "enforce production identity"]}
+    - {path: src/agent_action/app_factory.py, role: HTTP composition, key_responsibilities: ["configure observability", "install middleware/router", "shutdown draining"]}
+    - {path: src/agent_action/adapters/inbound/api.py, role: HTTP adapter, key_responsibilities: ["auth", "DTO translation", "REST/S2S response mapping", "governed context"]}
+    - {path: src/agent_action/adapters/inbound/identity.py, role: identity adapter, key_responsibilities: ["Google ID-token verification", "principal allowlist"]}
+    - {path: src/agent_action/adapters/inbound/request_limits.py, role: ASGI guard, key_responsibilities: ["declared and streamed body limits"]}
+    - {path: src/agent_action/adapters/outbound/adk_openai.py, role: reasoner adapter, key_responsibilities: ["tool-free ADK sessions", "OpenAI readiness"]}
+    - {path: src/agent_action/adapters/outbound/kafka_connect.py, role: Kafka tool adapter, key_responsibilities: ["HTTP operations", "status normalization", "tool telemetry"]}
+    - {path: src/agent_action/core/application/service.py, role: use-case coordinator, key_responsibilities: ["classify", "dispatch exactly one capability", "map failures"]}
+    - {path: src/agent_action/core/domain/models.py, role: domain contracts, key_responsibilities: ["immutable requests/responses/context/enums"]}
+    - {path: src/agent_action/core/domain/policy.py, role: authorization policy, key_responsibilities: ["bounded payload traversal", "source/principal/connector/action validation"]}
+    - {path: src/agent_action/core/ports/inbound.py, role: inbound port, key_responsibilities: ["use-case protocol"]}
+    - {path: src/agent_action/core/ports/outbound.py, role: outbound ports, key_responsibilities: ["Kafka/reasoner protocols", "bounded Kafka error"]}
+    - {path: src/agent_action/configuration/settings.py, role: configuration, key_responsibilities: ["TOML/env loading", "typed fail-closed validation"]}
+    - {path: src/agent_action/client.py, role: remote client, key_responsibilities: ["authenticated /invoke client"]}
+    - {path: shared-contracts/platform-protocol/src/platform_protocol, role: shared S2S contract, key_responsibilities: ["envelope types", "routing invariants"]}
+  config_files:
+    - {path: agent.toml, purpose: "Reviewed non-secret runtime policy and defaults"}
+    - {path: .env.example, purpose: "Local environment template"}
+    - {path: .env.cloud-run.example, purpose: "Production Cloud Run environment template"}
+    - {path: pyproject.toml, purpose: "Package, dependencies, scripts, workspace, pytest"}
+    - {path: shared-contracts/platform-protocol/pyproject.toml, purpose: "Protocol package metadata"}
+    - {path: Containerfile, purpose: "Reproducible non-root OCI image"}
+  notable_conventions: ["Hexagonal dependency direction", "frozen slotted dataclasses", "async I/O", "dependency injection", "LLM has no tools", "secrets referenced by environment-variable name"]
+
+architecture:
+  pattern: hybrid
+  components:
+    - {name: RequestSizeLimitMiddleware, role: guard, description: "Bounds POST bodies before parsing", inputs: [ASGI request], outputs: ["forwarded request or JSON 400/413"]}
+    - {name: Authentication, role: guard, description: "Disabled, static bearer, or Google platform identity", inputs: [Authorization], outputs: [authenticated_principal]}
+    - {name: ActionPolicy, role: deterministic router, description: "Only approved payload objects may select Kafka; LLM cannot route", inputs: [ActionRequest], outputs: ["ActionKind, connector"]}
+    - {name: GoogleAdkOpenAIReasoner, role: general intelligence, description: "Isolated in-memory, tool-free session", inputs: [query, ExecutionContext], outputs: [plain_text]}
+    - {name: KafkaConnectAdapter, role: governed tool, description: "One status or mutation attempt", inputs: [operation, connector, correlation_id], outputs: [normalized status/submission]}
+    - {name: DownstreamObservabilityPipeline, role: context and telemetry, description: "Validates/generates lineage and emits agent/tool records", inputs: [headers, payload], outputs: [context, logs, traces]}
+  data_flows:
+    - {from: HTTP/Python caller, to: ActionPolicy, data_type: ActionRequest, description: "Normalize query, freeze top-level payload, preserve trusted identity context"}
+    - {from: ActionPolicy, to: GoogleAdkOpenAIReasoner, data_type: general query, description: "Used when no approved-source object exists"}
+    - {from: ActionPolicy, to: KafkaConnectAdapter, data_type: explicit governed connector action, description: "Used only after source, principal, connector, and action validation"}
+    - {from: KafkaConnectAdapter, to: Kafka Connect REST, data_type: authenticated HTTP, description: "GET status; PUT pause/resume; POST restart"}
+    - {from: adapters, to: observability backends, data_type: structured DLP-protected telemetry, description: "Propagates enterprise correlation context"}
+  state_schema: {persistence: none, session_state: "ADK InMemorySessionService; unique correlation-id/UUID session per answer", request_state: [authenticated_principal, identity_claims, observability_active]}
+  entry_point: "agent-action -> agent_action.__main__:main -> Uvicorn factory agent_action.app_factory:create_app"
+  terminal_conditions: ["general answer completed/failed", "status completed/failed", "mutation submitted/failed", "policy blocked"]
+
+api_contracts:
+  entry_points:
+    - {name: "GET /health", invocation_style: HTTP, signature: "health(request: Request) -> dict[str,str]", inputs: [], outputs: ["{status:'UP',service:string}"], description: "Unauthenticated process liveness"}
+    - {name: "GET /ready", invocation_style: HTTP, signature: "ready(request: Request) -> dict[str,Any]", inputs: [], outputs: ["status READY|DEGRADED", general_query_ready, kafka_action_ready], description: "Unauthenticated capability readiness"}
+    - {name: "GET /capabilities/schemas", invocation_style: HTTP, signature: "capabilities(request, authorize) -> dict", inputs: [Authorization], outputs: [service, protocol, capabilities], description: "Authenticated capability catalog"}
+    - {name: "POST /invoke", invocation_style: HTTP, signature: "invoke(dto: InvokeDto, request, authorize) -> JSON", inputs: [InvokeDto, headers], outputs: [ActionResponseView], description: "403 blocked; 502 failed; 202 submitted; 200 completed"}
+    - {name: "POST /s2s", invocation_style: HTTP, signature: "s2s(message: ServiceMessage, request, authorize) -> ServiceMessage", inputs: [ServiceMessage], outputs: [ServiceMessage], description: "REQUEST-only S2S endpoint"}
+    - {name: ActionAgent.invoke, invocation_style: Python, signature: "async invoke(query: str='', *, payload: Mapping|None=None, context: ExecutionContext|None=None)", inputs: [query, payload, context], outputs: [ActionResponse], description: "Embedded equivalent"}
+  internal_interfaces:
+    - {name: ActionAgentUseCase, signature: "execute(ActionRequest)->ActionResponse; ready()->bool; capability_readiness()->dict[str,bool]; close()->None", description: inbound core port}
+    - {name: KafkaActionPort, signature: "restart_connector/resume_connector/pause_connector/get_connector_status(connector_name, *, correlation_id); ready; close", description: governed tool port}
+    - {name: ReasonerPort, signature: "answer(query, *, context)->str; ready; close", description: tool-free intelligence port}
+
+business_logic:
+  intent: "Allow explicit, authenticated, source-governed Kafka operations without allowing probabilistic model output to authorize side effects."
+  rules:
+    - "Trim query and shallow-copy/freeze the top-level payload on ActionRequest construction."
+    - "Reject a general query longer than max_query_chars (default 4000) as blocked."
+    - "Traverse mappings, lists, and tuples to find every object whose normalized source_system is approved; maximum depth is 64 and maximum container nodes is 10,000."
+    - "Reject cyclic payload containers, excess depth, or excess nodes."
+    - "If no approved-source object exists, route to GENERAL_QUERY even when unapproved objects resemble tool calls."
+    - "If more than one approved-source object exists, block because no batch contract exists."
+    - "When principal enforcement is enabled, require every approved source to have a non-empty principal set and require the authenticated principal to belong to the claimed source."
+    - "Extract the first nonblank connector from configured reference_keys in order; block if absent."
+    - "Require connector regex full-match and, when allowlist is nonempty, exact allowlist membership."
+    - "Resolve action from action then operation; normalize uppercase; accept only configured explicit actions; block absent/unknown action."
+    - "Configuration rejects wildcard approved sources and rejects GENERAL_QUERY in explicit action mappings."
+    - "GENERAL_QUERY calls the reasoner with no tools. Empty query becomes 'Please clarify your question.' at the adapter boundary."
+    - "A reasoner exception returns FAILED and exposes only the exception class name. Empty model final text becomes 'I could not produce a response.'"
+    - "GET_CONNECTOR_STATUS performs one GET /{connector}/status and returns COMPLETED."
+    - "PAUSE and RESUME perform one PUT /{connector}/{operation}, wait verification_wait_seconds, then one GET status; return SUBMITTED regardless of snapshot state and require later polling."
+    - "RESTART performs one POST with includeTasks=true and onlyFailed=true, performs no status poll, and returns SUBMITTED with final_state_confirmed=false."
+    - "All mutations send X-Correlation-Id and Idempotency-Key equal to correlation_id; status sends X-Correlation-Id."
+    - "Accept mutation HTTP status 200, 202, or 204; any other status is a bounded KafkaToolError. Status requires HTTP 200."
+    - "Never retry Kafka mutations; max_attempts must equal 1."
+    - "Normalize missing connector/task states to UNKNOWN; unhealthy and manual_intervention_required are true if connector or any task is FAILED."
+    - "transition_in_progress is true if connector or any task is RESTARTING or UNASSIGNED; mutation response explicitly forces it true."
+    - "Bound upstream error detail to message/error/error_code scalar, whitespace-normalized, first 300 characters; never return HTML/traces."
+    - "Authentication disabled sets principal anonymous; bearer mode uses constant-time exact token comparison; platform mode verifies Google token signature/audience/issuer and optional principal allowlist."
+    - "Production/prod environment requires platform identity plus nonempty audience and allowed principals."
+    - "Only POST requests are body-limited; duplicate/malformed/negative Content-Length returns 400; declared or streamed excess returns 413."
+    - "Health is liveness only. Ready is READY only when both model and Kafka capabilities are ready, otherwise DEGRADED."
+    - "Model readiness GETs /models without inference and is true only on HTTP 200; HTTP transport errors return false."
+    - "Kafka readiness GETs configured base URL and is true for any status below 500; transport errors return false."
+    - "S2S accepts only MessageType.REQUEST; query preference is payload.query then payload.message then empty."
+    - "S2S response preserves protocol_version/correlation_id, targets original source, and defaults capability to action.execute."
+    - "Invoke effective query prefers trimmed query, then trimmed short_description. Nested payload keys override recognized top-level fields during merge."
+    - "When enterprise context header exists or context generation is enabled, run through downstream pipeline; missing context is synthesized; invalid context returns bounded HTTP 400."
+    - "HTTP maps blocked to 403, failed to 502, submitted to 202, completed to 200."
+    - "Agent log outcome maps completed/submitted=success, blocked=rejected, failed=failure; severity maps INFO/INFO/WARNING/ERROR."
+    - "Shutdown drains observability before closing Kafka and reasoner resources."
+    - "ServiceMessage requires nonblank source and at least one of target/capability/skill/tool; RESPONSE requires payload; ERROR requires error."
+  constraints: ["No model tools", "No mutation retries", "No durable memory/database", "One approved action per request", "Connector ID <=128 characters under default regex", "Request body default <=262144 bytes"]
+  assumptions: ["Kafka Connect implements standard connector lifecycle REST paths", "platform-sdk provides the imported observability contracts", "Caller identity context is trusted only after inbound adapter verification"]
+  domain_terms: {DOM: "Only approved source system by default", connector: "Kafka Connect connector identifier", submitted: "Mutation accepted but final state not confirmed", governed_context: "Validated enterprise correlation/business lineage"}
+
+tool_inventory:
+  tools:
+    - {name: kafka.connector.status, type: deterministic HTTP tool, description: "Read connector/task status", inputs: [connector_name, correlation_id], outputs: [KafkaStatusSnapshot]}
+    - {name: kafka.connector.pause, type: deterministic HTTP tool, description: "Submit pause then snapshot status", inputs: [connector_name, correlation_id], outputs: [KafkaMutationResult]}
+    - {name: kafka.connector.resume, type: deterministic HTTP tool, description: "Submit resume then snapshot status", inputs: [connector_name, correlation_id], outputs: [KafkaMutationResult]}
+    - {name: kafka.connector.restart, type: deterministic HTTP tool, description: "Submit restart of failed connector/tasks", inputs: [connector_name, correlation_id], outputs: [KafkaRestartSubmission]}
+  mcps: []
+  external_services:
+    - {name: OpenAI API, type: model API, purpose: "General answers and /models readiness", auth_method: "Bearer OPENAI_API_KEY"}
+    - {name: Kafka Connect REST, type: operational API, purpose: "Connector lifecycle/status", auth_method: "HTTP Basic from KAFKA_CONNECT_USER/PASSWORD"}
+    - {name: Google OAuth token verification, type: identity, purpose: "Private Cloud Run caller verification", auth_method: "Google-signed bearer ID token"}
+    - {name: Google Cloud Logging/Trace, type: telemetry, purpose: "Correlated DLP-protected records", auth_method: "Application Default Credentials/runtime service account"}
+    - {name: Sumo Logic HTTP collector, type: telemetry, purpose: "Optional log export in platform-sdk", auth_method: "Secret collector endpoint"}
+  databases: []
+
+prompt_patterns:
+  system_prompts:
+    - name: safe_general_operations
+      purpose: "Answer informational operational questions without inventing remediation"
+      template: "Answer general operational questions safely. Never claim that remediation occurred unless the governed service reports it."
+      variables: []
+  user_prompt_templates:
+    - {name: general_query, template: "{{query}}", variables: [query]}
+    - {name: empty_query_fallback, template: "Please clarify your question.", variables: []}
+  chains:
+    - {name: general_answer, steps: ["validate query length", "deterministically confirm no approved action", "create isolated ADK session", "send user text", "collect final-response text parts", "return bounded answer"]}
+    - {name: governed_kafka_action, steps: ["bounded payload scan", "source/principal/connector/action checks", "one tool invocation", "normalize result", "return completed or submitted"]}
+  evaluation_criteria: ["Never claim an unreported remediation", "Never use model output to authorize a connector action", "Return only final ADK response text", "Fail closed on policy/config errors"]
+
+config_schema:
+  env_vars:
+    - {name: AGENT_ACTION_CONFIG_PATH, purpose: "TOML path", required: false, example_format: "agent.toml"}
+    - {name: AGENT_ACTION_ENV_PATH, purpose: "dotenv path used by CLI", required: false, example_format: ".env"}
+    - {name: AGENT_ACTION_AUTH_ENABLED, purpose: "Enable inbound auth", required: false, example_format: "true|false"}
+    - {name: AGENT_ACTION_AUTH_TOKEN, purpose: "Local bearer secret", required: "when auth enabled in bearer mode", example_format: "<secret>"}
+    - {name: AGENT_ACTION_ENVIRONMENT, purpose: "Runtime class", required: false, example_format: "local|production"}
+    - {name: AGENT_ACTION_HOST, purpose: "Bind host", required: false, example_format: "127.0.0.1"}
+    - {name: AGENT_ACTION_PORT, purpose: "Fallback bind port", required: false, example_format: "8084"}
+    - {name: PORT, purpose: "Cloud Run bind port; precedence over AGENT_ACTION_PORT", required: false, example_format: "8080"}
+    - {name: AGENT_ACTION_MODEL, purpose: "ADK LiteLLM model", required: false, example_format: "openai/gpt-4o"}
+    - {name: AGENT_ACTION_SYSTEM_PROMPT, purpose: "System prompt override", required: false, example_format: "approved prompt text"}
+    - {name: OPENAI_API_KEY, purpose: "OpenAI secret", required: true, example_format: "<secret>"}
+    - {name: OPENAI_BASE_URL, purpose: "Optional compatible endpoint", required: false, example_format: "https://host/v1"}
+    - {name: KAFKA_CONNECT_BASE_URL, purpose: "Connector collection URL", required: true, example_format: "https://host/connectors"}
+    - {name: KAFKA_CONNECT_USER, purpose: "Kafka Basic username", required: true, example_format: "<secret>"}
+    - {name: KAFKA_CONNECT_PASSWORD, purpose: "Kafka Basic password", required: true, example_format: "<secret>"}
+    - {name: AGENT_ACTION_KAFKA_VERIFICATION_WAIT_SECONDS, purpose: "Pause/resume pre-status delay", required: false, example_format: "0"}
+    - {name: AGENT_ACTION_KAFKA_MAX_ATTEMPTS, purpose: "Must equal 1", required: false, example_format: "1"}
+    - {name: AGENT_ACTION_IDENTITY_MODE, purpose: "Inbound mode", required: "production", example_format: "bearer|platform"}
+    - {name: AGENT_ACTION_IDENTITY_AUDIENCE, purpose: "Google ID-token audience", required: "production", example_format: "https://service.run.app"}
+    - {name: AGENT_ACTION_ALLOWED_PRINCIPALS, purpose: "Comma-separated platform callers", required: "production", example_format: "svc@project.iam.gserviceaccount.com"}
+    - {name: AGENT_ACTION_CONNECTOR_ALLOWLIST, purpose: "Comma-separated exact connectors", required: false, example_format: "connector-a,connector-b"}
+    - {name: AGENT_ACTION_REQUIRE_TRUSTED_PRINCIPAL, purpose: "Bind principal to source", required: false, example_format: "true"}
+    - {name: AGENT_ACTION_TRUSTED_PRINCIPALS_BY_SOURCE, purpose: "Source-to-principals JSON", required: "when binding enabled", example_format: "{\"DOM\":[\"svc@example\"]}"}
+    - {name: AGENT_ACTION_OBSERVABILITY_CONTEXT_ENABLED, purpose: "Enable primary context", required: false, example_format: "true"}
+    - {name: AGENT_ACTION_GENERATE_CONTEXT_WHEN_MISSING, purpose: "Synthesize direct-client context", required: false, example_format: "true"}
+    - {name: AGENT_ACTION_BUSINESS_PROCESS, purpose: "Workflow label", required: false, example_format: "incident-remediation"}
+    - {name: AGENT_ACTION_LOG_LEVEL, purpose: "Log threshold", required: false, example_format: "INFO"}
+    - {name: GOOGLE_CLOUD_PROJECT, purpose: "Cloud project", required: "when cloud logging enabled", example_format: "project-id"}
+    - {name: AGENT_ACTION_OBSERVABILITY_LOG_NAME, purpose: "Cloud log name", required: true, example_format: "genai-application"}
+    - {name: AGENT_ACTION_CLOUD_LOGGING, purpose: "Enable Cloud export", required: false, example_format: "true"}
+    - {name: SUMO_LOGIC_ENABLED, purpose: "platform-sdk collector toggle", required: false, example_format: "true"}
+    - {name: SUMO_LOGIC_ENDPOINT, purpose: "platform-sdk collector secret URL", required: "if Sumo enabled", example_format: "<secret>"}
+    - {name: SUMO_LOGIC_TIMEOUT_SECONDS, purpose: "collector timeout", required: false, example_format: "2"}
+  parameters:
+    - {name: service, type: table, default: "{name: agent-action, version: 0.1.0, environment: local}", description: identity}
+    - {name: server, type: table, default: "{host: 127.0.0.1, port: 8084}", description: listener}
+    - {name: model, type: table, default: "OpenAI gpt-4o, action_agent, readiness 3s, inference 30s", description: tool-free reasoner}
+    - {name: tool.kafka, type: table, default: "timeout 120s, verify wait 0s, attempts 1", description: Kafka adapter}
+    - {name: security.inbound, type: table, default: "disabled bearer; 262144 bytes", description: ingress controls}
+    - {name: policy.routing, type: table, default: "DOM; anchored connector regex; six action aliases", description: deterministic authorization}
+    - {name: observability, type: table, default: "context/generation/cloud enabled; INFO", description: telemetry}
+  warnings:
+    - ".env.example contains placeholder credential values; reproduce only as <secret>."
+    - ".gcp/application_default_credentials.json exists locally but is untracked/generated; credential JSON is excluded and must never be copied."
+    - "Do not regenerate agent.toml poll_interval_seconds or poll_timeout_seconds: the runtime never reads them."
+    - ".env examples set AGENT_ACTION_KAFKA_MAX_ATTEMPTS=2, but runtime requires exactly 1; use 1."
+
+component_manifest:
+  files:
+    - {path: src/agent_action/__init__.py, language: Python, classes: [], functions: []}
+    - {path: src/agent_action/__main__.py, language: Python, classes: [], functions: [{name: main, signature: "main() -> None"}]}
+    - {path: src/agent_action/app_factory.py, language: Python, classes: [], functions: [{name: create_app, signature: "create_app(*, settings=None, kafka_port=None, reasoner=None, identity_verifier=None, observability_utility=None) -> FastAPI"}]}
+    - path: src/agent_action/application.py
+      language: Python
+      classes: [{name: ActionAgent, kind: class, properties: [{name: _service, type: ActionAgentUseCase}], methods: [{name: __init__, signature: "(service: ActionAgentUseCase)->None"}, {name: invoke, signature: "async (query: str='', *, payload: Mapping[str,Any]|None=None, context: ExecutionContext|None=None)->ActionResponse"}, {name: ready, signature: "async ()->bool"}, {name: capability_readiness, signature: "async ()->dict[str,bool]"}, {name: close, signature: "async ()->None"}]}]
+      functions: []
+    - path: src/agent_action/bootstrap.py
+      language: Python
+      classes: [{name: ActionRuntime, kind: frozen_dataclass, properties: [{name: settings, type: Any}, {name: agent, type: ActionAgent}, {name: kafka_port, type: Any}, {name: reasoner, type: Any}], methods: []}]
+      functions: [{name: build_action_runtime, signature: "(*, settings=None, kafka_port=None, reasoner=None, config_path='agent.toml', env_path='.env')->ActionRuntime"}, {name: build_action_agent, signature: "same inputs -> ActionAgent"}]
+    - path: src/agent_action/client.py
+      language: Python
+      classes: [{name: AsyncActionAgentClient, kind: class, properties: [{name: _client, type: httpx.AsyncClient}], methods: [{name: __init__, signature: "(base_url: str, *, auth_token: str, timeout: float=30.0)->None"}, {name: invoke, signature: "async (query: str='', payload: Mapping|None=None)->dict[str,Any]"}, {name: close, signature: "async ()->None"}]}]
+      functions: []
+    - {path: src/agent_action/config.py, language: Python, classes: [], functions: []}
+    - {path: src/agent_action/configuration/__init__.py, language: Python, classes: [], functions: []}
+    - path: src/agent_action/configuration/settings.py
+      language: Python
+      classes:
+        - {name: ServiceSettings, kind: frozen_slots_dataclass, properties: [{name: name, type: str}, {name: version, type: str}, {name: environment, type: str}], methods: []}
+        - {name: ServerSettings, kind: frozen_slots_dataclass, properties: [{name: host, type: str}, {name: port, type: int}], methods: [{name: __post_init__, signature: "()->None"}]}
+        - {name: ModelSettings, kind: frozen_slots_dataclass, properties: [{name: provider, type: str}, {name: model, type: str}, {name: agent_name, type: str}, {name: system_prompt, type: str}, {name: api_key_env, type: str}, {name: base_url_env, type: str}, {name: readiness_timeout_seconds, type: float}, {name: inference_timeout_seconds, type: float}], methods: [{name: __post_init__, signature: "()->None"}]}
+        - {name: KafkaSettings, kind: frozen_slots_dataclass, properties: [{name: base_url, type: str}, {name: username_env, type: str}, {name: password_env, type: str}, {name: timeout_seconds, type: float}, {name: verification_wait_seconds, type: float}, {name: max_attempts, type: int}], methods: [{name: __post_init__, signature: "()->None"}]}
+        - {name: SecuritySettings, kind: frozen_slots_dataclass, properties: [{name: enabled, type: bool}, {name: token_env, type: str}, {name: max_request_bytes, type: int}, {name: identity_mode, type: str}, {name: identity_audience, type: str}, {name: allowed_principals, type: "tuple[str,...]"}], methods: [{name: __post_init__, signature: "()->None"}]}
+        - {name: PolicySettings, kind: frozen_slots_dataclass, properties: [{name: max_query_chars, type: int}, {name: routing, type: ActionRoutingPolicyConfig}], methods: [{name: __post_init__, signature: "()->None"}]}
+        - {name: ObservabilitySettings, kind: frozen_slots_dataclass, properties: [{name: log_name, type: str}, {name: context_enabled, type: bool}, {name: generate_context_when_missing, type: bool}, {name: business_process, type: str}, {name: log_level, type: str}, {name: project_id, type: str}, {name: cloud_logging, type: bool}], methods: [{name: __post_init__, signature: "()->None"}]}
+        - {name: AgentActionSettings, kind: frozen_slots_dataclass, properties: [{name: service, type: ServiceSettings}, {name: server, type: ServerSettings}, {name: model, type: ModelSettings}, {name: kafka, type: KafkaSettings}, {name: security, type: SecuritySettings}, {name: policy, type: PolicySettings}, {name: observability, type: ObservabilitySettings}], methods: [{name: secret, signature: "(name: str)->str"}]}
+      functions: [{name: load_settings, signature: "(path: str='agent.toml', env_path: str='.env')->AgentActionSettings"}]
+    - path: src/agent_action/adapters/inbound/api.py
+      language: Python
+      classes: [{name: InvokeDto, kind: Pydantic_model_extra_allow, properties: [{name: query, type: str}, {name: payload, type: "dict[str,Any]"}, {name: correlation_id, type: "str|None"}, {name: tenant_id, type: str}, {name: user_id, type: str}, {name: request_id, type: "str|None"}, {name: incident_number, type: "str|None"}, {name: short_description, type: "str|None"}, {name: deduplicate_logs, type: "bool|None"}, {name: include_historical_stats, type: "bool|None"}, {name: tool_calls, type: "list[dict[str,Any]]"}], methods: [{name: effective_payload, signature: "()->dict[str,Any]"}, {name: effective_query, signature: "()->str"}]}]
+      functions: [{name: authorize, signature: "(request: Request)->None"}, {name: health, signature: "async (request)->dict[str,str]"}, {name: ready, signature: "async (request)->dict[str,Any]"}, {name: capabilities, signature: "async (request, authorize)->dict[str,Any]"}, {name: invoke, signature: "async (dto, request, authorize)->Any"}, {name: s2s, signature: "async (message, request, authorize)->ServiceMessage"}, {name: _response, signature: "(ActionResponse)->dict[str,Any]"}, {name: _execution_context, signature: "(request, correlation_id, tenant_id, user_id, source)->ExecutionContext"}, {name: _execute_governed, signature: "async (request, *, payload, operation_name, coordinate)->PipelineResult"}]
+    - path: src/agent_action/adapters/inbound/identity.py
+      language: Python
+      classes: [{name: GooglePlatformIdentityVerifier, kind: class, properties: [{name: _audience, type: str}, {name: _allowed, type: frozenset}], methods: [{name: __init__, signature: "(audience: str, allowed_principals: tuple[str,...]=())->None"}, {name: verify, signature: "(authorization: str)->dict"}]}]
+      functions: []
+    - path: src/agent_action/adapters/inbound/request_limits.py
+      language: Python
+      classes: [{name: RequestSizeLimitMiddleware, kind: ASGI_middleware, properties: [{name: app, type: Any}, {name: max_bytes, type: int}], methods: [{name: __init__, signature: "(app: Any, max_bytes: int)->None"}, {name: __call__, signature: "async (scope, receive, send)->None"}, {name: _reject, signature: "async static (send, status: int, detail: str)->None"}]}, {name: _RequestTooLarge, kind: exception, properties: [], methods: []}]
+      functions: []
+    - path: src/agent_action/adapters/outbound/adk_openai.py
+      language: Python
+      classes: [{name: GoogleAdkOpenAIReasoner, kind: adapter, properties: [{name: _types, type: google.genai.types}, {name: _api_key, type: str}, {name: _base_url, type: str}, {name: _readiness_timeout, type: float}, {name: _inference_timeout, type: float}, {name: _runner, type: google.adk.Runner}], methods: [{name: __init__, signature: "(settings, *, api_key: str, base_url: str|None=None)->None"}, {name: answer, signature: "async (query: str, *, context: ExecutionContext)->str"}, {name: ready, signature: "async ()->bool"}, {name: close, signature: "async ()->None"}]}]
+      functions: []
+    - path: src/agent_action/adapters/outbound/kafka_connect.py
+      language: Python
+      classes: [{name: KafkaConnectAdapter, kind: adapter, properties: [{name: _settings, type: KafkaSettings}, {name: _client, type: httpx.AsyncClient}, {name: _owns, type: bool}], methods: [{name: __init__, signature: "(settings, username, password, *, client=None)->None"}, {name: restart_connector, signature: "async (connector_name, *, correlation_id)"}, {name: resume_connector, signature: "async (connector_name, *, correlation_id)"}, {name: pause_connector, signature: "async (connector_name, *, correlation_id)"}, {name: get_connector_status, signature: "async (connector_name, *, correlation_id)"}, {name: _get_connector_status, signature: "async (connector_name, correlation_id)"}, {name: _observe, signature: "async (operation, connector_name, invoke)"}, {name: _execute, signature: "async (operation, connector_name, correlation_id)"}, {name: _read_status, signature: "async (connector_name, correlation_id, operation)"}, {name: _status_snapshot, signature: "static (data, connector_name)"}, {name: _get_once, signature: "async (url, correlation_id)"}, {name: _rejection_detail, signature: "static (response)->str"}, {name: ready, signature: "async ()->bool"}, {name: _observability_headers, signature: "static ()->dict[str,str]"}, {name: close, signature: "async ()->None"}]}]
+      functions: []
+    - path: src/agent_action/core/domain/models.py
+      language: Python
+      classes:
+        - {name: ActionKind, kind: StrEnum, properties: [{name: GENERAL_QUERY, type: "literal GENERAL_QUERY"}, {name: GET_CONNECTOR_STATUS, type: "literal GET_CONNECTOR_STATUS"}, {name: PAUSE_CONNECTOR, type: "literal PAUSE_CONNECTOR"}, {name: RESUME_CONNECTOR, type: "literal RESUME_CONNECTOR"}, {name: RESTART_CONNECTOR, type: "literal RESTART_CONNECTOR"}], methods: []}
+        - {name: ActionStatus, kind: StrEnum, properties: [{name: COMPLETED, type: "literal completed"}, {name: SUBMITTED, type: "literal submitted"}, {name: BLOCKED, type: "literal blocked"}, {name: FAILED, type: "literal failed"}], methods: []}
+        - {name: ExecutionContext, kind: frozen_slots_dataclass, properties: [{name: correlation_id, type: str}, {name: source, type: str}, {name: tenant_id, type: str}, {name: user_id, type: str}, {name: incident_id, type: "str|None"}, {name: parent_ref, type: "str|None"}, {name: current_ref, type: "str|None"}, {name: authenticated_principal, type: str}], methods: []}
+        - {name: ActionRequest, kind: frozen_slots_dataclass, properties: [{name: query, type: str}, {name: payload, type: "Mapping[str,Any]"}, {name: context, type: ExecutionContext}], methods: [{name: __post_init__, signature: "()->None"}]}
+        - {name: ActionResponse, kind: frozen_slots_dataclass, properties: [{name: status, type: ActionStatus}, {name: action, type: ActionKind}, {name: message, type: str}, {name: correlation_id, type: str}, {name: connector_name, type: "str|None"}, {name: tool_result, type: "Mapping[str,Any]|None"}], methods: []}
+      functions: []
+    - path: src/agent_action/core/domain/policy.py
+      language: Python
+      classes:
+        - {name: ActionRoutingPolicyConfig, kind: frozen_slots_dataclass, properties: [{name: approved_sources, type: "tuple[str,...]"}, {name: connector_pattern, type: str}, {name: reference_keys, type: "tuple[str,...]"}, {name: explicit_actions, type: "Mapping[str,ActionKind|str]"}, {name: connector_allowlist, type: "tuple[str,...]"}, {name: require_trusted_principal, type: bool}, {name: trusted_principals_by_source, type: "Mapping[str,tuple[str,...]]"}, {name: _connector_regex, type: "re.Pattern[str]"}], methods: [{name: __post_init__, signature: "()->None"}, {name: _normalized_tuple, signature: "static (values,name,*,allow_empty=False)->tuple[str,...]"}, {name: _action_mapping, signature: "classmethod (values,name)->dict[str,ActionKind]"}, {name: _mutation_action, signature: "static (value,name)->ActionKind"}, {name: connector_matches, signature: "(connector: str)->bool"}, {name: principal_is_trusted, signature: "(source: str, principal: str)->bool"}]}
+        - {name: ActionPolicy, kind: frozen_slots_dataclass, properties: [{name: max_query_chars, type: int}, {name: routing, type: ActionRoutingPolicyConfig}], methods: [{name: classify, signature: "(payload, context=None)->tuple[ActionKind,str|None]"}, {name: validate_query, signature: "(query: str)->None"}, {name: _find_approved_items, signature: "(value)->list[Mapping]"}, {name: _walk_approved_items, signature: "(value,*,depth,seen,nodes)->list[Mapping]"}, {name: _connector_from, signature: "(value)->str|None"}]}
+      functions: []
+    - path: src/agent_action/core/application/service.py
+      language: Python
+      classes: [{name: ActionAgentService, kind: application_service, properties: [{name: _policy, type: ActionPolicy}, {name: _kafka, type: KafkaActionPort}, {name: _reasoner, type: ReasonerPort}], methods: [{name: __init__, signature: "(policy,kafka,reasoner)->None"}, {name: execute, signature: "async (ActionRequest)->ActionResponse"}, {name: _answer_general, signature: "async (ActionRequest)->ActionResponse"}, {name: ready, signature: "async ()->bool"}, {name: capability_readiness, signature: "async ()->dict[str,bool]"}, {name: _component_ready, signature: "async static (component)->bool"}, {name: close, signature: "async ()->None"}]}]
+      functions: []
+    - {path: src/agent_action/core/ports/inbound.py, language: Python, classes: [{name: ActionAgentUseCase, kind: Protocol, properties: [], methods: [{name: execute, signature: "async (ActionRequest)->ActionResponse"}, {name: ready, signature: "async ()->bool"}, {name: capability_readiness, signature: "async ()->dict[str,bool]"}, {name: close, signature: "async ()->None"}]}], functions: []}
+    - {path: src/agent_action/core/ports/outbound.py, language: Python, classes: [{name: KafkaActionPort, kind: Protocol, properties: [], methods: [{name: restart_connector, signature: "async (str,*,correlation_id:str)->Mapping"}, {name: resume_connector, signature: "same"}, {name: pause_connector, signature: "same"}, {name: get_connector_status, signature: "same"}, {name: ready, signature: "async ()->bool"}, {name: close, signature: "async ()->None"}]}, {name: ReasonerPort, kind: Protocol, properties: [], methods: [{name: answer, signature: "async (str,*,context)->str"}, {name: ready, signature: "async ()->bool"}, {name: close, signature: "async ()->None"}]}, {name: KafkaToolError, kind: exception, properties: [{name: operation, type: str}, {name: detail, type: str}, {name: status_code, type: "int|None"}], methods: [{name: __init__, signature: "(operation,detail,*,status_code=None)->None"}]}], functions: []}
+    - {path: src/agent_action/observability/__init__.py, language: Python, classes: [], functions: []}
+    - {path: shared-contracts/platform-protocol/src/platform_protocol/__init__.py, language: Python, classes: [], functions: []}
+    - {path: shared-contracts/platform-protocol/src/platform_protocol/__main__.py, language: Python, classes: [], functions: [{name: main, signature: "main()->None"}]}
+    - {path: shared-contracts/platform-protocol/src/platform_protocol/application/message_validator.py, language: Python, classes: [{name: MessageValidator, kind: application_service, properties: [], methods: [{name: validate, signature: "static (ServiceMessage)->bool"}]}], functions: []}
+    - {path: shared-contracts/platform-protocol/src/platform_protocol/domain/message_type.py, language: Python, classes: [{name: MessageType, kind: "str Enum", properties: [{name: REQUEST, type: literal}, {name: RESPONSE, type: literal}, {name: EVENT, type: literal}, {name: ERROR, type: literal}], methods: []}], functions: []}
+    - {path: shared-contracts/platform-protocol/src/platform_protocol/domain/service_type.py, language: Python, classes: [{name: ServiceType, kind: "str Enum", properties: [{name: AGENT, type: agent}, {name: TOOL, type: tool}, {name: LLM, type: llm}, {name: ORCHESTRATOR, type: orchestrator}, {name: INGRESS, type: ingress}], methods: []}], functions: []}
+    - {path: shared-contracts/platform-protocol/src/platform_protocol/domain/service_metadata.py, language: Python, classes: [{name: ServiceMetadata, kind: Pydantic_model, properties: [{name: service_id, type: str}, {name: service_name, type: str}, {name: service_type, type: ServiceType}, {name: version, type: "str|None"}, {name: instance_id, type: "str|None"}], methods: [{name: validate_service_id, signature: "classmethod (value)->str"}]}], functions: []}
+    - {path: shared-contracts/platform-protocol/src/platform_protocol/domain/service_message.py, language: Python, classes: [{name: ServiceMessage, kind: Pydantic_model, properties: [{name: protocol_version, type: str}, {name: correlation_id, type: str}, {name: source, type: str}, {name: target, type: "str|None"}, {name: capability, type: "str|None"}, {name: skill, type: "str|None"}, {name: tool, type: "str|None"}, {name: message_type, type: MessageType}, {name: payload, type: "dict[str,Any]|None"}, {name: error, type: "str|None"}, {name: metadata, type: "dict[str,Any]|None"}, {name: timestamp, type: datetime}], methods: [{name: validate_protocol_rules, signature: "model_validator after ()->ServiceMessage"}]}], functions: []}
+    - {path: src/agent_action/adapters/__init__.py, language: Python, classes: [], functions: []}
+    - {path: src/agent_action/adapters/inbound/__init__.py, language: Python, classes: [], functions: []}
+    - {path: src/agent_action/adapters/outbound/__init__.py, language: Python, classes: [], functions: []}
+    - {path: src/agent_action/core/__init__.py, language: Python, classes: [], functions: []}
+    - {path: src/agent_action/core/application/__init__.py, language: Python, classes: [], functions: []}
+    - {path: src/agent_action/core/domain/__init__.py, language: Python, classes: [], functions: []}
+    - {path: src/agent_action/core/ports/__init__.py, language: Python, classes: [], functions: []}
+  config_keys:
+    - {name: "service.{name,version,environment}", purpose: identity, source_file: agent.toml}
+    - {name: "server.{host,port}", purpose: listener, source_file: agent.toml}
+    - {name: "observability.{context_enabled,generate_context_when_missing,business_process,log_level,log_name,project_id,cloud_logging}", purpose: telemetry, source_file: agent.toml}
+    - {name: "model.{provider,name,agent_name,api_key_env,base_url_env,readiness_timeout_seconds,inference_timeout_seconds,system_prompt}", purpose: reasoner, source_file: agent.toml}
+    - {name: "tool.kafka.{base_url,username_env,password_env,timeout_seconds,verification_wait_seconds,max_attempts}", purpose: "minimum tool transport configuration; omit unused polling and fixture defaults", source_file: agent.toml}
+    - {name: "security.inbound.{enabled,token_env,max_request_bytes,identity_mode,identity_audience,allowed_principals}", purpose: ingress security, source_file: agent.toml}
+    - {name: "policy.max_query_chars", purpose: query bound, source_file: agent.toml}
+    - {name: "policy.routing.{approved_sources,connector_pattern,reference_keys,explicit_actions,connector_allowlist,require_trusted_principal,trusted_principals_by_source}", purpose: deterministic authorization, source_file: agent.toml}
+  config_artifacts:
+    - path: agent.toml
+      format: TOML
+      purpose: runtime SSOT
+      keys: [service, service.name, service.version, service.environment, server, server.host, server.port, observability, observability.context_enabled, observability.generate_context_when_missing, observability.business_process, observability.log_level, observability.log_name, observability.project_id, observability.cloud_logging, model, model.provider, model.name, model.agent_name, model.api_key_env, model.base_url_env, model.readiness_timeout_seconds, model.inference_timeout_seconds, model.system_prompt, tool, tool.kafka, tool.kafka.base_url, tool.kafka.username_env, tool.kafka.password_env, tool.kafka.timeout_seconds, tool.kafka.verification_wait_seconds, tool.kafka.max_attempts, security, security.inbound, security.inbound.enabled, security.inbound.token_env, security.inbound.max_request_bytes, security.inbound.identity_mode, security.inbound.identity_audience, security.inbound.allowed_principals, policy, policy.max_query_chars, policy.routing, policy.routing.approved_sources, policy.routing.connector_pattern, policy.routing.reference_keys, policy.routing.explicit_actions, policy.routing.connector_allowlist, policy.routing.require_trusted_principal, policy.routing.trusted_principals_by_source]
+      structure: "Full non-secret values are recorded in config_schema and config_keys; Kafka URL is an explicit replace-with placeholder; explicit actions GET/STATUS/GET_STATUS->GET_CONNECTOR_STATUS, PAUSE/RESUME/RESTART->same-named domain actions."
+    - {path: .env.example, format: dotenv, purpose: local template, keys: [AGENT_ACTION_AUTH_ENABLED, AGENT_ACTION_AUTH_TOKEN, AGENT_ACTION_ENVIRONMENT, GOOGLE_CLOUD_PROJECT, AGENT_ACTION_CLOUD_LOGGING, AGENT_ACTION_OBSERVABILITY_LOG_NAME, OPENAI_API_KEY, KAFKA_CONNECT_BASE_URL, KAFKA_CONNECT_USER, KAFKA_CONNECT_PASSWORD, AGENT_ACTION_HOST, AGENT_ACTION_PORT, AGENT_ACTION_OBSERVABILITY_CONTEXT_ENABLED, AGENT_ACTION_GENERATE_CONTEXT_WHEN_MISSING, AGENT_ACTION_BUSINESS_PROCESS, SUMO_LOGIC_ENABLED, SUMO_LOGIC_ENDPOINT, SUMO_LOGIC_TIMEOUT_SECONDS], structure: "Values as config_schema; all token/key/password/collector endpoint values=<secret>. Commented optional keys are also inventoried in env_vars."}
+    - {path: .env.cloud-run.example, format: dotenv, purpose: production template, keys: [AGENT_ACTION_ENVIRONMENT, AGENT_ACTION_IDENTITY_MODE, AGENT_ACTION_IDENTITY_AUDIENCE, AGENT_ACTION_ALLOWED_PRINCIPALS, AGENT_ACTION_CONNECTOR_ALLOWLIST, AGENT_ACTION_REQUIRE_TRUSTED_PRINCIPAL, AGENT_ACTION_TRUSTED_PRINCIPALS_BY_SOURCE, KAFKA_CONNECT_BASE_URL, AGENT_ACTION_KAFKA_VERIFICATION_WAIT_SECONDS, AGENT_ACTION_KAFKA_MAX_ATTEMPTS, AGENT_ACTION_OBSERVABILITY_CONTEXT_ENABLED, AGENT_ACTION_GENERATE_CONTEXT_WHEN_MISSING, AGENT_ACTION_BUSINESS_PROCESS, AGENT_ACTION_CLOUD_LOGGING, GOOGLE_CLOUD_PROJECT, AGENT_ACTION_OBSERVABILITY_LOG_NAME, SUMO_LOGIC_ENABLED, SUMO_LOGIC_TIMEOUT_SECONDS], structure: "Production/platform identity placeholders; Secret Manager supplies omitted secrets and SUMO_LOGIC_ENDPOINT."}
+    - {path: pyproject.toml, format: TOML, purpose: minimum production build/runtime, keys: [project.name, project.version, project.description, project.requires-python, project.dependencies, project.scripts.agent-action, build-system.requires, build-system.build-backend, tool.uv.build-backend.module-name, tool.uv.sources.platform-sdk, tool.uv.sources.platform-protocol, tool.uv.workspace.members], structure: "Retain runtime dependencies and internal workspace sources only; omit readme, optional dependency groups, development dependencies, cache, and pytest settings."}
+    - {path: Containerfile, format: Containerfile, purpose: OCI build, keys: [builder_image, runtime_image, labels, environment, workdir, user, expose, stopsignal, command], structure: "quay.io/fedora/python-312; /workspace/services/action_service; UID 1001; port 8084; SIGTERM; CMD agent-action"}
+  payload_schemas:
+    - {name: InvokeDto, fields: [{name: query, type: str}, {name: payload, type: "dict[str,Any]"}, {name: correlation_id, type: "str|null"}, {name: tenant_id, type: str}, {name: user_id, type: str}, {name: request_id, type: "str|null"}, {name: incident_number, type: "str|null"}, {name: short_description, type: "str|null"}, {name: deduplicate_logs, type: "bool|null"}, {name: include_historical_stats, type: "bool|null"}, {name: tool_calls, type: "list[dict[str,Any]]"}, {name: extra_fields, type: Any}], used_by: "POST /invoke"}
+    - {name: ActionResponseView, fields: [{name: status, type: "completed|submitted|blocked|failed"}, {name: action, type: ActionKind}, {name: message, type: str}, {name: correlation_id, type: str}, {name: connector_name, type: "str|null"}, {name: tool_result, type: "object|null"}], used_by: "/invoke and ServiceMessage.payload"}
+    - {name: ApprovedActionItem, fields: [{name: source_system, type: str}, {name: action, type: "str optional; precedence over operation"}, {name: operation, type: "str optional"}, {name: kafka_loader_reference, type: "str optional"}, {name: kafka_loader_ref, type: "str optional"}, {name: connector_name, type: "str optional"}, {name: kafka_connector, type: "str optional"}, {name: loader_reference, type: "str optional"}], used_by: ActionPolicy}
+    - {name: KafkaStatusSnapshot, fields: [{name: connector, type: str}, {name: state, type: str}, {name: task_states, type: "list[str]"}, {name: kafka_connect_status, type: object}, {name: unhealthy, type: bool}, {name: transition_in_progress, type: bool}, {name: manual_intervention_required, type: bool}], used_by: status/pause/resume}
+    - {name: KafkaConnectStatus, fields: [{name: name, type: str}, {name: connector, type: "{state:str,worker_id:Any,version:Any}"}, {name: tasks, type: "list[{id:Any,state:str,worker_id:Any,version:Any,trace:Any}]"}, {name: type, type: Any}], used_by: KafkaStatusSnapshot}
+    - {name: KafkaRestartSubmission, fields: [{name: connector, type: str}, {name: operation, type: "literal restart"}, {name: request_status, type: "literal submitted"}, {name: accepted_status_code, type: int}, {name: transition_in_progress, type: bool}, {name: final_state_confirmed, type: bool}, {name: requires_status_poll, type: bool}], used_by: restart}
+    - {name: KafkaToolFailure, fields: [{name: connector, type: str}, {name: operation, type: str}, {name: error, type: "{type:'KAFKA_CONNECT_ERROR',status_code:int|null,detail:str}"}], used_by: failed ActionResponse.tool_result}
+    - {name: ServiceMessage, fields: [{name: protocol_version, type: str}, {name: correlation_id, type: str}, {name: source, type: str}, {name: target, type: "str|null"}, {name: capability, type: "str|null"}, {name: skill, type: "str|null"}, {name: tool, type: "str|null"}, {name: message_type, type: MessageType}, {name: payload, type: "dict|null"}, {name: error, type: "str|null"}, {name: metadata, type: "dict|null"}, {name: timestamp, type: datetime}], used_by: "POST /s2s"}
+  messaging:
+    - {channel: "HTTP POST /s2s", direction: bidirectional, message_shape: ServiceMessage}
+    - {channel: "HTTP POST /invoke", direction: request-response, message_shape: "InvokeDto -> ActionResponseView"}
+    - {channel: "Kafka topics/queues", direction: none, message_shape: "none; service controls Kafka Connect through REST and does not produce/consume Kafka messages"}
+  deploy_resources:
+    - {type: OCI_image, name: agent-action, file: Containerfile}
+    - {type: Cloud_Run_service, name: agent-action, file: "runtime contract only; no IaC manifest required for minimum regeneration"}
+    - {type: Secret_Manager_bindings, name: "OpenAI/Kafka/Sumo secrets", file: ".env.cloud-run.example; no secret values"}
+
+behavioral_tests:
+  scenarios: []
+  edge_cases: []
+
+adr:
+  - {id: ADR-001, decision: "Separate deterministic action authorization from LLM reasoning", context: "Remediation has side effects", rationale: "Model output cannot grant authority", alternatives_considered: ["LLM tool selection", "prompt-only guardrails"], consequences: "Explicit structured payload required; safer and reproducible"}
+  - {id: ADR-002, decision: "Hexagonal ports and replaceable adapters", context: "Package and service modes plus testability", rationale: "Core remains framework-neutral", alternatives_considered: ["FastAPI-coupled business logic"], consequences: "More interfaces/composition code; easy fakes and alternate transports"}
+  - {id: ADR-003, decision: "Mutations are submitted, never synchronously claimed complete", context: "Kafka connector state transitions are asynchronous", rationale: "Avoid false remediation claims", alternatives_considered: ["poll until terminal", "trust accepted HTTP status"], consequences: "Caller must poll status"}
+  - {id: ADR-004, decision: "No mutation retries", context: "Duplicate side effects are unsafe", rationale: "At-most-one attempt with correlation/idempotency keys", alternatives_considered: ["automatic exponential retries"], consequences: "Transient failures surface to orchestrator"}
+  - {id: ADR-005, decision: "In-memory isolated ADK session per query", context: "No durable conversational memory requirement", rationale: "Prevent cross-request leakage", alternatives_considered: ["persistent session/database"], consequences: "Stateless horizontal scaling; no conversational continuity"}
+  - {id: ADR-006, decision: "Production requires Google platform identity", context: "Private Cloud Run service-to-service ingress", rationale: "Verified audience/issuer/principal instead of shared bearer", alternatives_considered: ["static production bearer"], consequences: "Requires service account, audience, and allowlist configuration"}
+
+abom:
+  frameworks: ["Google ADK >=1.11,<2", "LiteLLM >=1.83.7,<=1.83.14", "FastAPI >=0.115", "Pydantic >=2.10", "httpx >=0.27", "Uvicorn >=0.30", "platform-sdk (workspace)", "platform-protocol 0.1.0"]
+  models: ["OpenAI openai/gpt-4o (runtime-overridable within openai/*)"]
+  tools: ["Kafka Connect REST status", "Kafka Connect REST pause", "Kafka Connect REST resume", "Kafka Connect REST restart"]
+  mcps: []
+  platforms: ["Python 3.12", "OCI/Podman compatible", "Google Cloud Run", "Google Cloud Logging", "Google Cloud Trace", "optional Sumo Logic"]
+  data_classification: "Operational metadata may include tenant/user/incident identifiers, connector names, upstream error trace text, and identity claims; credentials are secrets. DLP-protected observability is required for cloud delivery."
+  estimated_cost_profile: "Low-to-moderate: one OpenAI inference only for general queries; Kafka actions use 1-2 REST calls; readiness uses provider/Kafka GETs; Cloud Logging/Trace and optional Sumo ingestion add usage-based costs. No vector/database cost."
+
+# Extraction notes
+# overall_confidence: high for tracked implementation/config/API behavior; medium for platform-sdk internals and Cloud Run resources because those are referenced but implemented outside this service.
+# inferred_sections: hosting/deployment resource topology and Sumo behavior were inferred from runtime imports and environment configuration; model context window is not specified. No queue/topic names exist.
+# excluded_from_generation: all tests, fixtures, Postman assets, runbooks, README files, caches, local credentials, poll_interval_seconds, poll_timeout_seconds, and connector fixture defaults not needed by runtime behavior.
+# redactions: .env.example token/API key/Kafka username/password/Sumo endpoint and local untracked .gcp/application_default_credentials.json credential document. Values were not copied.

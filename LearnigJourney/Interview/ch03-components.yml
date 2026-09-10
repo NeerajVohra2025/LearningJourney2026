@@ -1,0 +1,427 @@
+Card 1 — ServiceNow Webhook:
+
+┌─────────────┐
+│ ServiceNow  │
+└──────┬──────┘
+       │
+       │ 1. OAuth2 Client Credentials
+       ▼
+┌────────────────────────┐
+│ ServiceNow Identity    │
+│ Provider               │
+└──────────┬─────────────┘
+           │
+           │ 2. Signed OIDC JWT
+           ▼
+┌────────────────────────┐
+│ Google STS             │
+│ Token Exchange         │
+└──────────┬─────────────┘
+           │
+           │ Verify Signature
+           │ Verify Issuer
+           │ Verify Audience
+           │ Verify Claims
+           │ Map Identity
+           ▼
+┌────────────────────────┐
+│ Google Service Account │
+│ genai-platform-sa      │
+└──────────┬─────────────┘
+           │
+           │ 3. Google Access Token
+           ▼
+┌────────────────────────┐
+│ Google API Gateway     │
+└──────────┬─────────────┘
+           │
+           ▼
+Runtime Flow Starts
+
+
+
+Card 2 – Google API Gateway:
+┌────────────────────────────────────────────────────────────────────────┐
+│ Card 2 – Google API Gateway                                            │
+├────────────────────────────────────────────────────────────────────────┤
+│ Purpose                                                                │
+│ Secure, authenticate, authorize and route external API requests        │
+├────────────────────────────────────────────────────────────────────────┤
+│ GCP Service                                                            │
+│ Google API Gateway                                                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ Deployment                                                             │
+│ Fully Managed Google Cloud Service                                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ Receives                                                               │
+│ • HTTPS POST Request                                                   │
+│ • Authorization: Bearer <Access Token>                                 │
+│ • Incident JSON Payload                                                │
+├────────────────────────────────────────────────────────────────────────┤
+│ Built-in Features                                                      │
+│ ✓ TLS/HTTPS Termination                                                │
+│ ✓ OAuth2 Authentication                                                │
+│ ✓ JWT / Access Token Validation                                        │
+│ ✓ IAM Authorization                                                    │
+│ ✓ API Key Validation (Optional)                                        │
+│ ✓ Quota Enforcement                                                    │
+│ ✓ Rate Limiting                                                        │
+│ ✓ Request Routing                                                      │
+│ ✓ Cloud Logging                                                        │
+│ ✓ Cloud Monitoring                                                     │
+│ ✓ Cloud Audit Logs                                                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ Google Services Used                                                   │
+│ • Google IAM                                                           │
+│ • Service Control API                                                  │
+│ • Service Management API                                               │
+│ • Cloud Logging                                                        │
+│ • Cloud Monitoring                                                     │
+│ • Cloud Audit Logs                                                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ Backend                                                                │
+│ Cloud Run (Enterprise AI Gateway)                                      │
+├────────────────────────────────────────────────────────────────────────┤
+│ Output                                                                 │
+│ Authenticated & Authorized Request                                     │
+└────────────────────────────────────────────────────────────────────────┘
+
+Chapter 3 – Enterprise AI Gateway:
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Card 3 – Enterprise AI Gateway                                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Component Type                                                               │
+│ 🔵 Enterprise Custom Service                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Purpose                                                                      │
+│ Entry point of the Enterprise GenAI Platform.                                │
+│ Initializes the execution context, creates the root application span,        │
+│ propagates distributed tracing context, resolves policies, and forwards      │
+│ the request to the Responsible AI Pipeline.                                  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Deployment                                                                   │
+│ Google Cloud Run                                                             │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Framework                                                                    │
+│ • FastAPI                                                                    │
+│ • Python                                                                     │
+│ • OpenTelemetry SDK                                                          │
+│ • Pydantic                                                                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ HTTP Endpoint                                                                │
+│ POST /v1/incidents/analyze                                                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Google Services Used                                                         │
+│ • Cloud Logging                                                              │
+│ • Cloud Trace                                                                │
+│ • Cloud Monitoring                                                           │
+│ • Secret Manager                                                             │
+│ • Artifact Registry                                                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Google APIs                                                                  │
+│ • Cloud Trace API                                                            │
+│ • Cloud Logging API                                                          │
+│ • Cloud Monitoring API                                                       │
+│ • Secret Manager API                                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Python SDKs                                                                  │
+│ • opentelemetry-api                                                          │
+│ • opentelemetry-sdk                                                          │
+│ • opentelemetry-propagate                                                    │
+│ • opentelemetry-exporter-gcp-trace                                           │
+│ • google-cloud-logging                                                       │
+│ • google-cloud-secret-manager                                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Key APIs / Methods                                                           │
+│ tracer = trace.get_tracer(__name__)                                          │
+│ tracer.start_as_current_span()                                               │
+│ trace.set_span_in_context()                                                  │
+│ inject(headers)                                                              │
+│ extract(headers)                                                             │
+│ logger.log_struct()                                                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Creates                                                                      │
+│ • Correlation ID                                                             │
+│ • Root Trace ID                                                              │
+│ • Root Span ID                                                               │
+│ • Request ID                                                                 │
+│ • Execution ID                                                               │
+│ • Tenant ID                                                                  │
+│ • Incident ID                                                                │
+│ • Policy Context                                                             │
+│ • Security Context                                                           │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Injects                                                                      │
+│ traceparent                                                                  │
+│ tracestate                                                                   │
+│ x-correlation-id                                                             │
+│ x-request-id                                                                 │
+│ x-tenant-id                                                                  │
+│ x-policy-id                                                                  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Output                                                                       │
+│ Enterprise Execution Context                                                 │
+│ + Distributed Trace Context                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+
+Card 5 — Responsible AI Input Pipeline:
+This is where Vertex AI services begin.
+Purpose
+-----------------------------
+Secure AI Request
+
+Deployment
+-----------------------------
+Cloud Run
+
+Invokes
+
+-----------------------------
+Cloud DLP API
+
+Vertex AI Model Armor
+
+Vertex AI Count Tokens
+
+Prompt Registry
+
+Policy Engine
+
+Google APIs
+-----------------------------
+Cloud DLP API
+
+Vertex AI Model Armor API
+
+Vertex AI Generative AI API
+
+Methods
+-----------------------------
+inspectContent()
+
+deidentifyContent()
+
+countTokens()
+
+Operations
+-----------------------------
+Prompt Validation
+
+Prompt Injection Detection
+
+Jailbreak Detection
+
+PII Detection
+
+Token Counting
+
+Prompt Optimization
+
+Context Enrichment
+
+Output
+-----------------------------
+Validated Prompt
+
+
+┌──────────────────────────────────────────────────────────────┐
+│ Responsible AI Input Pipeline                                │
+├──────────────────────────────────────────────────────────────┤
+│ Purpose                                                      │
+│ Validate & Secure Prompt                                     │
+├──────────────────────────────────────────────────────────────┤
+│ GCP Services                                                 │
+│ Cloud DLP                                                    │
+│ Vertex AI Model Armor                                        │
+│ Vertex AI Gemini                                             │
+├──────────────────────────────────────────────────────────────┤
+│ Google APIs                                                  │
+│ Cloud DLP API                                                │
+│ Vertex AI Model Armor API                                    │
+│ Vertex AI Generative AI API                                  │
+├──────────────────────────────────────────────────────────────┤
+│ REST Methods                                                 │
+│ inspectContent()                                             │
+│ deidentifyContent()                                          │
+│ countTokens()                                                │
+├──────────────────────────────────────────────────────────────┤
+│ Processing                                                   │
+│ Schema Validation                                            │
+│ Prompt Validation                                            │
+│ Prompt Injection Detection                                   │
+│ Jailbreak Detection                                          │
+│ PII Detection                                                │
+│ Prompt Normalization                                         │
+│ Token Counting                                               │
+│ Context Enrichment                                           │
+├──────────────────────────────────────────────────────────────┤
+│ Output                                                       │
+│ Validated Prompt                                             │
+└──────────────────────────────────────────────────────────────┘
+
+
+
+
+Input Pipeline
+    │
+    ├── Cloud DLP API
+    ├── Vertex AI Model Armor API
+    ├── Vertex AI countTokens()
+    ├── Cloud Logging
+    ├── Cloud Trace
+    └── Policy Engine
+    
+    
+
+Cloud DLP:
+┌─────────────────────────────────────────────┐
+│ Cloud DLP                                   │
+├─────────────────────────────────────────────┤
+│ GCP Service                                 │
+│ Cloud DLP                                   │
+├─────────────────────────────────────────────┤
+│ REST API                                    │
+│ DLP API                                     │
+├─────────────────────────────────────────────┤
+│ REST Methods                                │
+│ inspectContent()                            │
+│ deidentifyContent()                         │
+├─────────────────────────────────────────────┤
+│ Detects                                     │
+│ • PII                                       │
+│ • PAN                                       │
+│ • Email                                     │
+│ • Aadhaar                                   │
+│ • Passport                                  │
+├─────────────────────────────────────────────┤
+│ Output                                      │
+│ Sanitized Prompt                            │
+└─────────────────────────────────────────────┘
+
+Vertex AI Model Armor:
+┌─────────────────────────────────────────────┐
+│ Vertex AI Model Armor                       │
+├─────────────────────────────────────────────┤
+│ Purpose                                     │
+│ Prompt & Response Protection                │
+├─────────────────────────────────────────────┤
+│ REST API                                    │
+│ Model Armor API                             │
+├─────────────────────────────────────────────┤
+│ Operations                                  │
+│ • Prompt Inspection                         │
+│ • Response Inspection                       │
+│ • Jailbreak Detection                       │
+│ • Prompt Injection Detection                │
+├─────────────────────────────────────────────┤
+│ Output                                      │
+│ Safe Prompt                                 │
+└─────────────────────────────────────────────┘
+
+Vertex AI:
+┌─────────────────────────────────────────────┐
+│ Vertex AI Gemini                            │
+├─────────────────────────────────────────────┤
+│ REST API                                    │
+│ Generative AI API                           │
+├─────────────────────────────────────────────┤
+│ Methods                                     │
+│ countTokens()                               │
+│ generateContent()                           │
+├─────────────────────────────────────────────┤
+│ Input                                       │
+│ Grounded Prompt                             │
+├─────────────────────────────────────────────┤
+│ Output                                      │
+│ Structured JSON                             │
+└─────────────────────────────────────────────┘
+
+
+Example 5 — AI Orchestrator:
+┌──────────────────────────────────────────────────────────────┐
+│ AI Orchestrator                                              │
+├──────────────────────────────────────────────────────────────┤
+│ Purpose                                                      │
+│ Execute AI Workflow                                          │
+├──────────────────────────────────────────────────────────────┤
+│ Framework                                                    │
+│ LangGraph                                                    │
+│ Google ADK                                                   │
+│ OpenAI Agents SDK                                            │
+├──────────────────────────────────────────────────────────────┤
+│ Methods                                                      │
+│ plan()                                                       │
+│ dispatch()                                                   │
+│ checkpoint()                                                 │
+│ resume()                                                     │
+├──────────────────────────────────────────────────────────────┤
+│ Uses                                                         │
+│ Redis                                                        │
+│ Memory                                                       │
+│ Semantic Cache                                               │
+│ Policy Engine                                                │
+├──────────────────────────────────────────────────────────────┤
+│ Output                                                       │
+│ Execution Plan                                               │
+└──────────────────────────────────────────────────────────────┘
+
+
+Example 6 — Log Analysis Agent:
+┌──────────────────────────────────────────────────────────────┐
+│ Log Analysis Agent                                           │
+├──────────────────────────────────────────────────────────────┤
+│ Purpose                                                      │
+│ Analyze Production Logs                                      │
+├──────────────────────────────────────────────────────────────┤
+│ GCP Service                                                  │
+│ Cloud Logging                                                │
+├──────────────────────────────────────────────────────────────┤
+│ Google API                                                   │
+│ Cloud Logging API                                            │
+├──────────────────────────────────────────────────────────────┤
+│ REST Methods                                                 │
+│ entries.list()                                               │
+├──────────────────────────────────────────────────────────────┤
+│ Processing                                                   │
+│ Retrieve Logs                                                │
+│ Parse Errors                                                 │
+│ Detect Failure Pattern                                       │
+│ Produce Log Insights                                         │
+├──────────────────────────────────────────────────────────────┤
+│ Output                                                       │
+│ Structured Log Insights                                      │
+└──────────────────────────────────────────────────────────────┘
+
+
+Example 7 — Vertex AI Gemini:
+┌──────────────────────────────────────────────────────────────┐
+│ Vertex AI Gemini                                             │
+├──────────────────────────────────────────────────────────────┤
+│ Purpose                                                      │
+│ LLM Reasoning Engine                                         │
+├──────────────────────────────────────────────────────────────┤
+│ GCP Service                                                  │
+│ Vertex AI                                                    │
+├──────────────────────────────────────────────────────────────┤
+│ Google APIs                                                  │
+│ Generative AI API                                            │
+├──────────────────────────────────────────────────────────────┤
+│ REST Methods                                                 │
+│ countTokens()                                                │
+│ generateContent()                                            │
+│ streamGenerateContent()                                      │
+├──────────────────────────────────────────────────────────────┤
+│ Features                                                     │
+│ Function Calling                                             │
+│ Structured Output                                            │
+│ JSON Mode                                                    │
+│ Grounding                                                    │
+├──────────────────────────────────────────────────────────────┤
+│ Input                                                        │
+│ Grounded Prompt                                              │
+├──────────────────────────────────────────────────────────────┤
+│ Output                                                       │
+│ Structured JSON Response                                     │
+└──────────────────────────────────────────────────────────────┘

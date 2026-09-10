@@ -1,0 +1,310 @@
+Chapter 3.21:
+Runtime Step 16 – Execute AI Models Through the Model Adapter:
+Abstracting LLM Providers While Maintaining Enterprise Governance and Observability
+
+Architecture Principle:
+The Enterprise Application Layer must never depend directly on a specific LLM provider or SDK. All model interactions must be mediated through a Model Adapter that provides a provider-agnostic interface while enforcing governance, resilience, and observability.
+
+The Model Adapter is the enterprise abstraction that isolates the application core from vendor-specific AI services.
+
+Introduction:
+
+The Agent Runtime has completed its reasoning.
+
+It has:
+
+Determined the objective.
+Built the execution plan.
+Retrieved required knowledge.
+Invoked enterprise tools.
+Constructed the final prompt.
+
+The next step is to obtain intelligence from an AI model.
+
+However, the Agent Runtime should never directly invoke:
+
+Vertex AI
+OpenAI
+Anthropic
+Azure OpenAI
+Amazon Bedrock
+Gemini APIs
+
+Doing so would tightly couple business logic to a specific AI provider.
+
+Instead, the Agent Runtime delegates model execution to the Model Adapter.
+
+Runtime Position:
+Agent Runtime
+        │
+        ▼
+Model Adapter
+        │
+        ├── Vertex AI Adapter
+        ├── OpenAI Adapter
+        ├── Anthropic Adapter
+        ├── Azure OpenAI Adapter
+        └── Bedrock Adapter
+        
+The Model Adapter is the only component responsible for communicating with external AI providers.
+
+Responsibilities:
+
+The Model Adapter is responsible for:
+
+Selecting the provider implementation.
+Translating enterprise requests into provider-specific formats.
+Managing authentication.
+Executing model inference.
+Supporting streaming and non-streaming responses.
+Handling retries and failover.
+Recording AI metrics.
+Propagating distributed tracing.
+Normalizing provider responses.
+
+It is not responsible for:
+
+Business workflow.
+Agent reasoning.
+Prompt engineering decisions.
+Policy resolution.
+Tool execution.
+
+Runtime Sequence:
+Receive ModelRequest
+        │
+        ▼
+Read RequestContext
+        │
+        ▼
+Extract ObservabilityContext
+        │
+        ▼
+Create Model Adapter Span
+        │
+        ▼
+Validate Model Request
+        │
+        ▼
+Resolve Provider
+        │
+        ▼
+Translate Request
+        │
+        ▼
+Inject Trace Context
+        │
+        ▼
+Invoke AI Provider
+        │
+        ▼
+Normalize Response
+        │
+        ▼
+Return ModelResult
+
+
+Step 1 – Receive the Model Request:
+
+The Model Adapter receives:
+RequestContext
+
++
+
+ModelRequest
+The ModelRequest typically contains:
+
+Prompt
+System Instructions
+Temperature
+Top-P
+Maximum Tokens
+Streaming Preference
+Response Format
+Model Capability Requirements
+
+The RequestContext provides enterprise execution metadata.
+
+
+Step 2 – Extract the ObservabilityContext:
+
+The adapter retrieves the enterprise observability information.
+        
+RequestContext
+        │
+        ▼
+ObservabilityContext
+        │
+        ├── Trace ID
+        ├── Correlation ID
+        ├── Parent Span
+        └── Request ID        
+        
+        
+A dedicated child span is created for model execution.
+
+Step 3 – Create the Model Execution Span:
+Gateway Span
+      │
+Responsible AI Span
+      │
+AI Orchestrator Span
+      │
+Agent Runtime Span
+      │
+Model Adapter Span
+
+This span represents the complete interaction with the external AI provider.
+
+
+Step 4 – Resolve the AI Provider:
+
+The Model Adapter determines which provider should satisfy the request.
+
+Example routing considerations include:
+
+Required capabilities (text, vision, audio, embeddings)
+Enterprise policy restrictions
+Tenant preferences
+Cost optimization
+Geographic residency
+Availability and failover
+Latency objectives
+
+Example:      
+
+ModelRequest
+        │
+        ▼
+Provider Selection
+        │
+        ├── Vertex AI
+        ├── OpenAI
+        ├── Anthropic
+        └── Bedrock
+
+The calling application remains unaware of the chosen provider.  
+
+
+Step 5 – Translate the Enterprise Request:
+
+Each provider exposes different APIs and request formats.
+
+The Model Adapter converts the provider-independent ModelRequest into the provider's native request.
+
+Examples of provider-specific differences include:      
+Authentication mechanisms
+Request schemas
+Token parameter names
+Streaming protocols
+Tool-calling formats
+Safety configuration
+Response structures
+
+This translation is hidden from the application layer.
+
+
+Step 6 – Inject Trace Context:
+
+Before calling the external provider, the Model Adapter propagates the active trace context where supported.
+Current Span
+        │
+Inject Trace Context
+        │
+        ▼
+AI Provider
+
+If the provider supports OpenTelemetry or compatible propagation, the distributed trace continues.
+
+If not, the enterprise trace still records the outbound dependency and correlates the response using trace and request identifiers.
+
+Step 7 – Execute the Model:
+
+The Model Adapter performs the model invocation.
+
+Typical execution includes:
+
+Authentication
+Secure transport
+Streaming or synchronous inference
+Timeout enforcement
+Retry policies
+Provider failover
+Rate-limit handling
+
+These infrastructure concerns remain outside the application core.
+
+Step 8 – Normalize the Response:
+
+Each provider returns responses in its own format.
+
+The Model Adapter transforms these into a standardized enterprise response.
+ModelResult
+│
+├── Generated Content
+├── Finish Reason
+├── Token Usage
+├── Latency
+├── Safety Results
+├── Provider Metadata
+└── Diagnostics
+
+The Agent Runtime receives a consistent interface regardless of the underlying provider.
+
+
+Runtime Flow:
+Receive ModelRequest
+        │
+Read RequestContext
+        │
+Extract ObservabilityContext
+        │
+Create Model Span
+        │
+Resolve Provider
+        │
+Translate Request
+        │
+Inject Trace Context
+        │
+Invoke Provider
+        │
+Normalize Response
+        │
+Return ModelResult
+
+Model Adapter vs Agent Runtime:
+| Agent Runtime                               | Model Adapter                           |
+| ------------------------------------------- | --------------------------------------- |
+| Determines that model inference is required | Executes model inference                |
+| Constructs prompts                          | Translates requests to provider APIs    |
+| Coordinates execution                       | Communicates with external AI providers |
+| Interprets results                          | Normalizes provider responses           |
+| Remains provider-agnostic                   | Encapsulates provider-specific behavior |
+
+Technology Card:
+| Category            | Technology                                                 |
+| ------------------- | ---------------------------------------------------------- |
+| Provider Interfaces | Vertex AI, OpenAI, Anthropic, Azure OpenAI, Amazon Bedrock |
+| Integration Pattern | Adapter Pattern (Hexagonal Architecture)                   |
+| Resilience          | Retry, Timeout, Circuit Breaker, Provider Failover         |
+| Observability       | OpenTelemetry                                              |
+| Security            | Enterprise Identity, API Keys, OAuth, Workload Identity    |
+| Streaming           | Server-Sent Events (SSE), HTTP Streaming, gRPC Streams     |
+
+Runtime Card:
+| Stage      | Description                                        |
+| ---------- | -------------------------------------------------- |
+| Input      | `RequestContext` and `ModelRequest`                |
+| Processing | Resolve provider, invoke model, normalize response |
+| Output     | `ModelResult`                                      |
+
+Principal Architect Insight:
+
+One of the most common mistakes in enterprise AI platforms is embedding provider SDKs directly into business services or agent implementations. Over time, application code becomes tightly coupled to a single vendor, making provider migration, multi-provider strategies, and resilience extremely difficult.
+
+PD-HECA isolates all provider-specific concerns within the Model Adapter. The application communicates only through a provider-agnostic contract (ModelRequest and ModelResult), while the adapter manages authentication, request translation, routing, observability, retries, and response normalization. This approach allows organizations to adopt new AI providers, optimize costs, satisfy regulatory requirements, or implement failover strategies without changing the Enterprise Application Layer.
+
+Chapter Summary:
+
+In this chapter, we introduced the Model Adapter, the enterprise abstraction responsible for communicating with external AI providers. We demonstrated how it resolves the appropriate provider, translates enterprise requests into provider-specific formats, propagates observability, executes model inference, and returns a normalized response to the Agent Runtime. By encapsulating provider-specific behavior, the Model Adapter preserves the core principles of Hexagonal Architecture and enables a flexible, vendor-independent AI platform.

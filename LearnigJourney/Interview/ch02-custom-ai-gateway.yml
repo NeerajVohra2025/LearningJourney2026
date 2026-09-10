@@ -1,0 +1,1030 @@
+Chapter 3 – Enterprise AI Gateway:
+3.1 Executive Overview:
+Architecture Principle:
+The Enterprise AI Gateway is not an API Gateway replacement, not an AI Orchestrator, and not an LLM Adapter.
+It is the Enterprise Ingress Layer of the Policy-Driven Hexagonal Enterprise Clean Architecture (PD-HECA).
+Every AI request entering the enterprise platform must pass through this component before it is allowed to interact with any downstream AI services.
+
+3.2 Enterprise GenAI Platform:
+                                      Enterprise GenAI Platform
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                     Google Cloud Platform                                    │
+│                                                                                              │
+│  ServiceNow / Web / Mobile / APIs                                                            │
+│               │                                                                              │
+│               ▼                                                                              │
+│      Google API Gateway                                                                      │
+│               │                                                                              │
+│               ▼                                                                              │
+│ ┌─────────────────────────────────────────────────────────────────────────────────────────┐  │
+│ │                    Enterprise AI Gateway (PD-HECA Ingress Layer)                        │  │
+│ └───────────────────────────────────────┬─────────────────────────────────────────────────┘  │
+│                                         │                                                    │
+│                                         ▼                                                    │
+│                         Responsible AI Input Pipeline                                        │
+│                                         │                                                    │
+│                                         ▼                                                    │
+│                              AI Orchestrator                                                 │
+│                                         │                                                    │
+│                                         ▼                                                    │
+│                          Agent Runtime / Agent Framework                                     │
+│                                         │                                                    │
+│                                         ▼                                                    │
+│                               Vertex AI Adapter                                              │
+│                                         │                                                    │
+│                                         ▼                                                    │
+│                                  Vertex AI Gemini                                            │
+│                                         │                                                    │
+│                                         ▼                                                    │
+│                        Responsible AI Output Pipeline                                        │
+│                                         │                                                    │
+│                                         ▼                                                    │
+│                                ServiceNow Update                                             │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+Why does this component exist?:
+Before writing a single line of code, every architect should understand the intent.
+
+Without Enterprise AI Gateway
+
+ServiceNow
+
+↓
+
+Responsible AI Pipeline
+
+↓
+
+Gemini
+
+Problems:
+
+❌ No Enterprise Context
+
+❌ No Correlation ID
+
+❌ No Policy Resolution
+
+❌ No Security Context
+
+❌ No Tenant Resolution
+
+❌ No Standard Logging
+
+❌ No Distributed Tracing Initialization
+
+Instead:
+ServiceNow
+
+↓
+
+Google API Gateway
+
+↓
+
+Enterprise AI Gateway
+
+↓
+
+Responsible AI Pipeline
+
+🏛 Principal Architect Insight:
+┌──────────────────────────────────────────────────────┐
+│ Why does Enterprise AI Gateway exist?                │
+├──────────────────────────────────────────────────────┤
+│ Without this component every downstream service      │
+│ would need to implement:                             │
+│                                                      │
+│ • Authentication                                     │
+│ • Policy Resolution                                  │
+│ • Context Creation                                   │
+│ • Observability Initialization                       │
+│ • Tenant Resolution                                  │
+│ • Security Validation                                │
+│ • Standard Logging                                   │
+│ • Distributed Tracing                                │
+│                                                      │
+│ This creates duplicated code, inconsistent           │
+│ security, fragmented observability, and              │
+│ non-standard request processing.                     │
+│                                                      │
+│ The Enterprise AI Gateway centralizes these          │
+│ enterprise responsibilities exactly once.            │
+└──────────────────────────────────────────────────────┘
+
+
+3.3 Business Overview:
+┌──────────────────────────────────────────────┐
+│ Business Overview                            │
+├──────────────────────────────────────────────┤
+│ Component                                    │
+│ Enterprise AI Gateway                        │
+├──────────────────────────────────────────────┤
+│ Business Purpose                             │
+│ Enterprise AI Request Entry Point            │
+├──────────────────────────────────────────────┤
+│ Primary Owner                                │
+│ AI Platform Engineering Team                 │
+├──────────────────────────────────────────────┤
+│ Architecture Pattern                         │
+│ Policy-Driven Hexagonal                      │
+├──────────────────────────────────────────────┤
+│ Upstream Component                           │
+│ Google API Gateway                           │
+├──────────────────────────────────────────────┤
+│ Downstream Component                         │
+│ Responsible AI Input Pipeline                │
+└──────────────────────────────────────────────┘
+
+3.4 Architecture Position:
+┌──────────────────────────────────────────────┐
+│ Architecture Position                        │
+├──────────────────────────────────────────────┤
+│ Enterprise Layer                             │
+│ Presentation Layer                           │
+├──────────────────────────────────────────────┤
+│ Primary Responsibility                       │
+│ Enterprise Ingress                           │
+├──────────────────────────────────────────────┤
+│ PD-HECA Layer                                │
+│ Policy Enforcement                           │
+├──────────────────────────────────────────────┤
+│ Runtime                                      │
+│ Google Cloud Run                             │
+├──────────────────────────────────────────────┤
+│ Framework                                    │
+│ FastAPI                                      │
+└──────────────────────────────────────────────┘
+
+
+
+3.5 PD-HECA Layer Mapping:
+One of the biggest mistakes in enterprise AI platforms is that teams mix infrastructure, policy, business logic, and AI orchestration into one service.
+
+PD-HECA explicitly separates these concerns.
+
+
+                  Policy-Driven Hexagonal Enterprise Clean Architecture
+
+        ┌───────────────────────────────────────────────────────────────┐
+        │ Presentation Layer                                            │
+        │                                                               │
+        │  Enterprise AI Gateway                                        │
+        └───────────────────────────────┬───────────────────────────────┘
+                                        │
+                                        ▼
+        ┌───────────────────────────────────────────────────────────────┐
+        │ Policy Enforcement Layer                                      │
+        │                                                               │
+        │ Authentication │ Authorization │ Tenant │ AI Governance       │
+        └───────────────────────────────┬───────────────────────────────┘
+                                        │
+                                        ▼
+        ┌───────────────────────────────────────────────────────────────┐
+        │ Application Layer                                             │
+        │                                                               │
+        │ Responsible AI Input Pipeline                                 │
+        │ AI Orchestrator                                               │
+        └───────────────────────────────┬───────────────────────────────┘
+                                        │
+                                        ▼
+        ┌───────────────────────────────────────────────────────────────┐
+        │ Domain Layer                                                  │
+        │                                                               │
+        │ Enterprise Policies │ Domain Models │ Business Rules          │
+        └───────────────────────────────┬───────────────────────────────┘
+                                        │
+                                        ▼
+        ┌───────────────────────────────────────────────────────────────┐
+        │ Ports                                                         │
+        │                                                               │
+        │ LLM Port │ Policy Port │ Logging Port │ Storage Port          │
+        └───────────────────────────────┬───────────────────────────────┘
+                                        │
+                                        ▼
+        ┌───────────────────────────────────────────────────────────────┐
+        │ Adapters                                                      │
+        │                                                               │
+        │ Vertex AI │ Cloud Logging │ Secret Manager │ Cloud Storage    │
+        └───────────────────────────────────────────────────────────────┘
+
+
+🏛 Principal Architect Insight:
+
+┌──────────────────────────────────────────────┐
+│ Architectural Rule #1                        │
+├──────────────────────────────────────────────┤
+│ Enterprise AI Gateway NEVER:                 │
+│                                              │
+│ ✗ Calls Vertex AI                            │
+│ ✗ Executes AI Agents                         │
+│ ✗ Performs Prompt Engineering                │
+│ ✗ Runs RAG                                   │
+│ ✗ Executes Business Logic                    │
+│                                              │
+│ It only establishes the enterprise           │
+│ execution contract before forwarding         │
+│ the request.                                 │
+└──────────────────────────────────────────────┘
+
+
+
+Chapter 3.6 – Enterprise Contracts:
+What is an Enterprise Contract?
+
+An Enterprise Contract defines the minimum guaranteed information that every downstream component will receive.
+
+Without this contract:
+
+Every service parses JWTs differently.
+Every service creates different Correlation IDs.
+Every service logs differently.
+Every service implements different security.
+Every service resolves tenant information differently.
+Every service creates different trace hierarchies.
+
+Result:
+
+❌ Platform inconsistency
+
+❌ Duplicate code
+
+❌ Security gaps
+
+❌ Broken observability
+
+❌ Difficult debugging
+
+
+🏛 Principal Architect Insight:
+
+┌──────────────────────────────────────────────┐
+│ Architecture Principle                       │
+├──────────────────────────────────────────────┤
+│ Downstream components should never           │
+│ recreate enterprise context.                 │
+│                                              │
+│ Enterprise AI Gateway creates it once.       │
+│                                              │
+│ Every downstream component consumes          │
+│ the same contract.                           │
+└──────────────────────────────────────────────┘
+
+Enterprise Request Contract:
+
+                 Enterprise Request Contract
+
+             Google API Gateway
+                      │
+                      ▼
+        Enterprise AI Gateway
+                      │
+      Creates Enterprise Contract
+                      │
+                      ▼
+        Responsible AI Input Pipeline
+                      │
+                      ▼
+            AI Orchestrator
+                      │
+                      ▼
+             Agent Runtime
+                      │
+                      ▼
+           Vertex AI Adapter
+
+Component Identity Card:
+┌──────────────────────────────────────────────┐
+│ Component Identity                           │
+├──────────────────────────────────────────────┤
+│ Component                                    │
+│ Enterprise AI Gateway                        │
+├──────────────────────────────────────────────┤
+│ Enterprise Capability                        │
+│ Enterprise Request Initialization            │
+├──────────────────────────────────────────────┤
+│ Enterprise Contract                          │
+│ RequestContext                               │
+├──────────────────────────────────────────────┤
+│ Contract Owner                               │
+│ Enterprise AI Gateway                        │
+├──────────────────────────────────────────────┤
+│ Contract Consumers                           │
+│ All downstream platform services             │
+└──────────────────────────────────────────────┘
+
+Enterprise Contract Stack:
+Instead of treating RequestContext as one large object, PD-HECA defines it as a composition of specialized contracts.
+
+                    RequestContext
+                          │
+        ┌─────────────────┼──────────────────┐
+        │                 │                  │
+        ▼                 ▼                  ▼
+
+Observability      Execution        Security
+Context            Context          Context
+
+        │                 │                  │
+        └─────────────────┼──────────────────┘
+                          │
+                          ▼
+
+                   PolicyContext
+                          │
+                          ▼
+
+                   RequestContext
+
+
+
+🏛 Principal Architect Rule:
+
+┌──────────────────────────────────────────────┐
+│ Architecture Rule #2                         │
+├──────────────────────────────────────────────┤
+│ RequestContext is NOT another context.       │
+│                                              │
+│ It is an Enterprise Aggregate that           │
+│ encapsulates multiple specialized            │
+│ contexts behind one contract.                │
+└──────────────────────────────────────────────┘
+
+
+
+Enterprise Context Ownership:
+Instead of wide tables, we use compact implementation cards.
+
+ObservabilityContext:
+┌──────────────────────────────────────────────┐
+│ Context Identity                             │
+├──────────────────────────────────────────────┤
+│ Context                                      │
+│ ObservabilityContext                         │
+├──────────────────────────────────────────────┤
+│ Owner                                        │
+│ Observability Framework                      │
+├──────────────────────────────────────────────┤
+│ Created By                                   │
+│ Enterprise AI Gateway                        │
+├──────────────────────────────────────────────┤
+│ Updated By                                   │
+│ All downstream components                    │
+├──────────────────────────────────────────────┤
+│ Consumed By                                  │
+│ Logging • Tracing • Metrics                  │
+└──────────────────────────────────────────────┘
+
+
+ExecutionContext:
+┌──────────────────────────────────────────────┐
+│ Context Identity                             │
+├──────────────────────────────────────────────┤
+│ Context                                      │
+│ ExecutionContext                             │
+├──────────────────────────────────────────────┤
+│ Owner                                        │
+│ Platform Runtime                             │
+├──────────────────────────────────────────────┤
+│ Created By                                   │
+│ Enterprise AI Gateway                        │
+├──────────────────────────────────────────────┤
+│ Consumed By                                  │
+│ Entire Platform                              │
+└──────────────────────────────────────────────┘
+
+
+SecurityContext:
+┌──────────────────────────────────────────────┐
+│ Context Identity                             │
+├──────────────────────────────────────────────┤
+│ Context                                      │
+│ SecurityContext                              │
+├──────────────────────────────────────────────┤
+│ Owner                                        │
+│ Security Framework                           │
+├──────────────────────────────────────────────┤
+│ Created By                                   │
+│ Enterprise AI Gateway                        │
+├──────────────────────────────────────────────┤
+│ Immutable                                    │
+│ Yes                                          │
+├──────────────────────────────────────────────┤
+│ Consumed By                                  │
+│ Policy Engine                                │
+└──────────────────────────────────────────────┘
+
+Enterprise Contract Lifecycle:
+
+               Google API Gateway
+                        │
+                        ▼
+             Enterprise AI Gateway
+                        │
+          Create Specialized Contexts
+                        │
+                        ▼
+         Aggregate into RequestContext
+                        │
+                        ▼
+       Propagate Enterprise Contract
+                        │
+                        ▼
+      Downstream Components Consume
+
+
+🏛 Principal Architect Insight:
+┌──────────────────────────────────────────────┐
+│ Why this design?                             │
+├──────────────────────────────────────────────┤
+│ Specialized contexts evolve independently.   │
+│                                              │
+│ The RequestContext remains the stable        │
+│ enterprise contract across the platform.     │
+│                                              │
+│ This minimizes coupling and enables          │
+│ platform evolution without breaking          │
+│ downstream services.                         │
+└──────────────────────────────────────────────┘
+
+🏛 Principal Architect Insight:
+
+┌──────────────────────────────────────────────┐
+│ Enterprise Rule #3                           │
+├──────────────────────────────────────────────┤
+│ Data Contracts are immutable.                │
+│                                              │
+│ Implementations are replaceable.             │
+│                                              │
+│ The Canonical Data Model is the              │
+│ Enterprise Single Source of Truth (SSOT).    │
+└──────────────────────────────────────────────┘
+
+
+ECDM Hierarchy:
+                     RequestContext
+                           │
+     ┌──────────────┬───────────────┬──────────────┐
+     ▼              ▼               ▼              ▼
+
+Observability   Execution      Security      Policy
+Context         Context         Context       Context
+
+                           │
+                           ▼
+
+                     BusinessContext
+
+                           │
+                           ▼
+
+                    AIContext (later)
+                    
+Notice something new.
+I intentionally added BusinessContext.                    
+
+Why BusinessContext?:
+Most AI platforms mix business information into ExecutionContext.
+That is a design smell.
+For example
+Incident Number
+
+Customer ID
+
+Claim Number
+
+Order Number
+
+These are not execution data.
+They belong to the business domain.
+Therefore
+                    
+                    
+ExecutionContext:
+ONLY
+Execution Metadata
+
+while
+BusinessContext:
+
+ONLY
+
+Business Information
+
+This separation makes the architecture cleaner and allows the same platform to support multiple business domains without changing the execution model.
+
+Enterprise Context Dependency
+                RequestContext
+                       │
+ ┌─────────────┬──────────────┬───────────────┐
+ │             │              │               │
+ ▼             ▼              ▼               ▼
+
+Observability Execution     Security       Policy
+
+                       │
+                       ▼
+
+                 BusinessContext
+
+                       │
+                       ▼
+
+                   AIContext
+
+Each context has one responsibility.
+
+No overlap.
+
+No duplication.
+
+
+Context Identity Card:
+ObservabilityContext:
+
+┌──────────────────────────────────────┐
+│ Context Identity                     │
+├──────────────────────────────────────┤
+│ Name                                 │
+│ ObservabilityContext                 │
+├──────────────────────────────────────┤
+│ Responsibility                       │
+│ Distributed Observability            │
+├──────────────────────────────────────┤
+│ Owner                                │
+│ Observability Framework              │
+├──────────────────────────────────────┤
+│ Lifecycle                            │
+│ Entire Request                       │
+└──────────────────────────────────────┘
+
+
+ExecutionContext:
+┌──────────────────────────────────────┐
+│ Context Identity                     │
+├──────────────────────────────────────┤
+│ Name                                 │
+│ ExecutionContext                     │
+├──────────────────────────────────────┤
+│ Responsibility                       │
+│ Platform Runtime Metadata            │
+├──────────────────────────────────────┤
+│ Owner                                │
+│ Enterprise Runtime                   │
+├──────────────────────────────────────┤
+│ Lifecycle                            │
+│ Entire Request                       │
+└──────────────────────────────────────┘
+
+
+BusinessContext:
+┌──────────────────────────────────────┐
+│ Context Identity                     │
+├──────────────────────────────────────┤
+│ Name                                 │
+│ BusinessContext                      │
+├──────────────────────────────────────┤
+│ Responsibility                       │
+│ Business Metadata                    │
+├──────────────────────────────────────┤
+│ Owner                                │
+│ Calling Application                  │
+├──────────────────────────────────────┤
+│ Lifecycle                            │
+│ Business Transaction                 │
+└──────────────────────────────────────┘
+
+
+SecurityContext:
+┌──────────────────────────────────────┐
+│ Context Identity                     │
+├──────────────────────────────────────┤
+│ Name                                 │
+│ SecurityContext                      │
+├──────────────────────────────────────┤
+│ Responsibility                       │
+│ Enterprise Identity                  │
+├──────────────────────────────────────┤
+│ Owner                                │
+│ Enterprise Security                  │
+├──────────────────────────────────────┤
+│ Immutable                            │
+│ Yes                                  │
+└──────────────────────────────────────┘
+
+
+PolicyContext:
+┌──────────────────────────────────────┐
+│ Context Identity                     │
+├──────────────────────────────────────┤
+│ Name                                 │
+│ PolicyContext                        │
+├──────────────────────────────────────┤
+│ Responsibility                       │
+│ Enterprise AI Policies               │
+├──────────────────────────────────────┤
+│ Owner                                │
+│ Policy Engine                        │
+├──────────────────────────────────────┤
+│ Updated Throughout                   │
+│ Entire AI Lifecycle                  │
+└──────────────────────────────────────┘
+
+AIContext:
+┌──────────────────────────────────────┐
+│ Context Identity                     │
+├──────────────────────────────────────┤
+│ Name                                 │
+│ AIContext                            │
+├──────────────────────────────────────┤
+│ Responsibility                       │
+│ AI Execution Metadata                │
+├──────────────────────────────────────┤
+│ Owner                                │
+│ AI Orchestrator                      │
+├──────────────────────────────────────┤
+│ Created                              │
+│ After Policy Evaluation              │
+└──────────────────────────────────────┘
+
+
+🏛 Principal Architect Insight:
+
+┌──────────────────────────────────────────────┐
+│ Enterprise Rule #4                           │
+├──────────────────────────────────────────────┤
+│ Every Context has one owner.                 │
+│                                              │
+│ Every Context has one responsibility.        │
+│                                              │
+│ No Context duplicates another Context.       │
+│                                              │
+│ This guarantees low coupling and             │
+│ predictable platform evolution.              │
+└──────────────────────────────────────────────┘
+
+
+
+Enterprise AI Gateway
+│
+├── ObservabilityContext
+├── ExecutionContext
+├── SecurityContext
+├── PolicyContext
+└── BusinessContext
+        │
+        ▼
+Unified RequestContext
+
+Then, when the request reaches the AI Orchestrator, it enriches the contract by creating:
+
+AIContext
+which contains AI-specific metadata such as model selection, prompt version, token usage, conversation state, agent execution, tool calls, grounding, and evaluation metadata.
+
+This keeps the Enterprise layer completely independent of the AI execution layer, which is fully aligned with the Policy-Driven Hexagonal Enterprise Clean Architecture (PD-HECA) and results in a cleaner, more maintainable platform.
+
+
+
+Single Responsibility Matrix:
+Each context should have exactly one owner and one purpose.
+
+| Context              | Created By            | Purpose                       |
+| -------------------- | --------------------- | ----------------------------- |
+| ObservabilityContext | Enterprise AI Gateway | Tracing, logging, metrics     |
+| ExecutionContext     | Enterprise AI Gateway | Runtime execution metadata    |
+| SecurityContext      | Enterprise AI Gateway | Identity and authorization    |
+| PolicyContext        | Enterprise AI Gateway | Enterprise policy decisions   |
+| BusinessContext      | Enterprise AI Gateway | Business transaction metadata |
+| RequestContext       | Enterprise AI Gateway | Aggregate enterprise contract |
+| AIContext            | AI Orchestrator       | AI execution metadata         |
+This enforces a clear ownership model and prevents overlap
+
+Dependency Ownership Matrix:
+This answers who owns what across the platform.
+
+Chapter 3.10 – Runtime Lifecycle:
+
+
+
+########################################################################################################################################################
+3.2 Enterprise AI Gateway Responsibilities:
+
+┌─────────────────────────────────────────────────────────────┐
+│ Enterprise AI Gateway Responsibilities                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ Receive Authenticated Request                               │
+│                                                             │
+│ Validate Business Request                                   │
+│                                                             │
+│ Extract OpenTelemetry Context                               │
+│                                                             │
+│ Create Root Application Span                                │
+│                                                             │
+│ Build ObservabilityContext                                  │
+│                                                             │
+│ Build ExecutionContext                                      │
+│                                                             │
+│ Build SecurityContext                                       │
+│                                                             │
+│ Resolve PolicyContext                                       │
+│                                                             │
+│ Create RequestContext                                       │
+│                                                             │
+│ Structured Logging                                          │
+│                                                             │
+│ Inject Distributed Trace                                    │
+│                                                             │
+│ Inject Enterprise Headers                                   │
+│                                                             │
+│ Forward to Responsible AI Pipeline                          │
+└─────────────────────────────────────────────────────────────┘
+
+
+Component Classification:
+┌─────────────────────────────────────────────────────────────┐
+│ Enterprise AI Gateway                                       │
+├─────────────────────────────────────────────────────────────┤
+│ Component Type                                              │
+│ Enterprise Custom Component                                 │
+├─────────────────────────────────────────────────────────────┤
+│ Architecture Layer                                          │
+│ Policy-Driven Hexagonal Enterprise Clean Architecture       │
+├─────────────────────────────────────────────────────────────┤
+│ Layer                                                       │
+│ Presentation + Policy Enforcement                           │
+├─────────────────────────────────────────────────────────────┤
+│ Deployment                                                  │
+│ Cloud Run                                                   │
+├─────────────────────────────────────────────────────────────┤
+│ Runtime                                                     │
+│ Python 3.x                                                  │
+├─────────────────────────────────────────────────────────────┤
+│ Framework                                                   │
+│ FastAPI                                                     │
+├─────────────────────────────────────────────────────────────┤
+│ Responsibility                                              │
+│ Request Initialization                                      │
+└─────────────────────────────────────────────────────────────┘
+
+Google Service Matrix:
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Google Service Matrix                                                                        │
+├────────────────────┬────────────────────────────┬────────────────────────────────────────────┤
+│ Service            │ Purpose                    │ Primary SDK / Client                       │
+├────────────────────┼────────────────────────────┼────────────────────────────────────────────┤
+│ Cloud Run          │ Hosting                    │ Managed Runtime                            │
+│ Cloud Logging      │ Structured Logging         │ google.cloud.logging.Client                │
+│ Cloud Trace        │ Distributed Tracing        │ OpenTelemetry Exporter                     │
+│ Secret Manager     │ Configuration & Secrets    │ SecretManagerServiceClient                 │
+│ IAM                │ Authorization              │ Managed                                    │
+│ Cloud Monitoring   │ Metrics                    │ OpenTelemetry Metrics Exporter             │
+└────────────────────┴────────────────────────────┴────────────────────────────────────────────┘
+
+Google SDK Matrix:
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SDK                              │ Primary Classes                           │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ google-cloud-logging             │ Client                                    │
+│ google-cloud-secret-manager      │ SecretManagerServiceClient                │
+│ opentelemetry-api                │ trace                                     │
+│ opentelemetry-sdk                │ TracerProvider                            │
+│ opentelemetry-propagate          │ inject / extract                          │
+│ opentelemetry-exporter-gcp-trace │ CloudTraceSpanExporter                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Google APIs & Methods Matrix:
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Service            │ Class                              │ Primary Methods                            │
+├────────────────────┼────────────────────────────────────┼────────────────────────────────────────────┤
+│ OpenTelemetry      │ trace                              │ get_tracer()                               │
+│ OpenTelemetry      │ Tracer                             │ start_as_current_span()                    │
+│ OpenTelemetry      │ Span                               │ get_span_context()                         │
+│ OpenTelemetry      │ Context                            │ get_current()                              │
+│ Propagation        │ propagate                          │ extract()                                  │
+│ Propagation        │ propagate                          │ inject()                                   │
+│ Cloud Logging      │ Client                             │ logger()                                   │
+│ Cloud Logging      │ Logger                             │ log_struct()                               │
+│ Secret Manager     │ SecretManagerServiceClient         │ access_secret_version()                    │
+└────────────────────┴────────────────────────────────────┴────────────────────────────────────────────┘
+
+
+Chapter 3.2 — Request Lifecycle:
+                               HTTP Request
+                                     │
+                                     ▼
+                         Google API Gateway
+                                     │
+                    (Authentication Completed)
+                                     │
+                                     ▼
+                    Enterprise AI Gateway (Cloud Run)
+                                     │
+──────────────────────────────────────────────────────────────
+               Policy-Driven Enterprise Framework
+──────────────────────────────────────────────────────────────
+
+ 1. Receive HTTP Request
+             │
+             ▼
+ 2. Extract OpenTelemetry Context
+             │
+             ▼
+ 3. Create Root Application Span
+             │
+             ▼
+ 4. Build ObservabilityContext
+             │
+             ▼
+ 5. Build ExecutionContext
+             │
+             ▼
+ 6. Build SecurityContext
+             │
+             ▼
+ 7. Resolve PolicyContext
+             │
+             ▼
+ 8. Build Unified RequestContext
+             │
+             ▼
+ 9. Validate Request
+             │
+             ▼
+10. Structured Logging
+             │
+             ▼
+11. Inject Trace Context
+             │
+             ▼
+12. Inject Enterprise Headers
+             │
+             ▼
+13. Forward to Responsible AI Pipeline
+
+
+Step 1 — Receive HTTP Request:
+This is the first line of enterprise code.
+
+Before this point:
+
+Google API Gateway
+Google IAM
+OAuth
+OIDC
+JWT Validation
+TLS
+
+have already completed.
+
+Enterprise AI Gateway receives:
+POST /v1/incidents/analyze
+Authorization: Bearer xxxx
+traceparent: 00-4bf92f...
+Content-Type: application/json
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Step 1 – Receive HTTP Request                                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Purpose                                                                      │
+│ Receive authenticated request from Google API Gateway                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ GCP Service                                                                  │
+│ Cloud Run                                                                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Google Managed Component                                                     │
+│ Cloud Run HTTP Runtime                                                       │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Framework                                                                    │
+│ FastAPI                                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Python SDK                                                                   │
+│ fastapi                                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Python Class                                                                 │
+│ FastAPI                                                                      │
+│ Request                                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Primary Methods                                                              │
+│ @app.post()                                                                  │
+│ Request.headers                                                              │
+│ Request.body()                                                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Input                                                                        │
+│ HTTP Request                                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Output                                                                       │
+│ FastAPI Request Object                                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+Step 2 — Extract Distributed Trace Context:
+This is the first observability operation.
+
+Question:
+
+Who owns the Trace Context?
+
+Not Google.
+
+Not FastAPI.
+
+The OpenTelemetry Context Propagation API owns it.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Step 2 – Extract OpenTelemetry Context                                       │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Purpose                                                                      │
+│ Restore distributed trace context from incoming request                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ GCP Service                                                                  │
+│ None                                                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Google API                                                                   │
+│ None                                                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ OpenTelemetry SDK                                                            │
+│ opentelemetry-propagate                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Python Module                                                                │
+│ opentelemetry.propagate                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Class                                                                        │
+│ GlobalTextMapPropagator                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Method                                                                       │
+│ extract(headers)                                                             │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Input                                                                        │
+│ HTTP Headers                                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Output                                                                       │
+│ OpenTelemetry Context                                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ W3C Headers Read                                                             │
+│ traceparent                                                                  │
+│ tracestate                                                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+Step 3 — Create Root Application Span:
+This is where your application begins its trace.
+The Enterprise AI Gateway creates the first application-owned span.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Step 3 – Create Root Application Span                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Purpose                                                                      │
+│ Start root application span for Enterprise AI Gateway                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ GCP Backend                                                                  │
+│ Cloud Trace (via exporter)                                                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Google REST API                                                              │
+│ None directly from application code                                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ OpenTelemetry SDK                                                            │
+│ opentelemetry-api                                                            │
+│ opentelemetry-sdk                                                            │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Python Classes                                                               │
+│ trace                                                                        │
+│ Tracer                                                                       │
+│ Span                                                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Methods                                                                      │
+│ trace.get_tracer()                                                           │
+│ tracer.start_as_current_span()                                               │
+│ span.get_span_context()                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Creates                                                                      │
+│ Root Span                                                                    │
+│ Trace Context                                                                │
+│ Current Span                                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Export Destination                                                           │
+│ Google Cloud Trace                                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+Principal Architect Clarification:
+This is an important distinction that many teams get wrong.
+Your application does not call the Cloud Trace REST API to create spans.
+Instead:
+Application
+     │
+     ▼
+OpenTelemetry SDK
+     │
+     ▼
+Cloud Trace Exporter
+     │
+     ▼
+Google Cloud Trace
+
+The application is SDK-driven, while the exporter is responsible for communicating with Google Cloud Trace.

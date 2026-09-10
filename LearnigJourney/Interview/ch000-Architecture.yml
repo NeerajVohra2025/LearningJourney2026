@@ -1,0 +1,360 @@
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   DOMAIN 1 – EVENT SOURCES                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Monitoring Platforms
+(Cloud Monitoring / Splunk / Dynatrace / Datadog / AppDynamics)
+
+        │
+        ▼
+
+AI / Rule-based Anomaly Detection
+
+        │
+        ▼
+
+Event Created
+
+        │
+        ▼
+
+ServiceNow Incident Created
+(Incident Number, Priority, Assignment Group)
+
+        │
+        ▼
+ServiceNow Outbound Webhook
+(HTTPS POST)
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                               DOMAIN 2 – GCP SECURITY & ENTRY                                               │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Google Cloud API Gateway / Apigee
+
+        │
+        ├── JWT Validation
+        ├── OAuth Validation
+        ├── Rate Limiting
+        ├── Quota
+        ├── WAF
+        └── Routing
+
+        │
+        ▼
+
+Enterprise AI Gateway
+
+        │
+        ├── Correlation ID
+        ├── Trace ID
+        ├── Span ID
+        ├── Tenant ID
+        ├── Request ID
+        ├── Incident ID
+        ├── User Context
+        └── Context Propagation
+
+        │
+        ▼
+
+Zero Trust Security
+
+        │
+        ├── Policy Enforcement Point (PEP)
+        ├── Policy Decision Point (PDP)
+        ├── IAM
+        ├── RBAC
+        ├── ABAC
+        ├── Context Aware Access
+        └── Least Privilege
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              DOMAIN 3 – RESPONSIBLE AI INPUT                                                │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Responsible AI Input Pipeline
+
+        │
+
+        ├── Schema Validation
+
+        ├── Prompt Validation
+
+        ├── Prompt Injection Detection
+
+        ├── Jailbreak Detection
+
+        ├── Vertex AI Model Armor API
+
+        ├── Cloud DLP API
+
+        ├── PII Detection
+
+        ├── Prompt Normalization
+
+        ├── Token Optimization
+
+        ├── Context Enrichment
+
+        └── Risk Classification
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             DOMAIN 4 – AI ORCHESTRATION                                                     │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+AI Orchestrator
+(LangGraph / Google ADK / OpenAI Agents SDK)
+
+        │
+
+        ├── Workflow Planner
+
+        ├── Decision Engine
+
+        ├── Memory Manager
+
+        ├── Semantic Cache
+
+        ├── Session Context
+
+        └── Agent Dispatcher
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                               DOMAIN 5 – SPECIALIZED AGENTS                                                 │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+            ┌─────────────────────────────────────┐
+            │     Log Analysis Agent              │
+            └─────────────────────────────────────┘
+                        │
+                        ▼
+                  returns Log Insights
+                        │
+                        ▼
+                 AI Orchestrator
+                        │
+                        ▼
+            ┌─────────────────────────────────────┐
+            │     Evidence Agent                  │
+            └─────────────────────────────────────┘
+                        │
+                        ▼
+              MCP Tool Execution Layer
+                        │
+        ┌───────────────┼────────────────┬──────────────────────┐
+        ▼               ▼                ▼                      ▼
+ Cloud Logging API  Cloud Trace API  Cloud Monitoring API  ServiceNow API
+        ▼
+ Vertex AI Search
+        ▼
+ Runbooks
+        ▼
+ Historical Incidents
+        ▼
+ CMDB
+        ▼
+ GitHub
+        ▼
+ Deployment History
+        ▼
+ BigQuery
+                        │
+                        ▼
+         Evidence Aggregation & Correlation Engine
+                        │
+                        ▼
+                returns Evidence Package
+                        │
+                        ▼
+                  AI Orchestrator
+                        │
+                        ▼
+            ┌─────────────────────────────────────┐
+            │        RCA Agent                    │
+            └─────────────────────────────────────┘
+                        │
+                        ├── Memory
+                        ├── Evidence Package
+                        ├── Incident Context
+                        ├── Retrieved Knowledge
+                        └── Enterprise Policies
+                        │
+                        ▼
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                       DOMAIN 6 – KNOWLEDGE & VERTEX AI                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Grounding & Context Builder
+
+        │
+
+Vertex AI RAG Engine / Vertex AI Search
+
+        │
+
+Prompt Builder
+
+        │
+
+Vertex AI Gemini
+GenerateContent API
+
+        │
+
+Function Calling
+
+        │
+
+Structured JSON Output
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                       DOMAIN 7 – RESPONSIBLE AI OUTPUT                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Output Pipeline
+
+        │
+
+        ├── Grounding Validation
+
+        ├── Fact Validation
+
+        ├── Citation Generation
+
+        ├── Confidence Score
+
+        ├── Vertex AI Model Armor API
+
+        ├── Cloud DLP API
+
+        ├── Safety Policy Validation
+
+        ├── Human Approval (Optional)
+
+        └── Response Formatter
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                         DOMAIN 8 – BUSINESS ACTION                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+AI Orchestrator
+
+        │
+
+Decision Engine
+
+        │
+
+        ├── Incident Agent
+
+        │       ├── Update Incident
+        │       ├── RCA Report
+        │       ├── Work Notes
+        │       ├── Evidence
+        │       ├── Resolution
+        │       └── Assignment
+
+        │
+
+        └── Action Agent
+
+                ├── Restart Service
+
+                ├── Trigger Automation
+
+                ├── Notify Teams
+
+                ├── Create Change Request
+
+                └── Execute Runbook
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                  CROSS-CUTTING (APPLIES TO EVERY DOMAIN)                                                    │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+• OpenTelemetry
+• Cloud Logging
+• Cloud Monitoring
+• Cloud Trace
+• Cloud Audit Logs
+• Vertex AI Evaluation
+• Responsible AI Evaluation
+• Prompt Registry
+• Policy Engine
+• Secret Manager
+• Cloud KMS
+• IAM
+• Cost Monitoring
+• Token Usage
+• Latency
+• Governance Dashboard
+
+
+
+Google Vertex AI APIs and GCP Services:
+| Architecture Component | Google Cloud Service / API                                                       |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| Identity Federation    | Google Cloud Identity (optional), Workforce Identity Federation, or external IdP |
+| API Gateway            | Apigee X or API Gateway                                                          |
+| JWT Validation         | API Gateway / Apigee JWT policies                                                |
+| Policy Engine          | Custom PDP, Open Policy Agent (OPA), or IAM Conditions                           |
+| Prompt Protection      | Vertex AI Model Armor API                                                        |
+| PII Detection          | Cloud DLP API                                                                    |
+| Orchestrator           | LangGraph, Google ADK, or OpenAI Agents SDK running on Cloud Run / GKE           |
+| Semantic Cache         | Memorystore (Redis) or Vertex AI Context Cache where applicable                  |
+| Memory Store           | Redis, Firestore, AlloyDB, or Spanner                                            |
+| Tool Layer             | MCP servers hosted on Cloud Run or GKE                                           |
+| Log Retrieval          | Cloud Logging API                                                                |
+| Trace Retrieval        | Cloud Trace API                                                                  |
+| Metrics                | Cloud Monitoring API                                                             |
+| Historical Data        | BigQuery API                                                                     |
+| Knowledge Base         | Vertex AI Search / Vector Search                                                 |
+| Grounding              | Vertex AI RAG Engine / Vertex AI Search                                          |
+| Prompt Builder         | Custom application layer                                                         |
+| LLM                    | Vertex AI Generative AI API (`generateContent`)                                  |
+| Function Calling       | Gemini function calling / tool calling                                           |
+| Output Protection      | Vertex AI Model Armor API                                                        |
+| Sensitive Data Check   | Cloud DLP API                                                                    |
+| Evaluation             | Vertex AI Evaluation service (or custom evaluation pipeline)                     |
+| Incident Update        | ServiceNow REST Table API / Incident API                                         |
+| Observability          | OpenTelemetry + Cloud Logging + Cloud Trace + Cloud Monitoring                   |
+| Audit                  | Cloud Audit Logs                                                                 |
+                  
+                  
+                  
+| Layer        | Component        | GCP Service       | API               | Method(s)                                         | Input           | Output                |
+| ------------ | ---------------- | ----------------- | ----------------- | ------------------------------------------------- | --------------- | --------------------- |
+| Security     | API Gateway      | Apigee X          | API Gateway       | JWT Verify Policy                                 | OAuth Token     | Authenticated Request |
+| Input        | DLP              | Cloud DLP         | DLP API           | `projects.locations.content.inspect`              | Prompt          | Masked Prompt         |
+| Input        | Model Armor      | Vertex AI         | Model Armor API   | `sanitizeUserPrompt` / prompt inspection endpoint | Prompt          | Sanitized Prompt      |
+| Input        | Token Count      | Vertex AI         | Generative AI API | `countTokens`                                     | Prompt          | Token Count           |
+| Input        | Context Manager  | Cloud Run         | Internal          | `createExecutionContext()`                        | Request         | Execution Context     |
+| Orchestrator | Planner          | Cloud Run / GKE   | Internal          | `plan()`                                          | Incident        | Execution Plan        |
+| Memory       | Redis            | Memorystore       | Redis API         | `GET` / `SET`                                     | Context         | Cached Context        |
+| Cache        | Semantic Cache   | Memorystore       | Redis API         | Similarity Lookup                                 | Prompt          | Cache Hit/Miss        |
+| Log Agent    | Cloud Logging    | Logging API       | `entries.list`    | Filter                                            | Log Entries     |                       |
+| Evidence     | Vertex AI Search | Vertex AI Search  | Search API        | `search()`                                        | Query           | Documents             |
+| Knowledge    | BigQuery         | BigQuery API      | Jobs API          | Query                                             | Historical Data |                       |
+| LLM          | Vertex AI Gemini | Generative AI API | `generateContent` | Prompt                                            | RCA             |                       |
+| Output       | Model Armor      | Vertex AI         | Model Armor API   | output inspection endpoint                        | Response        | Validated Response    |
+| Output       | DLP              | Cloud DLP         | DLP API           | `projects.locations.content.inspect`              | Response        | Safe Response         |
+| ServiceNow   | Incident Update  | ServiceNow        | Table API         | PATCH Incident                                    | RCA             | Updated Incident      |
+                  

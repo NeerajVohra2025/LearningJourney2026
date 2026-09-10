@@ -1,0 +1,123 @@
+Part III – Production Implementation:
+Mapping PD-HECA to Google Cloud Managed Services
+Architecture Principle:
+
+A production-ready Enterprise AI Platform should leverage Google Cloud managed services wherever possible while ensuring that business logic remains independent of cloud-specific SDKs and implementation details.
+
+PD-HECA is not designed to replace Google Cloud services. Instead, it orchestrates and integrates Google Cloud's managed AI, security, networking, observability, and deployment services into a cohesive enterprise architecture.
+
+The objective is to combine the operational excellence of Google Cloud with the architectural discipline of Hexagonal Architecture and Clean Architecture.
+
+Introduction:
+
+The previous chapters established the logical architecture and runtime behavior of the Enterprise AI Platform.
+
+We explored:
+
+Infrastructure Layer
+Enterprise Ingress Layer
+Enterprise Application Layer
+Enterprise Domain Layer
+Enterprise AI Services Layer
+Enterprise Integration Layer
+Infrastructure Adapters
+
+We also followed a complete request lifecycle from the Google API Gateway to the Enterprise AI Gateway, through AI orchestration and model execution, and back to the client.
+
+The next step is to transform this logical architecture into a production-ready implementation on Google Cloud.
+
+Unlike many architecture guides that remain technology-neutral, this implementation embraces Google Cloud's managed services. The platform uses Google Cloud capabilities for networking, identity, security, AI, observability, deployment, and operations while preserving a clean separation between business logic and infrastructure.
+
+
+Why Google Cloud Managed Services?:
+Enterprise AI platforms are expected to be:
+
+Highly available
+Secure by default
+Observable
+Scalable
+Cost-efficient
+Operationally simple
+Governed
+
+Building these capabilities from scratch increases complexity and operational risk.
+
+Google Cloud provides managed services that address these concerns, allowing development teams to focus on delivering business capabilities rather than maintaining undifferentiated infrastructure.
+
+PD-HECA uses these managed services as platform capabilities while keeping the Enterprise Application Layer independent of provider-specific implementation details.
+
+Implementation Philosophy:
+
+PD-HECA follows a Cloud-Native, Managed Services First philosophy.
+
+The platform is built on three complementary principles:
+
+| Principle                       | Description                                                                                                                                              |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Managed Services First**      | Use Google Cloud managed services for networking, AI, security, deployment, storage, and observability whenever appropriate.                             |
+| **Business Logic Independence** | Business workflows, orchestration, and domain logic remain independent of Google Cloud SDKs and APIs.                                                    |
+| **Ports and Adapters**          | Google Cloud services are accessed through infrastructure adapters, preserving clean architectural boundaries and enabling easier testing and evolution. |
+This approach delivers the operational advantages of Google Cloud without coupling the application core to specific implementation technologies.
+
+
+Mapping PD-HECA to Google Cloud:
+
+The following table illustrates how each major PD-HECA component is realized using Google Cloud services.
+| PD-HECA Component       | Google Cloud Implementation                                                   |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| External Entry Point    | Google Cloud External HTTP(S) Load Balancer                                   |
+| API Management          | Google API Gateway                                                            |
+| Edge Security           | Cloud Armor                                                                   |
+| Enterprise AI Gateway   | FastAPI application deployed on Cloud Run or GKE                              |
+| Responsible AI Pipeline | Application services integrated with Vertex AI Model Armor and Cloud DLP      |
+| AI Orchestrator         | LangGraph or OpenAI Agents SDK running on Cloud Run or GKE                    |
+| Agent Runtime           | Cloud Run or GKE workloads                                                    |
+| Tool Executor           | Enterprise adapters calling Google APIs, MCP servers, and enterprise services |
+| Model Adapter           | Vertex AI Generative AI APIs (Gemini)                                         |
+| Knowledge Retrieval     | Vertex AI RAG Engine or Vertex AI Search                                      |
+| Object Storage          | Cloud Storage                                                                 |
+| Secrets                 | Secret Manager                                                                |
+| Identity                | IAM and Workload Identity                                                     |
+| Container Images        | Artifact Registry                                                             |
+| Observability           | Cloud Logging, Cloud Monitoring, Cloud Trace, Error Reporting                 |
+| CI/CD                   | Cloud Build and Cloud Deploy                                                  |
+
+Each mapping reflects a deliberate architectural decision: use managed services for infrastructure capabilities while preserving the independence of the Enterprise Application Layer.
+
+Enterprise Platform Architecture:
+
+At a high level, the production platform is organized into four layers:
+Enterprise Clients
+        │
+        ▼
+Google Cloud Platform Services
+(Load Balancer, API Gateway, Cloud Armor, IAM)
+        │
+        ▼
+Enterprise AI Platform
+(PD-HECA Components)
+        │
+        ▼
+Google AI & Enterprise Services
+(Vertex AI, Cloud Storage, Secret Manager,
+Artifact Registry, Cloud Logging, Cloud Monitoring,
+Cloud Trace, Cloud DLP, Enterprise APIs)
+
+This layered model clearly separates infrastructure responsibilities from application responsibilities while leveraging Google Cloud's managed capabilities.
+
+Core Google Cloud Services:
+
+The production implementation relies on the following Google Cloud services:
+
+| Category            | Google Cloud Services                                                                   |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| Networking          | External HTTP(S) Load Balancer, API Gateway, Cloud Armor                                |
+| AI Platform         | Vertex AI, Gemini Models, Vertex AI Model Armor, Vertex AI RAG Engine, Vertex AI Search |
+| Identity & Security | IAM, Service Accounts, Workload Identity Federation, Secret Manager, Cloud KMS          |
+| Containers          | Cloud Run, Google Kubernetes Engine (GKE), Artifact Registry                            |
+| Storage             | Cloud Storage, AlloyDB or Cloud SQL (as required)                                       |
+| Integration         | Pub/Sub, Eventarc, Enterprise APIs, MCP Servers                                         |
+| Observability       | Cloud Logging, Cloud Monitoring, Cloud Trace, Error Reporting, Cloud Profiler           |
+| DevOps              | Cloud Build, Cloud Deploy, Terraform                                                    |
+
+

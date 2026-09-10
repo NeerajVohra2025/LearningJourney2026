@@ -1,0 +1,378 @@
+Chapter 2 – Runtime Flow:
+Card 2 – Google API Gateway:
+┌────────────────────────────────────────────────────────────────────────┐
+│ Card 2 – Google API Gateway                                            │
+├────────────────────────────────────────────────────────────────────────┤
+│ Purpose                                                                │
+│ Secure, authenticate, authorize and route external API requests        │
+├────────────────────────────────────────────────────────────────────────┤
+│ GCP Service                                                            │
+│ Google API Gateway                                                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ Deployment                                                             │
+│ Fully Managed Google Cloud Service                                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ Receives                                                               │
+│ • HTTPS POST Request                                                   │
+│ • Authorization: Bearer <Access Token>                                 │
+│ • Incident JSON Payload                                                │
+├────────────────────────────────────────────────────────────────────────┤
+│ Built-in Features                                                      │
+│ ✓ TLS/HTTPS Termination                                                │
+│ ✓ OAuth2 Authentication                                                │
+│ ✓ JWT / Access Token Validation                                        │
+│ ✓ IAM Authorization                                                    │
+│ ✓ API Key Validation (Optional)                                        │
+│ ✓ Quota Enforcement                                                    │
+│ ✓ Rate Limiting                                                        │
+│ ✓ Request Routing                                                      │
+│ ✓ Cloud Logging                                                        │
+│ ✓ Cloud Monitoring                                                     │
+│ ✓ Cloud Audit Logs                                                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ Google Services Used                                                   │
+│ • Google IAM                                                           │
+│ • Service Control API                                                  │
+│ • Service Management API                                               │
+│ • Cloud Logging                                                        │
+│ • Cloud Monitoring                                                     │
+│ • Cloud Audit Logs                                                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ Backend                                                                │
+│ Cloud Run (Enterprise AI Gateway)                                      │
+├────────────────────────────────────────────────────────────────────────┤
+│ Output                                                                 │
+│ Authenticated & Authorized Request                                     │
+└────────────────────────────────────────────────────────────────────────┘
+
+What actually happens internally?:
+Imagine ServiceNow sends:
+POST /v1/incidents
+
+Authorization: Bearer eyJhbGciOi...
+API Gateway performs these operations before your Cloud Run service is invoked.
+
+Step 1 — TLS Termination:
+ServiceNow
+
+        │ HTTPS
+
+        ▼
+
+Google Front End (GFE)
+
+        │
+
+TLS Handshake
+
+        ▼
+
+API Gateway
+
+Google component:
+
+Google Front End (GFE)
+
+Purpose
+
+Decrypt HTTPS traffic
+Verify TLS certificate
+Protect against common network attacks
+
+Your application never handles TLS directly.    
+
+Step 2 — Extract Authorization Header:
+Authorization: Bearer eyJhbGc...
+Gateway extracts:
+Bearer Token
+No validation yet.
+
+Step 3 — Authentication:
+Now Google verifies the token.
+
+Internally:
+Extract Token
+
+        │
+
+Validate Signature
+
+        │
+
+Validate Issuer
+
+        │
+
+Validate Audience
+
+        │
+
+Validate Expiration
+
+        │
+
+Validate Required Claims
+
+Google services involved:
+Google IAM
+
+Identity Infrastructure
+
+JWT Verification Engine
+
+
+The gateway ensures:
+✓ Signature is valid
+
+✓ Token not expired
+
+✓ Correct issuer
+
+✓ Correct audience
+
+✓ Token format valid
+
+If any check fails:
+401 Unauthorized
+
+is returned immediately.
+
+Cloud Run is never invoked.
+
+
+Step 4 — Authorization:
+Authentication asks:
+
+Who are you?
+
+Authorization asks:
+
+Are you allowed to invoke this API?
+
+Google IAM evaluates the caller's permissions.
+
+Example:
+Principal
+
+↓
+
+Google IAM Policy
+
+↓
+
+roles/run.invoker
+
+↓
+
+Allow
+
+If permission is missing
+403 Forbidden
+
+
+Step 5 — API Key Validation (Optional):
+Some organizations require:
+x-api-key
+Gateway validates
+API Key
+
+↓
+
+Google Service Control
+
+↓
+
+Valid?
+Failure
+403 Forbidden
+
+
+Step 6 — Quota Enforcement:
+
+Google checks
+Requests Per Minute
+
+↓
+
+Configured Quota
+
+↓
+
+Exceeded?
+If exceeded
+429 Too Many Requests
+
+
+Step 7 — Rate Limiting:
+Protects your AI platform.
+Example
+100 Requests
+
+↓
+
+1 Second
+
+↓
+
+Gateway
+If limit exceeded
+429 Too Many Requests
+
+
+Step 8 — Request Routing:
+Gateway determines
+
+POST /v1/incidents
+
+↓
+
+API Configuration
+
+↓
+
+Cloud Run Backend
+
+↓
+
+Enterprise AI Gateway:
+
+This routing is based on the deployed API configuration.
+
+Step 9 — Logging:
+Before forwarding the request, Google automatically records metadata.
+
+Services:
+
+Cloud Logging
+Cloud Monitoring
+Cloud Audit Logs
+
+Captured information includes:
+
+Timestamp
+HTTP Method
+URL
+Response Code
+Latency
+Request Size
+Response Size
+Authenticated Principal
+Trace Context (if present)
+
+No application code is required.
+
+End-to-End Internal Flow:
+
+                    HTTPS POST
+┌──────────────────────────────────────────────┐
+│           Google API Gateway                 │
+├──────────────────────────────────────────────┤
+│ 1. TLS Termination (Google Front End)        │
+│                │                             │
+│ 2. Extract Bearer Token                      │
+│                │                             │
+│ 3. Authenticate (IAM / JWT Validation)       │
+│                │                             │
+│ 4. IAM Authorization                         │
+│                │                             │
+│ 5. API Key Validation (Optional)             │
+│                │                             │
+│ 6. Quota Enforcement                         │
+│                │                             │
+│ 7. Rate Limiting                             │
+│                │                             │
+│ 8. Request Routing                           │
+│                │                             │
+│ 9. Cloud Logging / Monitoring / Audit Logs   │
+└────────────────┬─────────────────────────────┘
+                 │
+                 ▼
+      Cloud Run (Enterprise AI Gateway)
+
+
+What happens internally?:
+Imagine ServiceNow sends
+POST /v1/incidents
+
+Authorization:
+Bearer eyJhbGc...
+Google API Gateway internally does something conceptually like this:
+Receive Request
+
+↓
+
+Verify HTTPS
+
+↓
+
+Extract Authorization Header
+
+↓
+
+Validate Token
+
+↓
+
+Check IAM Permission
+
+↓
+
+Check API Configuration
+
+↓
+
+Check Quota
+
+↓
+
+Check Rate Limit
+
+↓
+
+Forward Request
+
+You don't implement those steps—they're built into the managed service.:
+What do you actually configure?
+API Configuration:
+
+paths:
+  /v1/incidents:
+  
+
+backend:
+   address:
+      https://enterprise-ai-gateway.run.app  
+      
+This tells API Gateway where to forward authenticated requests.
+
+
+Security:
+
+security:
+   OAuth2      
+   
+   or
+securityDefinitions:
+This configures how requests are authenticated.
+
+Quotas:
+1000 requests/minute
+
+Routing:
+POST /incident
+
+↓
+
+Cloud Run
+
+
+What code do we write?:
+Very little before Cloud Run.   
+
+@app.post("/incident")
+async def analyze_incident(request: IncidentRequest):
+
+    ...
+    
+This is the first line of your application.:
+Everything before that is Google's managed infrastructure.    

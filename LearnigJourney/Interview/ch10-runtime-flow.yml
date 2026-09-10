@@ -1,0 +1,151 @@
+Chapter 3.23:
+End-to-End Runtime Walkthrough
+Following a Real Enterprise AI Request from Start to Finish
+
+Architecture Principle:
+
+An enterprise architecture is fully understood only when its components, contexts, governance, observability, and execution lifecycle are viewed as one continuous runtime journey rather than isolated building blocks.
+
+This chapter consolidates the previous seventeen runtime steps into a single enterprise scenario.
+
+Introduction:
+
+Throughout this chapter, we have examined each runtime component independently.
+
+We explored:
+
+Enterprise AI Gateway
+RequestContext
+Responsible AI Pipeline
+AI Orchestrator
+Agent Runtime
+Tool Executor
+Model Adapter
+
+Each component has a clearly defined responsibility.
+
+However, in a production system, these components never operate independently.
+
+They work together to execute a single business request.
+
+This chapter follows one realistic enterprise scenario from the moment the client sends an HTTP request until the final governed response is returned.
+
+
+Enterprise Scenario:
+
+Assume an Operations Engineer submits the following request:
+
+"Investigate why the Production Payment Service is failing and provide the root cause together with recommended remediation steps."
+
+The platform must:
+
+authenticate the user,
+enforce enterprise governance,
+retrieve operational knowledge,
+query monitoring tools,
+analyze incident history,
+reason across multiple AI agents,
+generate recommendations,
+validate the response,
+return a governed answer.
+
+
+High-Level Runtime Journey:
+Client
+   │
+   ▼
+Google Cloud External HTTP(S) Load Balancer
+   │
+   ▼
+Google API Gateway (or Apigee)
+   │
+   ▼
+Cloud Armor (if configured)
+   │
+   ▼
+Cloud Run / GKE Ingress
+   │
+   ▼
+Enterprise AI Gateway
+   │
+   ▼
+Responsible AI Pipeline
+   │
+   ▼
+AI Orchestrator
+   │
+   ▼
+...
+or, if using Istio:
+Client
+   │
+   ▼
+Google External HTTP(S) Load Balancer
+   │
+   ▼
+Google API Gateway
+   │
+   ▼
+GKE Ingress
+   │
+   ▼
+Istio Ingress Gateway
+   │
+   ▼
+Enterprise AI Gateway
+
+
+The responsibilities are different
+Google API Gateway (Infrastructure Layer):
+
+This is not your application.
+
+It handles:
+
+API publishing
+API Keys
+OAuth/JWT validation
+Rate limiting
+Quotas
+API Products
+Request routing
+CORS
+WAF integration
+Backend routing
+Basic logging
+Initial trace propagation (traceparent)
+Forwarding headers to your backend
+
+It does not know anything about:
+
+RequestContext
+BusinessContext
+PolicyContext
+AI Orchestrator
+Agents
+RAG
+Enterprise AI
+
+
+Enterprise AI Gateway (Application Layer):
+
+Only after the request reaches your application does the Enterprise AI Gateway begin.
+
+Its responsibilities are to:
+
+Receive the normalized HTTP request from API Gateway
+Read inbound headers (including traceparent, Authorization, X-Correlation-ID, etc.)
+Extract or continue the distributed trace
+Create the Root Application Span
+Build the ObservabilityContext
+Build the ExecutionContext
+Build the SecurityContext
+Resolve the PolicyContext
+Build the BusinessContext
+Assemble the immutable RequestContext
+Validate the RequestContext
+Forward it to the Responsible AI Pipeline
+
+This distinction is one of the key principles of PD-HECA:
+
+Google API Gateway is infrastructure. Enterprise AI Gateway is application.

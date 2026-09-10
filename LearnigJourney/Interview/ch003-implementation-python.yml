@@ -1,0 +1,448 @@
+Step 7.1 – Bootstrap the Enterprise AI Gateway Project using uv:
+Benefits of uv
+| Capability                              | Benefit                                                  |
+| --------------------------------------- | -------------------------------------------------------- |
+| High-performance dependency resolution  | Faster project setup and builds                          |
+| Built-in virtual environment management | No need for separate `venv` commands                     |
+| Lock file support                       | Reproducible builds across all environments              |
+| Cross-platform consistency              | Same workflow on Windows, Linux, and macOS               |
+| CI/CD friendly                          | Faster and deterministic pipeline execution              |
+| Modern Python workflow                  | Simplifies dependency management and project maintenance |
+
+mkdir enterprise-ai-gateway
+cd enterprise-ai-gateway
+uv init --package enterprise-ai-gateway
+
+Understanding the Generated Files:
+At this stage, each generated file has a specific purpose.
+| File / Directory             | Purpose                                                                                |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
+| `.gitignore`                 | Excludes generated files, virtual environments, and caches from source control.        |
+| `.python-version`            | Specifies the Python version used by the project.                                      |
+| `README.md`                  | Provides project documentation and onboarding information.                             |
+| `pyproject.toml`             | The central configuration file for project metadata, dependencies, and build settings. |
+| `src/enterprise_ai_gateway/` | Contains the Python package that will hold the Enterprise AI Gateway implementation.   |
+| `tests/`                     | Contains unit, integration, and end-to-end tests.                                      |
+
+The src layout is recommended for enterprise projects because it clearly separates source code from project configuration and reduces accidental import issues during development and testing.
+
+
+Why the Package Name Uses Underscores:
+Although the project directory is named enterprise-ai-gateway, the generated Python package is named enterprise_ai_gateway.
+This is intentional.
+Python package names cannot contain hyphens, so the project name is automatically converted to a valid Python package name using underscores.
+
+Project Name	Python Package
+enterprise-ai-gateway	enterprise_ai_gateway
+This convention aligns with Python packaging standards and should be used consistently throughout the project.
+
+Configure Project Metadata
+
+The first section describes the application.
+
+[project]
+name = "enterprise-ai-gateway"
+version = "0.1.0"
+description = "Enterprise AI Gateway for Policy-Driven Hexagonal Enterprise Clean Architecture (PD-HECA)"
+readme = "README.md"
+requires-python = ">=3.12"
+
+requirements.txt:
+
+#Web Framework
+fastapi
+uvicorn[standard]
+
+#Google Cloud
+google-cloud-aiplatform
+google-cloud-logging
+google-cloud-secret-manager
+google-cloud-storage
+google-cloud-pubsub
+
+
+# OpenTelemetry Core
+opentelemetry-api
+opentelemetry-sdk
+
+#Context Propagation These are required for continuing the parent trace received from Google API Gateway.
+opentelemetry-propagator-b3
+opentelemetry-propagator-jaeger
+
+
+#OTLP Export
+opentelemetry-exporter-otlp
+
+#FastAPI Instrumentation
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-asgi
+
+# HTTP Client Instrumentation
+opentelemetry-instrumentation-httpx
+
+# If you use requests anywhere:
+opentelemetry-instrumentation-requests
+
+#Structured Logging
+python-json-logger
+structlog
+
+#Configuration
+pydantic
+pydantic-settings
+
+#HTTP Client
+httpx
+
+#Dependency Injection
+dependency-injector
+
+uv add -r requirements.txt
+
+
+Chapter 7:
+Step 7.4 – Create the Policy-Driven Hexagonal Enterprise Project Structure
+Project Structure:
+enterprise-ai-gateway/
+│
+├── .env
+├── .gitignore
+├── .python-version
+├── pyproject.toml
+├── uv.lock
+├── README.md
+│
+├── config.toml
+│
+├── requirements.txt
+│
+├── src/
+│   └── enterprise_ai_gateway/
+│
+│       ├── bootstrap/
+│       │
+│       ├── core/
+│       │
+│       ├── ports/
+│       │
+│       ├── adapters/
+│       │
+│       ├── configuration/
+│       │
+│       ├── infrastructure/
+│       │
+│       ├── shared/
+│       │
+│       └── main.py
+│
+└── tests/
+
+
+Why This Structure?:
+
+The repository now mirrors the PD-HECA architecture.
+Instead of organizing code by frameworks or technologies, every directory has a well-defined architectural responsibility.
+| Directory         | Responsibility                                                                                                                                 |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bootstrap/`      | Application startup, dependency injection, FastAPI initialization, Google Cloud initialization, OpenTelemetry, Structured Logging              |
+| `core/`           | Enterprise business logic and orchestration, independent of frameworks and cloud SDKs                                                          |
+| `ports/`          | Interfaces (contracts) that define how the core communicates with external systems                                                             |
+| `adapters/`       | Implementations of the ports, integrating with Vertex AI, Google Cloud services, REST APIs, MCP servers, databases, and other external systems |
+| `configuration/`  | Application settings, configuration loading, and environment management                                                                        |
+| `infrastructure/` | Technical infrastructure such as tracing, logging, security, metrics, and cloud client factories                                               |
+| `shared/`         | Common constants, exceptions, utilities, and reusable models                                                                                   |
+
+Root Configuration Files:
+Several files reside at the project root because they apply to the entire application rather than a specific package.
+.env:
+
+Contains environment-specific values that should not be hardcoded in the application.
+
+Typical examples include:
+Google Cloud Project ID
+Vertex AI Location
+Environment Name
+Service Name
+Log Level
+API Keys (for local development only)
+
+The .env file should never be committed to source control.
+
+config.toml:
+
+Contains application configuration that is shared across environments and is not considered sensitive.
+
+Examples include:
+
+Default timeout values
+Retry policies
+Service metadata
+Feature flags
+Default model identifiers
+Observability settings
+
+Unlike .env, this file is typically version-controlled because it defines application behavior rather than secrets.
+
+pyproject.toml:
+
+The central configuration file for the Python project.
+
+It defines:
+
+Project metadata
+Python version
+Dependencies
+Build configuration
+Tool configuration
+
+It is the authoritative source for the project's dependency and packaging configuration.
+
+uv.lock:
+
+Records the exact versions of all installed dependencies, ensuring that every environment resolves the same package versions.
+
+requirements.txt:
+
+Contains organized dependency lists grouped by concern rather than a single large file.
+
+
+Principal Architect Insight:
+
+In a Policy-Driven Hexagonal Enterprise Clean Architecture, the repository itself should communicate the architecture. A developer opening the project for the first time should immediately recognize the separation between the application core, its ports, the external adapters, the bootstrap process, and the infrastructure concerns. This architectural alignment reduces cognitive load, reinforces dependency direction, and makes the codebase easier to evolve without violating the core design principles.
+
+Perfect. Now we move to the Bootstrap layer, because in a Policy-Driven Hexagonal Enterprise Clean Architecture (PD-HECA), everything starts from Bootstrap.
+The startup sequence should be:
+Application Starts
+        │
+        ▼
+Bootstrap
+        │
+        ├── Load .env
+        ├── Load config.toml
+        ├── Initialize Logging
+        ├── Initialize OpenTelemetry
+        ├── Initialize Google Cloud
+        ├── Initialize Vertex AI
+        ├── Build Dependency Injection Container
+        ├── Register Adapters
+        ├── Build FastAPI Application
+        └── Start Uvicorn
+        
+Notice that FastAPI is almost the last thing initialized, not the first.
+
+Chapter 7:
+Step 7.5 – Build the Bootstrap Layer:
+
+Architecture Principle:
+Bootstrap is the composition root of the application.
+Bootstrap is responsible for assembling the application.
+It creates every infrastructure component exactly once.
+It wires dependencies.
+It builds the Dependency Injection container.
+It never contains business logic.
+The Core never depends on Bootstrap.
+Bootstrap is responsible for assembling the Enterprise AI Gateway.
+
+Why Bootstrap?:
+Many applications place everything inside main.py.
+Example:
+app = FastAPI()
+logging.basicConfig(...)
+vertexai.init(...)
+tracer = ...
+app.include_router(...)
+
+
+This quickly becomes difficult to maintain.
+Instead, Bootstrap owns startup.
+main.py should only delegate to Bootstrap
+
+Bootstrap Responsibilities:
+Bootstrap is responsible for assembling the Enterprise AI Gateway.
+
+It performs the following tasks in order:
+   
+| Step | Responsibility                       |
+| ---- | ------------------------------------ |
+| 1    | Load `.env`                          |
+| 2    | Load `config.toml`                   |
+| 3    | Initialize Configuration             |
+| 4    | Initialize Structured Logging        |
+| 5    | Initialize OpenTelemetry             |
+| 6    | Initialize Google Cloud Clients      |
+| 7    | Initialize Vertex AI                 |
+| 8    | Build Dependency Injection Container |
+| 9    | Register Ports and Adapters          |
+| 10   | Build FastAPI Application            |
+| 11   | Register Middleware                  |
+| 12   | Register Exception Handlers          |
+| 13   | Register Health Endpoints            |
+| 14   | Start Uvicorn                        |
+
+
+Bootstrap Runtime:
+main.py
+      │
+      ▼
+Bootstrap
+      │
+      ├── Configuration
+      │
+      ├── Logging
+      │
+      ├── Tracing
+      │
+      ├── Google Cloud
+      │
+      ├── Vertex AI
+      │
+      ├── Dependency Injection
+      │
+      └── FastAPI  
+      
+Notice something important:
+
+Bootstrap creates infrastructure.
+
+It never creates:
+
+RequestContext
+BusinessContext
+Agent Runtime
+Tool Executor
+
+Those belong to runtime.     
+
+
+What Gets Created During Bootstrap?:
+
+The following are singleton services created once when the application starts:
+
+Configuration:
+Environment
+Project ID
+Region
+Service Name 
+
+Structured Logging:
+Google Cloud Logging Client
+Logger Factory
+JSON Formatter
+
+
+OpenTelemetry:
+Tracer Provider
+Resource
+Exporter
+Propagator
+
+
+Google Cloud:
+Secret Manager Client
+Cloud Storage Client
+Cloud Logging Client
+
+
+Vertex AI:
+Vertex AI Initialization
+Model Registry
+Default Region
+
+
+Dependency Injection:
+
+Registers:
+
+Configuration Service
+Logger Factory
+Tracer
+Vertex AI Client
+Cloud Clients
+Port Implementations
+
+
+FastAPI:
+
+Creates:
+
+Application
+Middleware
+Routes
+Health Endpoint
+
+
+What Bootstrap Does NOT Create:
+
+Bootstrap never creates request-scoped objects.
+
+The following are created only when an HTTP request arrives:
+
+Parent Trace Context
+Root Application Span
+Request Logger
+ObservabilityContext
+ExecutionContext
+SecurityContext
+PolicyContext
+BusinessContext
+RequestContext
+
+This separation keeps startup concerns and request processing concerns independent.
+
+Dependency Direction:
+                Bootstrap
+                     │
+                     ▼
+              Register Adapters
+                     │
+                     ▼
+                 Ports
+                     ▲
+                     │
+                  Core
+                  
+The Core knows only about Ports.:
+
+Bootstrap wires concrete Adapter implementations to those Ports during application startup.   
+
+Principal Architect Insight:
+
+A common anti-pattern is allowing main.py to become the application's composition root, configuration loader, infrastructure initializer, dependency container, and web server entry point all at once. In a Policy-Driven Hexagonal Enterprise Clean Architecture, those responsibilities belong to the Bootstrap layer. Bootstrap assembles the application exactly once at startup, while the Core remains completely unaware of infrastructure, frameworks, and cloud SDKs. This separation preserves the inward dependency rule, simplifies testing, and allows infrastructure to evolve without affecting business logic.  
+
+
+Before we continue:
+
+I recommend one architectural refinement that will make the rest of the implementation much cleaner.
+
+Instead of a generic bootstrap/ package, organize it around startup responsibilities:    
+
+
+bootstrap/
+│
+├── application/
+│   ├── builder.py          # Builds the FastAPI application
+│   ├── lifecycle.py        # Startup and shutdown events
+│   └── server.py           # Uvicorn entry point
+│
+├── configuration/
+│   ├── env_loader.py
+│   ├── toml_loader.py
+│   └── settings.py
+│
+├── observability/
+│   ├── logging.py
+│   ├── tracing.py
+│   └── metrics.py
+│
+├── cloud/
+│   ├── google.py
+│   ├── vertex_ai.py
+│   └── clients.py
+│
+└── container/
+    └── dependency_container.py
+    
+    
+    
+
+    

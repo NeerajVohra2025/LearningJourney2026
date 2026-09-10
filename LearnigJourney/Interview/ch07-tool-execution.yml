@@ -1,0 +1,358 @@
+Chapter 3.20:
+Runtime Step 15 – Execute Enterprise Tools Through the Tool Executor:
+Securely Invoking Enterprise Capabilities While Preserving Architectural Boundaries
+The architecture should be:
+Agent Runtime
+      │
+      ▼
+Tool Orchestrator (optional)
+      │
+      ▼
+Tool Executor
+      │
+      ▼
+MCP Client / REST Client / Database Adapter / Event Adapter
+The Tool Executor becomes the only component allowed to communicate with external capabilities.
+
+That gives you:
+
+centralized authorization
+centralized observability
+centralized retries
+centralized timeouts
+centralized auditing
+centralized error handling
+
+which is exactly what enterprise platforms need.
+
+
+Architecture Principle:
+
+AI agents should never communicate directly with enterprise systems. Every external capability must be invoked through the Tool Executor, which enforces security, governance, observability, and execution policies.
+
+The Tool Executor is the controlled gateway between AI execution and enterprise capabilities.
+
+
+Introduction:
+
+The Agent Runtime has completed its reasoning.
+
+It now understands:
+
+what action should be performed,
+which tool should execute,
+the required input,
+the expected output.
+
+However, the Agent Runtime should never directly invoke:
+
+REST APIs
+MCP Servers
+Databases
+Event Brokers
+SaaS Platforms
+Cloud SDKs
+
+Doing so would tightly couple agent logic to enterprise infrastructure.
+
+Instead, the Agent Runtime delegates execution to the Tool Executor.
+
+
+Runtime Position:
+AI Orchestrator
+        │
+        ▼
+Agent Runtime
+        │
+        ▼
+Tool Executor
+        │
+        ├── MCP Client
+        ├── REST Adapter
+        ├── GraphQL Adapter
+        ├── Database Adapter
+        ├── Event Adapter
+        └── Model Adapter
+The Tool Executor becomes the single execution boundary for external capabilities.
+Responsibilities:
+
+The Tool Executor is responsible for:
+
+validating tool requests,
+authorizing tool execution,
+resolving tool adapters,
+propagating observability,
+executing retries,
+enforcing timeouts,
+collecting execution metrics,
+handling failures,
+returning normalized responses.
+
+It is not responsible for:
+
+agent reasoning,
+workflow orchestration,
+prompt engineering,
+policy resolution.        
+
+Runtime Sequence:
+Receive Tool Request
+        │
+        ▼
+Read RequestContext
+        │
+        ▼
+Extract ObservabilityContext
+        │
+        ▼
+Create Tool Execution Span
+        │
+        ▼
+Validate Tool Request
+        │
+        ▼
+Authorize Tool
+        │
+        ▼
+Resolve Tool Adapter
+        │
+        ▼
+Inject Trace Context
+        │
+        ▼
+Execute Tool
+        │
+        ▼
+Normalize Response
+        │
+        ▼
+Return Result
+
+Notice that observability is established before any outbound communication occurs.
+Step 1 – Receive the Tool Request:
+
+The Tool Executor receives:
+RequestContext
+
++
+
+ToolRequest
+
+
+The ToolRequest contains:
+
+tool identifier,
+operation,
+parameters,
+execution options.
+
+The RequestContext provides:
+
+identity,
+policies,
+observability,
+business intent,
+execution metadata.
+
+Step 2 – Extract the ObservabilityContext:
+
+The Tool Executor retrieves the shared observability information.
+RequestContext
+        │
+        ▼
+ObservabilityContext
+        │
+        ├── Trace ID
+        ├── Correlation ID
+        ├── Parent Span
+        └── Request ID
+        
+This ensures the outbound operation remains part of the same distributed trace.       
+
+Step 3 – Create the Tool Execution Span:
+
+The Tool Executor creates its own child span. 
+Gateway Span
+      │
+Responsible AI Span
+      │
+AI Orchestrator Span
+      │
+Agent Runtime Span
+      │
+Tool Executor Span
+This span represents the complete lifecycle of the external operation.
+Step 4 – Validate the Tool Request
+
+Before execution, the Tool Executor validates:
+
+tool exists,
+required parameters,
+supported operation,
+parameter schema,
+execution constraints.
+
+Invalid requests fail before reaching external systems.
+
+
+Step 5 – Authorize the Tool:
+
+The Tool Executor evaluates the PolicyContext and SecurityContext.
+
+Typical checks include:
+
+Is this tool approved?
+Is the caller allowed to use it?
+Is the tenant permitted?
+Is this environment allowed?
+Are quota limits exceeded?
+
+Only authorized requests proceed.
+
+
+Step 6 – Resolve the Tool Adapter:
+
+The Tool Executor selects the appropriate adapter.
+
+Examples include:
+CRM Search
+
+↓
+
+REST Adapter
+
+Knowledge Search
+
+↓
+
+MCP Client
+
+Ticket Creation
+
+↓
+
+ServiceNow Adapter
+
+Customer Lookup
+
+↓
+
+Database Adapter
+
+The agent never knows how the tool is implemented.
+
+Step 7 – Inject Trace Context:
+
+Before making an outbound call, the Tool Executor propagates the active trace.
+
+Current Span
+        │
+Inject traceparent
+Inject tracestate
+Inject baggage (optional)
+        │
+        ▼
+External Tool
+
+If the external system supports OpenTelemetry, it continues the same distributed trace.
+
+If it does not, the correlation identifiers still provide end-to-end operational visibility.
+
+
+Step 8 – Execute the Tool:
+The adapter performs the actual interaction.
+
+Examples:
+
+REST API
+MCP Server
+gRPC Service
+Database Query
+Kafka Publish
+Event Hub
+Cloud Storage
+SaaS Platform
+
+The Tool Executor remains responsible for:
+
+retries,
+circuit breakers,
+timeout management,
+response normalization.
+
+Step 9 – Normalize the Response:
+
+Regardless of the underlying protocol, the Tool Executor returns a standardized response.
+ToolResult
+│
+├── Success
+├── Payload
+├── Metadata
+├── Execution Time
+├── Error
+└── Diagnostics
+
+The Agent Runtime receives a consistent contract regardless of the external technology.
+
+Runtime Flow:
+Receive ToolRequest
+        │
+Read RequestContext
+        │
+Extract ObservabilityContext
+        │
+Create Tool Span
+        │
+Authorize Tool
+        │
+Resolve Adapter
+        │
+Inject Trace Context
+        │
+Execute Tool
+        │
+Normalize Result
+        │
+Return ToolResult
+
+Tool Executor vs Agent Runtime:
+| Agent Runtime                                       | Tool Executor                    |
+| --------------------------------------------------- | -------------------------------- |
+| Decides a tool is needed                            | Executes the tool                |
+| Performs reasoning                                  | Performs external communication  |
+| Maintains agent state                               | Manages outbound execution       |
+| Delegates work                                      | Returns normalized results       |
+| Never communicates directly with enterprise systems | Owns all enterprise integrations |
+
+Technology Card:
+| Category              | Technology                                        |
+| --------------------- | ------------------------------------------------- |
+| Tool Protocol         | Model Context Protocol (MCP), REST, gRPC, GraphQL |
+| Integration Pattern   | Adapter Pattern                                   |
+| Resilience            | Retry, Circuit Breaker, Timeout                   |
+| Observability         | OpenTelemetry                                     |
+| Security              | `PolicyContext` + `SecurityContext`               |
+| Integration Framework | Ports & Adapters (Hexagonal Architecture)         |
+
+Runtime Card:
+| Stage      | Description                                                          |
+| ---------- | -------------------------------------------------------------------- |
+| Input      | `RequestContext` and `ToolRequest`                                   |
+| Processing | Validate, authorize, observe, execute, and normalize tool invocation |
+| Output     | `ToolResult`                                                         |
+
+
+Principal Architect Insight:
+
+One of the most common anti-patterns in Agentic AI systems is allowing each agent to implement its own integrations. Over time, every agent contains custom HTTP clients, database connections, authentication logic, retry mechanisms, and observability code. This results in duplicated infrastructure concerns, inconsistent governance, and difficult-to-maintain integrations.
+
+PD-HECA addresses this by introducing the Tool Executor as the single integration boundary. Agents express intent ("I need customer information" or "Create an incident"), while the Tool Executor determines how that intent is executed. By centralizing outbound communication, the platform achieves consistent authorization, resilience, auditing, and distributed tracing across all enterprise integrations.
+
+
+Chapter Summary:
+
+In this chapter, we introduced the Tool Executor, the controlled execution boundary between AI agents and enterprise capabilities. We showed how it validates and authorizes tool requests, creates a dedicated observability span, propagates trace context, invokes the appropriate adapter, and returns normalized results to the Agent Runtime.
+
+The Tool Executor ensures that AI agents remain focused on reasoning while all external communication is governed by a consistent enterprise execution model.
+
+

@@ -1,0 +1,231 @@
+Chapter 1 — Platform Prerequisites:
+Card 1 — ServiceNow Machine Identity (One-Time Setup):
+Before any webhook can invoke the GenAI Platform, ServiceNow and Google Cloud must establish a Zero Trust relationship.
+Think of this like issuing a company ID card before someone can enter a secure office.
+No ID card → No Entry.
+┌──────────────────────────────────────────────────────────────────────┐
+│ Card 1 – ServiceNow Machine Identity (One-Time Setup)                │
+├──────────────────────────────────────────────────────────────────────┤
+│ Purpose                                                              │
+│ Establish Zero Trust between ServiceNow and Google Cloud             │
+├──────────────────────────────────────────────────────────────────────┤
+│ Authentication Pattern                                               │
+│ OAuth 2.0 Client Credentials                                         │
+├──────────────────────────────────────────────────────────────────────┤
+│ Identity                                                             │
+│ ServiceNow Machine Identity                                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ Identity Provider                                                    │
+│ ServiceNow IDP / Enterprise IDP                                      │
+├──────────────────────────────────────────────────────────────────────┤
+│ Token Type                                                           │
+│ Signed OIDC JWT                                                      │
+├──────────────────────────────────────────────────────────────────────┤
+│ Google Cloud Services                                                │
+│ • IAM                                                                │
+│ • Workload Identity Federation                                       │
+│ • Workload Identity Pool                                             │
+│ • OIDC Provider                                                      │
+│ • Service Account                                                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ Google APIs                                                          │
+│ • Security Token Service (STS) API                                   │
+│ • IAM API                                                            │
+├──────────────────────────────────────────────────────────────────────┤
+│ REST APIs                                                            │
+│ POST /v1/token   (STS Token Exchange)                                │
+│ IAM Service Account Binding                                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ Output                                                               │
+│ Trusted Google Service Identity                                      │
+└──────────────────────────────────────────────────────────────────────┘
+
+
+What happens behind the scenes?:
+Let's walk through it as if we were debugging the platform.
+
+Step 1 — ServiceNow Needs an Identity:
+
+Your webhook is not anonymous.
+
+It first needs to prove:
+
+"I am ServiceNow."
+
+For that, ServiceNow requests a token from its Identity Provider.
+
+ServiceNow
+
+      │
+
+      │ OAuth2 Client Credentials
+
+      ▼
+
+ServiceNow Identity Provider
+
+      │
+
+      │ Authenticate Client ID
+      │ Authenticate Client Secret
+
+      ▼
+
+Generate Signed JWT
+The JWT contains claims similar to:
+{
+  "iss": "https://idp.company.com",
+  "sub": "servicenow-prod",
+  "aud": "gcp-genai-platform",
+  "exp": 1782323232,
+  "iat": 1782322932
+}
+
+At this point, Google Cloud has not seen this token yet.
+
+Step 2 — Google Must Trust That JWT:
+Now the request reaches Google Cloud.
+ServiceNow
+
+↓
+
+Signed JWT
+
+↓
+
+Google Security Token Service (STS)
+
+The STS service checks:
+✓ Is the signature valid?
+
+✓ Is the issuer trusted?
+
+✓ Is the audience correct?
+
+✓ Has the token expired?
+
+✓ Is the workload allowed?
+
+✓ Does it map to a Google Service Account?
+
+
+This validation happens because you configured:
+
+Workload Identity Pool
+OIDC Provider
+Attribute Mapping
+IAM Binding
+
+during platform setup.
+
+
+Step 3 — Identity Mapping:
+Now Google says:
+"I trust this ServiceNow identity."
+It performs the mapping.
+OIDC Identity
+
+↓
+
+Attribute Mapping
+
+↓
+
+Google Service Account
+
+↓
+
+genai-platform-sa
+
+This is where IAM evaluates:
+roles/iam.workloadIdentityUser
+
+
+Step 4 — Google Issues a Google Access Token:
+This is the part many architects miss.
+The ServiceNow JWT is not used directly to call Vertex AI.
+Instead, Google STS exchanges it for a Google OAuth Access Token that represents the mapped service account.
+ServiceNow JWT
+
+↓
+
+Google STS
+
+↓
+
+Google OAuth Access Token
+
+↓
+
+genai-platform-sa
+This token is what Google services (API Gateway, Cloud Run, Vertex AI, etc.) understand.
+
+
+Step 5 — Runtime Begins:
+Only now does the webhook send the business request.
+ServiceNow
+
+↓
+
+HTTPS POST
+
+Authorization:
+Bearer <Google Access Token>
+
+↓
+
+Google API Gateway
+
+Payload:
+{
+  "incidentNumber": "INC0012456",
+  "priority": "P1",
+  "shortDescription": "Payment API Timeout",
+  "assignmentGroup": "Platform Support"
+}
+
+┌─────────────┐
+│ ServiceNow  │
+└──────┬──────┘
+       │
+       │ 1. OAuth2 Client Credentials
+       ▼
+┌────────────────────────┐
+│ ServiceNow Identity    │
+│ Provider               │
+└──────────┬─────────────┘
+           │
+           │ 2. Signed OIDC JWT
+           ▼
+┌────────────────────────┐
+│ Google STS             │
+│ Token Exchange         │
+└──────────┬─────────────┘
+           │
+           │ Verify Signature
+           │ Verify Issuer
+           │ Verify Audience
+           │ Verify Claims
+           │ Map Identity
+           ▼
+┌────────────────────────┐
+│ Google Service Account │
+│ genai-platform-sa      │
+└──────────┬─────────────┘
+           │
+           │ 3. Google Access Token
+           ▼
+┌────────────────────────┐
+│ Google API Gateway     │
+└──────────┬─────────────┘
+           │
+           ▼
+Runtime Flow Starts
+
+Principal Architect Notes:
+
+One refinement to your understanding:
+
+Workload Identity Federation, Workload Identity Pool, OIDC Provider, and Service Account Mapping are platform configuration steps, not actions that happen on every request.
+JWT validation and STS token exchange are part of the authentication flow.
+After a successful exchange, downstream Google services operate using the Google service account identity, not the original external JWT.

@@ -1,0 +1,388 @@
+meta:
+  name: tool-servicenow
+  purpose: "Regenerate the minimum production utility for governed ServiceNow incident creation, retrieval, update, and resolver assignment."
+  domain: "ITSM incident management"
+  description: "Production-code SSOT. Tests, fixtures, examples, Postman assets, runbooks, generated files, and unused configuration are intentionally excluded."
+
+replication_profile:
+  language: {name: Python, version: ">=3.12"}
+  agent_frameworks:
+    - {name: FastAPI, version: ">=0.135.1", role: "HTTP/S2S transport and dependency injection"}
+    - {name: Pydantic, version: ">=2.12.5", role: "Configuration and protocol validation"}
+    - {name: platform-sdk, version: "workspace dependency; unspecified", role: "Governed observability context, DLP-aware logging, and tracing"}
+    - {name: platform-protocol, version: "0.1.0", role: "Canonical ServiceMessage S2S envelope"}
+  orchestration:
+    topology: pipeline
+    description: "Authenticate -> validate/generate enterprise context -> normalize typed command -> route allowlisted capability -> validate endpoint policy -> call ServiceNow -> validate postconditions -> return protocol envelope."
+  model_provider: none
+  models: []
+  runtime: {type: "Async Python service or embedded package", description: "Uvicorn/FastAPI deployable service plus ToolService and ServiceNowTool Python APIs"}
+  hosting_platform: {type: "Google Cloud Run compatible OCI container", description: "Fedora Python 3.12 multi-stage image, non-root UID 1001, port 8086"}
+  vector_store: none
+  secrets_management: "Environment variables locally; hosted credentials and collector endpoints must be injected from a secret manager. No secret belongs in TOML."
+  supporting_services:
+    - {name: ServiceNow Table API, type: "HTTP REST", purpose: "Incident CRUD subset and assignment"}
+    - {name: platform-registry, type: "HTTP registry", purpose: "Optional registration, heartbeat, deregistration, and capability discovery"}
+    - {name: Google Cloud Logging/Trace, type: observability, purpose: "DLP-protected correlated tool telemetry"}
+    - {name: Sumo Logic, type: observability, purpose: "Optional platform-sdk HTTP collector"}
+  presentation_layer: {framework: none, type: none, backend_binding: none, description: "No UI; S2S, operator HTTP, and Python APIs only"}
+
+source_structure:
+  tree: |
+    services/tool-servicenow/
+    |-- .containerignore
+    |-- .env.cloud-run.example
+    |-- .env.example
+    |-- .env.podman.example
+    |-- .gitignore
+    |-- config.toml
+    |-- tool.toml
+    |-- Containerfile
+    |-- pyproject.toml
+    |-- uv.lock
+    |-- shared-contracts/platform-protocol/
+    |   |-- pyproject.toml
+    |   `-- src/platform_protocol/
+    |       |-- __init__.py
+    |       |-- __main__.py
+    |       |-- application/message_validator.py
+    |       `-- domain/{message_type.py,service_message.py,service_metadata.py,service_type.py}
+    `-- src/tool_servicenow/
+        |-- __init__.py
+        |-- __main__.py
+        |-- main.py
+        |-- app_factory.py
+        |-- bootstrap.py
+        |-- application/{__init__.py,capability_schemas.py,tool_contract.py}
+        |-- configuration/{settings.py,operation_catalog.py}
+        |-- adapters/
+        |   |-- __init__.py
+        |   |-- inbound/{__init__.py,http/{__init__.py,s2s_controller.py,security.py}}
+        |   `-- outbound/{__init__.py,registry/{__init__.py,registrar.py},servicenow/__init__.py}
+        |-- client/
+        |   |-- __init__.py
+        |   |-- agent_client.py
+        |   `-- capabilities/{__init__.py,_base.py,create_incident.py,retrieve_incident.py,update_incident.py,assign_resolver_group.py}
+        |-- core/
+        |   |-- __init__.py
+        |   |-- application/{__init__.py,commands.py,request_normalizer.py,tool_service.py}
+        |   |-- domain/{__init__.py,policies.py,servicenow_policies.py,value_objects.py,workflow_contract.py}
+        |   `-- ports/{__init__.py,inbound.py,outbound.py}
+        |-- infrastructure/
+        |   |-- capability_executor.py
+        |   |-- http_client.py
+        |   |-- operation_router.py
+        |   |-- registry_client.py
+        |   `-- operations/{assign_resolver_group.py,capability_tool.py,contract_endpoint_executor.py,create_incident.py,incident_identity.py,retrieve_incident.py,update_incident.py}
+        `-- observability/{__init__.py,runtime.py}
+  entry_points:
+    - {path: src/tool_servicenow/__main__.py, purpose: "tool-servicenow CLI; checks port and starts Uvicorn factory"}
+    - {path: src/tool_servicenow/app_factory.py, purpose: "FastAPI composition/lifecycle root"}
+    - {path: src/tool_servicenow/bootstrap.py, purpose: "Embedded and HTTP dependency composition"}
+    - {path: src/tool_servicenow/application/tool_contract.py, purpose: "Agent-facing embedded facade"}
+    - {path: src/tool_servicenow/client/agent_client.py, purpose: "Remote async S2S client"}
+  modules:
+    - {path: application/capability_schemas.py, role: schema catalog, key_responsibilities: ["Draft 2020-12 input/output schemas", "registry-safe schema metadata"]}
+    - {path: application/tool_contract.py, role: embedded facade, key_responsibilities: ["four explicit methods", "generic invoke", "workflow metadata"]}
+    - {path: core/application/commands.py, role: typed commands, key_responsibilities: ["canonical capability payload serialization"]}
+    - {path: core/application/request_normalizer.py, role: normalization, key_responsibilities: ["aliases", "body/data promotion", "typed command construction"]}
+    - {path: core/application/tool_service.py, role: use case, key_responsibilities: ["execute one capability", "configuration/live readiness"]}
+    - {path: core/domain/value_objects.py, role: domain values, key_responsibilities: ["incident identity", "assignment targets", "placeholder filtering"]}
+    - {path: core/domain/policies.py, role: governance/readiness, key_responsibilities: ["host/method allowlist", "credential readiness"]}
+    - {path: core/domain/servicenow_policies.py, role: ServiceNow decisions, key_responsibilities: ["update verification", "assignment sequencing", "partial-success policy"]}
+    - {path: infrastructure/operation_router.py, role: explicit router, key_responsibilities: ["allowlisted capability dispatch"]}
+    - {path: infrastructure/http_client.py, role: outbound transport, key_responsibilities: ["wrapper-owned auth", "header sanitization", "response decoding"]}
+    - {path: infrastructure/operations, role: capability adapters, key_responsibilities: ["create/retrieve/update/assign behavior", "identity lookup", "endpoint expansion"]}
+    - {path: adapters/inbound/http/s2s_controller.py, role: HTTP adapter, key_responsibilities: ["S2S/operator routes", "idempotency", "safe error mapping", "tool telemetry"]}
+    - {path: adapters/outbound/registry/registrar.py, role: registry lifecycle, key_responsibilities: ["metadata publication", "heartbeat", "deregistration"]}
+    - {path: configuration/settings.py, role: configuration, key_responsibilities: ["TOML/env precedence", "typed settings", "process cache"]}
+  config_files:
+    - {path: config.toml, purpose: "Non-secret runtime baseline"}
+    - {path: tool.toml, purpose: "Registry-facing identity/capability contract"}
+    - {path: .env.example, purpose: "Local runtime template"}
+    - {path: .env.cloud-run.example, purpose: "Cloud Run template"}
+    - {path: .env.podman.example, purpose: "Podman template"}
+    - {path: pyproject.toml, purpose: "Minimum package/build/runtime dependencies"}
+    - {path: Containerfile, purpose: "Non-root OCI image"}
+  notable_conventions: ["Hexagonal boundaries", "async I/O", "explicit capability maps", "typed immutable commands/value objects", "wrapper-owned credentials", "fail-closed egress governance", "no model or prompt"]
+
+architecture:
+  pattern: tool-calling
+  components:
+    - {name: HTTP/S2S adapter, role: inbound, description: "Protected canonical /s2s and optional operator routes", inputs: [ServiceMessage, HTTP], outputs: [ServiceMessage, JSON]}
+    - {name: ToolService, role: application, description: "Normalizes and executes exactly one capability", inputs: [capability, payload], outputs: [ServiceNow result]}
+    - {name: OperationRouter, role: deterministic router, description: "Only four compiled operations exist", inputs: [CapabilityRequest], outputs: [operation result]}
+    - {name: EndpointGovernancePolicy, role: egress guard, description: "Checks fixed method and endpoint host", inputs: [method, URL, payload], outputs: [allow or exception]}
+    - {name: ServiceNowHttpClient, role: outbound adapter, description: "Adds wrapper auth and strips caller credentials", inputs: [HTTP request], outputs: [decoded response]}
+    - {name: Registrar, role: lifecycle adapter, description: "Optional discovery publication", inputs: [tool.toml, settings], outputs: [registry action status]}
+    - {name: DownstreamObservabilityPipeline, role: telemetry, description: "Governed context and DLP-aware terminal tool evidence", inputs: [headers, payload, result], outputs: [logs/traces]}
+  data_flows:
+    - {from: agent, to: "/s2s", data_type: ServiceMessage, description: "Authenticated capability request"}
+    - {from: inbound adapter, to: ToolService, data_type: "capability + payload", description: "Context-governed execution"}
+    - {from: normalizer, to: OperationRouter, data_type: CapabilityRequest, description: "Typed canonical command"}
+    - {from: operation, to: ServiceNowHttpClient, data_type: governed HTTP, description: "Fixed method/template plus safe query/body/headers"}
+    - {from: lifecycle, to: platform-registry, data_type: service metadata, description: "Optional register/heartbeat/deregister"}
+  state_schema:
+    s2s_idempotency_cache: {type: "dict[(correlation_id, capability), response]", applies_to: [servicenow.assign_resolver_group], maximum_entries: 1024, eviction: "oldest insertion", persistence: none}
+    settings_cache: {type: "LRU maxsize=1", persistence: process}
+  entry_point: "tool-servicenow -> tool_servicenow.__main__:main -> tool_servicenow.app_factory:app_factory"
+  terminal_conditions: ["ServiceNow success response", "protocol ERROR envelope", "direct HTTP error", "readiness response", "registration lifecycle result"]
+
+api_contracts:
+  entry_points:
+    - {name: "POST /s2s", invocation_style: canonical HTTP, signature: "handle_s2s(request, ServiceMessage, ToolService)", inputs: [ServiceMessage, Authorization, enterprise headers], outputs: [ServiceMessage], description: "Only canonical agent/platform capability endpoint"}
+    - {name: "GET /health", invocation_style: HTTP, signature: "health()->dict[str,str]", inputs: [], outputs: ["{status:UP}"], description: liveness}
+    - {name: "GET /readyz", invocation_style: HTTP, signature: "readiness_probe(request,response)->dict", inputs: [], outputs: ["{status:READY|NOT_READY}"], description: "503 when not ready"}
+    - {name: "GET /ready", invocation_style: HTTP, signature: "ready(service)->dict", inputs: [], outputs: [ReadinessResult], description: detailed readiness}
+    - {name: "GET /capabilities/schemas", invocation_style: HTTP, signature: "capability_schemas()->dict", inputs: [], outputs: [CapabilitySchemaCatalog], description: discovery schemas}
+    - {name: "POST /register-self", invocation_style: HTTP, signature: "register_self(request)->dict", inputs: [], outputs: [RegistryStatus], description: manual registration}
+    - {name: "GET /incident", invocation_style: operator HTTP, signature: "get_incident(sysparm_limit=100, incident_sys_id=None, incident_number=None)", inputs: [query], outputs: [ServiceNow result], description: "limit 1..1000"}
+    - {name: "PUT /incident/{incident_sys_id}", invocation_style: operator HTTP, signature: "put_incident(incident_sys_id, update_data)", inputs: [identifier, update], outputs: [ServiceNow result], description: update}
+    - {name: "PUT /incident", invocation_style: operator HTTP, signature: "put_incident_by_identifier(update_request, incident_sys_id=None, incident_number=None)", inputs: [identifier, update], outputs: [ServiceNow result], description: update by either identity}
+    - {name: "PUT /incident/{incident_sys_id}/resolver-assignment", invocation_style: operator HTTP, signature: "put_incident_resolver_assignment(incident_sys_id, assignment_data)", inputs: [identifier, assignment], outputs: [ServiceNow result], description: assignment}
+    - {name: "PUT /incident/resolver-assignment", invocation_style: operator HTTP, signature: "put_incident_resolver_assignment_by_identifier(assignment_request, incident_sys_id=None, incident_number=None)", inputs: [identifier, assignment], outputs: [ServiceNow result], description: assignment by either identity}
+    - {name: "POST /api/execute", invocation_style: deprecated operator HTTP, signature: "execute_api(payload)", inputs: [compatibility envelope], outputs: ["{message,capability,result}"], description: "Hidden from schema; omit in a strict minimum deployment if backward compatibility is not required"}
+    - {name: ServiceNowTool, invocation_style: embedded Python, signature: "create/retrieve/update/assign/invoke", inputs: [dict], outputs: [dict], description: explicit facade}
+    - {name: AsyncServiceNowToolClient, invocation_style: remote Python, signature: "four convenience methods + invoke", inputs: [typed keyword arguments], outputs: [dict], description: S2S client}
+  internal_interfaces:
+    - {name: ToolServicePort, signature: "execute(capability,payload); operational_readiness(); close()", description: inbound port}
+    - {name: CapabilityExecutorPort, signature: "execute(CapabilityRequest); supported_capabilities(); dependency_issues(); close()", description: outbound port}
+
+business_logic:
+  intent: "Expose a narrow incident API without becoming a generic authenticated HTTP proxy or leaking caller credentials to ServiceNow."
+  rules:
+    - "Accept exactly four capabilities: servicenow.create_incident, retrieve_incident, update_incident, assign_resolver_group; reject every other name."
+    - "Payload must be an object; query, headers, body, and data must be objects when present."
+    - "Normalize incident_sys_id aliases in order incident_sys_id, incident_id, sys_id; also preserve incident_number."
+    - "Trim optional text; treat replace-with-* and {{placeholder}} assignment values as absent."
+    - "Create promotes body to data when data is absent; otherwise infers data from non-control top-level fields."
+    - "Create removes an unresolved {incident_sys_id} path component unless an identifier was explicitly supplied."
+    - "Retrieve accepts identity at top-level or sys_id aliases inside query."
+    - "Retrieve incident_number becomes sysparm_query=number=<number> unless caller already supplied sysparm_query."
+    - "List retrieval defaults sysparm_limit to string '100'; explicit caller value wins."
+    - "Retrieval by sys_id appends it to a list endpoint when the template has no placeholder."
+    - "If retrieval by sys_id returns HTTP 404, retry once against the list endpoint with sysparm_query=sys_id=<id> and sysparm_limit=1. No other failure falls back."
+    - "Update and assignment accept incident_number by first GETting list endpoint with number query, limit 1, fields sys_id."
+    - "If number lookup finds no sys_id, fail; if supplied sys_id conflicts with resolved sys_id, fail."
+    - "Update normalizes preferred contact method mobile/phone to phone and email to email."
+    - "Update sets sysparm_input_display_value=true unless supplied."
+    - "Only when validate_update_applied is truthy (bool or 1/true/yes/on string), compare returned fields; journal work_notes/comments use case-insensitive containment, others exact normalized comparison."
+    - "Ignore requested fields absent from ServiceNow response during update verification; fail only fields returned with mismatched values."
+    - "Resolver alias keys are uppercase; an alias must resolve through configured map unless direct assignment_group is supplied."
+    - "Assignment group precedence is body.assignment_group, top-level assignment_group, resolver alias, configured default."
+    - "Assigned-to precedence is body.assigned_to then top-level assigned_to. Work notes precedence is body, top-level, then the human-approval default sentence."
+    - "Assignment requires a resolved assignment_group."
+    - "Request sysparm_display_value=all for assignment verification; use sysparm_input_display_value=true for display values but remove it for 32-hex sys_ids."
+    - "When assignment_group and assigned_to differ in sys_id-vs-display shape, update group first and assignee second; otherwise submit together."
+    - "After assignment group success, accept assignee HTTP 403 as partial success only when detail indicates business-rule/group-abort policy and not authentication; return tool_partial_success=true and warning."
+    - "Verify returned assignment_group against requested value or display_value when ServiceNow includes it; fail on mismatch."
+    - "When endpoint governance is enabled, allow only configured uppercase methods and allowlisted hosts; derive allowed host from ServiceNow base URL when configured list is empty."
+    - "Caller headers authorization, cookie, proxy-authorization, x-api-key, and x-usertoken are never forwarded; caller cannot override wrapper default headers."
+    - "Outbound auth_type is basic, header, or none. Basic requires username/password. Header auth must reside in wrapper default headers."
+    - "Decode JSON responses as JSON, empty bodies as {}, and other bodies as {content:text}; raise for non-2xx."
+    - "Inbound bearer auth is optional. If required but configured token is absent, return 503; missing/malformed or unequal token returns 401 using constant-time comparison."
+    - "Production S2S requires x-enterprise-current-service; local S2S may execute without governed context."
+    - "Non-REQUEST S2S returns protocol ERROR code TOOL_PROTOCOL_INVALID_MESSAGE_TYPE rather than HTTP failure."
+    - "Default S2S capability is retrieve only for metadata/error/idempotency computation; execution passes empty capability when omitted and therefore rejects it."
+    - "Cache terminal success and error responses only for assign_resolver_group, keyed by correlation_id+capability; replay duplicate without ServiceNow I/O; cap at 1024."
+    - "Map governed context, egress policy, upstream 401/403/other HTTP, timeout, request error, ValueError, and unknown exceptions to stable protocol error codes."
+    - "Bound upstream HTTP error detail to 500 characters."
+    - "Direct endpoints map governance to 403, validation to 400, upstream 4xx to same status, upstream 5xx/other failures to 502."
+    - "Operator routes return 404 when operator_endpoints_enabled=false; /s2s remains available."
+    - "Readiness checks placeholder base URL; basic credentials, header auth headers, optional registry key, and optionally one live ServiceNow GET with sysparm_limit=1."
+    - "Configuration precedence is preexisting OS env > .env > config.toml; settings process cache size is one."
+    - "Registration has exactly one startup attempt and zero retry delay. Fail-fast raises after any nonregistered result."
+    - "Only start heartbeat after registered/already_registered; stop on shutdown; optionally deregister; then drain observability and close owned tool service."
+    - "Registry localhost URLs additionally try host.containers.internal only after ConnectError."
+    - "Registry duplicate HTTP 400 containing 'already registered' is success state already_registered. Missing API key skips unless raise_on_error."
+    - "Service ID precedence: env override, tool.toml static id, generated service-hostname-port. Endpoint precedence: env override, nonplaceholder tool.toml endpoint, generated http://service:port/s2s."
+  constraints: ["No LLM/model/prompt", "No database/vector store", "No arbitrary capability or HTTP verb", "No caller credentials forwarded", "No registration retries", "Only assignment is idempotency-cached", "Cache is process-local"]
+  assumptions: ["ServiceNow Table API response usually uses result", "Reference fields may be scalar or {value,display_value}", "platform-sdk implements context validation and DLP delivery outside this service"]
+  domain_terms: {incident_sys_id: "ServiceNow unique record ID, normally 32 hex characters", incident_number: "Human-readable INC identifier", resolver_group: "Agent-facing alias", assignment_group: "ServiceNow reference/sys_id", partial_success: "Group updated but assignee blocked by ServiceNow business policy"}
+
+tool_inventory:
+  tools:
+    - {name: servicenow.create_incident, type: HTTP POST, description: "Create incident", inputs: [CreateIncidentPayload], outputs: [ServiceNowResponse]}
+    - {name: servicenow.retrieve_incident, type: HTTP GET, description: "List or retrieve incident", inputs: [RetrieveIncidentPayload], outputs: [ServiceNowResponse]}
+    - {name: servicenow.update_incident, type: HTTP PUT, description: "Update incident", inputs: [UpdateIncidentPayload], outputs: [ServiceNowResponse]}
+    - {name: servicenow.assign_resolver_group, type: HTTP PUT, description: "Human-approved group/assignee update", inputs: [AssignmentPayload], outputs: [ServiceNowResponse]}
+  mcps: []
+  external_services:
+    - {name: ServiceNow Table API, type: REST, purpose: incident operations, auth_method: "wrapper-owned Basic, header, or none"}
+    - {name: platform-registry, type: REST, purpose: discovery lifecycle, auth_method: x-api-key}
+    - {name: Google Cloud Logging/Trace, type: observability, purpose: governed telemetry, auth_method: runtime identity/ADC}
+    - {name: Sumo Logic, type: observability, purpose: optional collector, auth_method: secret endpoint}
+  databases: []
+
+prompt_patterns:
+  system_prompts: []
+  user_prompt_templates: []
+  chains:
+    - {name: capability_pipeline, steps: ["authenticate", "establish context", "normalize command", "route fixed capability", "validate egress", "call ServiceNow", "validate postcondition", "emit terminal evidence", "return envelope"]}
+  evaluation_criteria: ["Never forward caller credentials", "Never execute unknown capability/method/host", "Never claim assignment/update reflected when returned evidence conflicts", "Never retry registry startup or arbitrary mutations"]
+
+config_schema:
+  env_vars:
+    - {name: TOOL_SERVICENOW_CONFIG_PATH, purpose: TOML path, required: false, example_format: config.toml}
+    - {name: TOOL_SERVICENOW_HOST, purpose: bind host, required: false, example_format: 0.0.0.0}
+    - {name: TOOL_SERVICENOW_PORT, purpose: bind/identity port, required: false, example_format: "8086"}
+    - {name: PORT, purpose: Cloud Run port mapped by container shell, required: false, example_format: "8080"}
+    - {name: TOOL_SERVICENOW_RELOAD, purpose: Uvicorn reload, required: false, example_format: "false"}
+    - {name: TOOL_SERVICENOW_SERVICE_NAME, purpose: identity, required: false, example_format: tool-servicenow}
+    - {name: TOOL_SERVICENOW_SERVICE_VERSION, purpose: identity version, required: false, example_format: 1.0.0}
+    - {name: TOOL_SERVICENOW_ENVIRONMENT, purpose: environment/production context enforcement, required: false, example_format: production}
+    - {name: TOOL_SERVICENOW_AUTH_REQUIRED, purpose: inbound bearer toggle, required: false, example_format: "true"}
+    - {name: TOOL_SERVICENOW_AUTH_TOKEN_ENV, purpose: token variable name, required: false, example_format: TOOL_SERVICENOW_AUTH_TOKEN}
+    - {name: TOOL_SERVICENOW_AUTH_TOKEN, purpose: inbound token, required: "when auth required", example_format: "<secret>"}
+    - {name: TOOL_SERVICENOW_BASE_URL, purpose: incident table URL, required: true, example_format: "https://<instance>.service-now.com/api/now/table/incident"}
+    - {name: TOOL_SERVICENOW_AUTH_TYPE, purpose: outbound auth, required: true, example_format: "basic|header|none"}
+    - {name: TOOL_SERVICENOW_USERNAME, purpose: Basic username, required: "basic auth", example_format: "<secret>"}
+    - {name: TOOL_SERVICENOW_PASSWORD, purpose: Basic password, required: "basic auth", example_format: "<secret>"}
+    - {name: TOOL_SERVICENOW_TIMEOUT_SECONDS, purpose: upstream timeout, required: false, example_format: "30"}
+    - {name: TOOL_SERVICENOW_DEFAULT_HEADERS, purpose: wrapper-owned headers, required: "header auth", example_format: "Accept=application/json;X-UserToken=<secret>"}
+    - {name: TOOL_SERVICENOW_READY_CHECK_UPSTREAM, purpose: live readiness toggle, required: false, example_format: "true"}
+    - {name: TOOL_SERVICENOW_DEFAULT_RESOLVER_GROUP_SYS_ID, purpose: assignment fallback, required: false, example_format: "32-hex sys_id"}
+    - {name: TOOL_SERVICENOW_RESOLVER_GROUP_SYS_ID_MAP, purpose: alias map, required: false, example_format: "EAI=<sys_id>,SPES=<sys_id>"}
+    - {name: TOOL_SERVICENOW_ENDPOINT_CREATE_INCIDENT, purpose: endpoint override, required: false, example_format: "{servicenow.base_url}"}
+    - {name: TOOL_SERVICENOW_ENDPOINT_RETRIEVE_INCIDENT, purpose: endpoint override, required: false, example_format: "{servicenow.base_url}"}
+    - {name: TOOL_SERVICENOW_ENDPOINT_UPDATE_INCIDENT, purpose: endpoint override, required: false, example_format: "{servicenow.base_url}/{incident_sys_id}"}
+    - {name: TOOL_SERVICENOW_ENDPOINT_ASSIGN_RESOLVER_GROUP, purpose: endpoint override, required: false, example_format: "{servicenow.base_url}/{incident_sys_id}"}
+    - {name: REGISTRY_URL, purpose: registry base URL, required: "when registration enabled", example_format: "http://platform-registry:8500"}
+    - {name: TOOL_SERVICENOW_REGISTRY_API_KEY_ENV, purpose: registry key variable name, required: false, example_format: PLATFORM_REGISTRY_API_KEY}
+    - {name: PLATFORM_REGISTRY_API_KEY_ENV, purpose: compatibility override for key variable name, required: false, example_format: PLATFORM_REGISTRY_API_KEY}
+    - {name: PLATFORM_REGISTRY_API_KEY, purpose: registry secret fallback, required: "when registration enabled", example_format: "<secret>"}
+    - {name: TOOL_SERVICENOW_REGISTRY_API_KEY, purpose: registry secret fallback, required: false, example_format: "<secret>"}
+    - {name: TOOL_SERVICENOW_REGISTRY_TIMEOUT_SECONDS, purpose: registry timeout, required: false, example_format: "10"}
+    - {name: TOOL_SERVICENOW_AUTO_REGISTER, purpose: startup registration, required: false, example_format: "false"}
+    - {name: TOOL_SERVICENOW_REGISTRATION_FAIL_FAST, purpose: fail startup, required: false, example_format: "false"}
+    - {name: TOOL_SERVICENOW_HEARTBEAT_ENABLED, purpose: heartbeat, required: false, example_format: "true"}
+    - {name: TOOL_SERVICENOW_HEARTBEAT_INTERVAL_SECONDS, purpose: heartbeat cadence, required: false, example_format: "20"}
+    - {name: TOOL_SERVICENOW_DEREGISTER_ON_SHUTDOWN, purpose: deregistration, required: false, example_format: "true"}
+    - {name: TOOL_SERVICENOW_ENABLE_GOVERNANCE_CONTROLS, purpose: egress policy, required: false, example_format: "true"}
+    - {name: TOOL_SERVICENOW_ALLOWED_ENDPOINT_HOSTS, purpose: host allowlist, required: false, example_format: "instance.service-now.com"}
+    - {name: TOOL_SERVICENOW_ALLOWED_HTTP_METHODS, purpose: method allowlist, required: false, example_format: "GET,POST,PUT"}
+    - {name: TOOL_SERVICENOW_OPERATOR_ENDPOINTS_ENABLED, purpose: direct routes, required: false, example_format: "false"}
+    - {name: TOOL_SERVICENOW_LOG_LEVEL, purpose: log level, required: false, example_format: INFO}
+    - {name: TOOL_SERVICENOW_LOG_NAME, purpose: cloud log name, required: false, example_format: genai-application}
+    - {name: GOOGLE_CLOUD_PROJECT, purpose: project, required: "cloud logging", example_format: project-id}
+    - {name: TOOL_SERVICENOW_CLOUD_LOGGING, purpose: cloud delivery, required: false, example_format: "true"}
+    - {name: TOOL_SERVICENOW_OBSERVABILITY_CONTEXT_ENABLED, purpose: context pipeline, required: false, example_format: "true"}
+    - {name: TOOL_SERVICENOW_GENERATE_CONTEXT_WHEN_MISSING, purpose: synthesize operator context, required: false, example_format: "true"}
+    - {name: TOOL_SERVICENOW_BUSINESS_PROCESS, purpose: workflow label, required: false, example_format: incident-management}
+    - {name: TOOL_SERVICENOW_SERVICE_ID, purpose: registry identity override, required: false, example_format: tool-servicenow-instance-8086}
+    - {name: TOOL_SERVICENOW_INSTANCE_ID, purpose: generated identity component, required: false, example_format: instance-1}
+    - {name: TOOL_SERVICENOW_S2S_ENDPOINT, purpose: published endpoint override, required: false, example_format: "https://service/s2s"}
+    - {name: SUMO_LOGIC_ENABLED, purpose: collector toggle, required: false, example_format: "true"}
+    - {name: SUMO_LOGIC_ENDPOINT, purpose: collector secret URL, required: "if enabled", example_format: "<secret>"}
+    - {name: SUMO_LOGIC_TIMEOUT_SECONDS, purpose: delivery timeout, required: false, example_format: "2"}
+  parameters:
+    - {name: server, type: object, default: "host=127.0.0.1, port=8086, reload=false", description: listener}
+    - {name: service, type: object, default: "tool-servicenow 1.0.0 local", description: identity}
+    - {name: observability, type: object, default: "INFO, cloud/context/generation enabled, incident-management", description: telemetry}
+    - {name: tool_auth, type: object, default: "required=false, token_env=TOOL_SERVICENOW_AUTH_TOKEN", description: ingress auth}
+    - {name: registry, type: object, default: "localhost:8500, PLATFORM_REGISTRY_API_KEY, 10s", description: discovery}
+    - {name: servicenow, type: object, default: "basic, 30s, JSON/transaction headers, no live check", description: upstream}
+    - {name: endpoints, type: object, default: "base for create/retrieve; base/{incident_sys_id} for update/assign", description: reviewed routes}
+    - {name: registration, type: object, default: "off; one attempt; heartbeat 20s; deregister true", description: lifecycle}
+    - {name: guardrails, type: object, default: "enabled; GET/POST/PUT; operator routes true", description: egress/route policy}
+  warnings:
+    - "All token, password, username, API key, X-UserToken, and collector endpoint values are <secret>."
+    - "Omit config.toml [example_client] entirely; production runtime never reads it."
+    - "Omit configuration/postman_environment.py and the prepare-postman console entry point from minimum regeneration."
+    - "resolve_registry_api_key accepts a literal secret mistakenly placed in api_key_env for compatibility; do not reproduce this unsafe compatibility branch in a clean minimum build unless required."
+
+component_manifest:
+  files:
+    - {path: src/tool_servicenow/__main__.py, language: Python, classes: [], functions: [{name: main, signature: "()->None"}, {name: _ensure_port_available, signature: "(host:str,port:int)->None"}]}
+    - {path: src/tool_servicenow/app_factory.py, language: Python, classes: [], functions: [{name: _heartbeat_loop, signature: "async (Event,float,Settings,Registrar)->None"}, {name: _register_on_startup, signature: "async (Settings,Registrar)->dict"}, {name: lifespan, signature: "async context manager (FastAPI)"}, {name: create_app, signature: "(*,settings=None,tool_service=None,observability_utility=None,registry_adapter=None)->FastAPI"}, {name: app_factory, signature: "()->FastAPI"}, {name: health, signature: "()->dict"}, {name: readiness_probe, signature: "async (Request,Response)->dict"}]}
+    - {path: src/tool_servicenow/bootstrap.py, language: Python, classes: [{name: ToolServiceNowRuntime, kind: frozen_dataclass, properties: [{name: settings, type: Settings}, {name: service, type: ToolService}], methods: []}], functions: [{name: build_tool_runtime, signature: "(Settings|None)->ToolServiceNowRuntime"}, {name: build_readiness_context_from_settings, signature: "(Settings)->ReadinessContext"}, {name: build_servicenow_tool_service, signature: "(*,settings=None,executor=None,readiness_context=None,readiness_policy=None,config_toml_path=None,live_dependency_readiness=None)->ToolService"}, {name: build_tool_service, signature: "(Settings|None)->ToolService"}]}
+    - {path: src/tool_servicenow/application/capability_schemas.py, language: Python, classes: [], functions: [{name: _payload_schema, signature: "(*,title,description,properties,examples,required=None,additional_properties=True)->dict"}, {name: _response_schema, signature: "(title)->dict"}, {name: get_capability_schemas, signature: "()->dict"}, {name: get_capability_schema, signature: "(capability)->dict"}, {name: get_registry_capability_metadata, signature: "()->dict"}]}
+    - {path: src/tool_servicenow/application/tool_contract.py, language: Python, classes: [{name: ToolCapability, kind: frozen_dataclass, properties: [{name: name, type: str}, {name: description, type: str}, {name: category, type: str}, {name: command_model, type: str}, {name: input_schema, type: dict}, {name: output_schema, type: dict}], methods: []}, {name: ToolInvocation, kind: frozen_dataclass, properties: [{name: capability, type: str}, {name: payload, type: dict}], methods: []}, {name: ServiceNowTool, kind: facade, properties: [{name: _service, type: ToolService}], methods: [{name: capabilities, signature: "static ()"}, {name: capability_schemas, signature: "static ()"}, {name: api_endpoints, signature: "static ()"}, {name: workflow_steps, signature: "static ()"}, {name: workflow_rules, signature: "static ()"}, {name: create_incident, signature: "async (dict)->dict"}, {name: retrieve_incident, signature: "async (dict)->dict"}, {name: update_incident, signature: "async (dict)->dict"}, {name: assign_resolver_group, signature: "async (dict)->dict"}, {name: invoke, signature: "async (ToolInvocation)->dict"}, {name: close, signature: "async ()->None"}]}], functions: [{name: _build_capability_catalog, signature: "()->tuple[ToolCapability,...]"}]}
+    - path: src/tool_servicenow/configuration/settings.py
+      language: Python
+      classes:
+        - {name: ServerSettings, kind: Pydantic_model, properties: [{name: host, type: str}, {name: port, type: int}, {name: reload, type: bool}], methods: []}
+        - {name: ServiceIdentitySettings, kind: Pydantic_model, properties: [{name: name, type: str}, {name: version, type: str}, {name: environment, type: str}], methods: []}
+        - {name: ObservabilitySettings, kind: Pydantic_model, properties: [{name: log_level, type: str}, {name: log_name, type: str}, {name: project_id, type: "str|null"}, {name: cloud_logging, type: bool}, {name: context_enabled, type: bool}, {name: generate_context_when_missing, type: bool}, {name: business_process, type: str}], methods: []}
+        - {name: ToolAuthSettings, kind: Pydantic_model, properties: [{name: required, type: bool}, {name: token_env, type: str}], methods: []}
+        - {name: RegistrySettings, kind: Pydantic_model, properties: [{name: url, type: HttpUrl}, {name: api_key_env, type: str}, {name: timeout_seconds, type: float}], methods: []}
+        - {name: ServiceNowSettings, kind: Pydantic_model, properties: [{name: base_url, type: HttpUrl}, {name: auth_type, type: str}, {name: username, type: str}, {name: password, type: str}, {name: timeout_seconds, type: float}, {name: default_headers, type: "dict[str,str]"}, {name: default_resolver_group_sys_id, type: "str|null"}, {name: resolver_group_sys_id_map, type: "dict[str,str]"}, {name: ready_check_upstream, type: bool}], methods: []}
+        - {name: EndpointSettings, kind: Pydantic_model, properties: [{name: create_incident, type: str}, {name: retrieve_incident, type: str}, {name: update_incident, type: str}, {name: assign_resolver_group, type: str}], methods: []}
+        - {name: RegistrationSettings, kind: Pydantic_model, properties: [{name: auto_register_on_startup, type: bool}, {name: fail_fast, type: bool}, {name: startup_register_attempts, type: "int=1 only"}, {name: startup_register_retry_delay_seconds, type: "float=0 only"}, {name: heartbeat_enabled, type: bool}, {name: heartbeat_interval_seconds, type: "float>0"}, {name: deregister_on_shutdown, type: bool}], methods: []}
+        - {name: GuardrailSettings, kind: Pydantic_model, properties: [{name: enable_governance_controls, type: bool}, {name: allowed_endpoint_hosts, type: "list[str]"}, {name: allowed_http_methods, type: "list[str]"}, {name: operator_endpoints_enabled, type: bool}], methods: []}
+        - {name: Settings, kind: Pydantic_model, properties: [{name: server, type: ServerSettings}, {name: service, type: ServiceIdentitySettings}, {name: observability, type: ObservabilitySettings}, {name: tool_auth, type: ToolAuthSettings}, {name: registry, type: RegistrySettings}, {name: servicenow, type: ServiceNowSettings}, {name: endpoints, type: EndpointSettings}, {name: registration, type: RegistrationSettings}, {name: guardrails, type: GuardrailSettings}], methods: []}
+      functions: [{name: _load_dotenv_file, signature: "()->None"}, {name: _resolve_config_path, signature: "()->Path"}, {name: _load_config_file, signature: "(Path)->dict"}, {name: _set_nested, signature: "(dict,dotted_key,value)->None"}, {name: _parse_bool, signature: "(str)->bool"}, {name: _parse_csv, signature: "(str,upper=False)->list[str]"}, {name: _parse_header_csv, signature: "(str)->dict[str,str]"}, {name: _parse_key_value_csv, signature: "(str)->dict[str,str]"}, {name: _env_override_map, signature: "()->dict"}, {name: _apply_env_overrides, signature: "(dict)->None"}, {name: load_settings_from_config_toml, signature: "(path,*,load_dotenv_file=True,apply_env_overrides=True)->Settings"}, {name: load_settings, signature: "()->Settings"}, {name: get_settings, signature: "()->Settings"}]
+    - {path: src/tool_servicenow/configuration/operation_catalog.py, language: Python, classes: [{name: ContractOperationDefinition, kind: frozen_dataclass, properties: [{name: capability, type: str}, {name: method, type: str}, {name: endpoint_key, type: str}], methods: []}], functions: [{name: _resolve_endpoint_template, signature: "(str,Settings)->str"}, {name: get_contract_operation_configs, signature: "(Settings)->dict[str,tuple[str,str]]"}]}
+    - {path: src/tool_servicenow/core/application/commands.py, language: Python, classes: [{name: CapabilityCommand, kind: abstract_frozen_dataclass, properties: [{name: capability, type: str}], methods: [{name: to_payload, signature: "abstract ()->dict"}]}, {name: GenericCapabilityCommand, kind: frozen_dataclass, properties: [{name: payload, type: dict}], methods: [{name: to_payload, signature: "()->dict"}]}, {name: CreateIncidentCommand, kind: frozen_dataclass, properties: [{name: data, type: dict}, {name: query, type: "dict|null"}, {name: headers, type: "dict|null"}], methods: [{name: to_payload, signature: "()->dict"}]}, {name: RetrieveIncidentCommand, kind: frozen_dataclass, properties: [{name: identity, type: IncidentIdentity}, {name: query, type: "dict|null"}], methods: [{name: __init__, signature: "(capability,incident_sys_id=None,incident_number=None,query=None,identity=None)"}, {name: to_payload, signature: "()->dict"}]}, {name: UpdateIncidentCommand, kind: frozen_dataclass, properties: [{name: data, type: dict}, {name: identity, type: IncidentIdentity}, {name: query, type: "dict|null"}, {name: headers, type: "dict|null"}, {name: validate_update_applied, type: "object|null"}], methods: [{name: __init__, signature: "(capability,data=None,incident_sys_id=None,incident_number=None,query=None,headers=None,validate_update_applied=None,identity=None)"}, {name: to_payload, signature: "()->dict"}]}, {name: AssignResolverGroupCommand, kind: frozen_dataclass, properties: [{name: identity, type: IncidentIdentity}, {name: assignment, type: AssignmentTarget}, {name: work_notes, type: "str|null"}, {name: headers, type: "dict|null"}, {name: body, type: "dict|null"}], methods: [{name: __init__, signature: "(capability,incident_sys_id=None,incident_number=None,resolver_group=None,assignment_group=None,assigned_to=None,work_notes=None,headers=None,body=None,identity=None,assignment=None)"}, {name: to_payload, signature: "()->dict"}]}], functions: [{name: _copy_if_present, signature: "(target,key,value)->None"}]}
+    - {path: src/tool_servicenow/core/application/request_normalizer.py, language: Python, classes: [{name: CapabilityRequest, kind: frozen_dataclass, properties: [{name: command, type: CapabilityCommand}], methods: []}], functions: [{name: _as_payload_dict, signature: "(payload)->dict"}, {name: _normalize_identifier_aliases, signature: "(dict)->dict"}, {name: _normalize_query_dict, signature: "(query)->dict|null"}, {name: _normalize_headers_dict, signature: "(headers)->dict|null"}, {name: _body_to_data, signature: "(body,data)->dict|null"}, {name: _add_identifier_fields, signature: "(target,normalized)->None"}, {name: _normalize_update_payload, signature: "(dict)->dict"}, {name: _normalize_assign_payload, signature: "(dict)->dict"}, {name: _normalize_retrieve_payload, signature: "(dict)->dict"}, {name: _normalize_create_payload, signature: "(dict)->dict"}, {name: normalize_capability_request, signature: "(capability,payload)->CapabilityRequest"}]}
+    - {path: src/tool_servicenow/core/application/tool_service.py, language: Python, classes: [{name: ToolService, kind: application_service, properties: [{name: _executor, type: CapabilityExecutorPort}, {name: _readiness_context, type: ReadinessContext}, {name: _live_dependency_readiness, type: bool}, {name: _readiness_policy, type: ReadinessPolicy}], methods: [{name: execute, signature: "async (capability,payload)"}, {name: close, signature: "async ()"}, {name: readiness, signature: "()->dict"}, {name: operational_readiness, signature: "async ()->dict"}]}], functions: []}
+    - {path: src/tool_servicenow/core/domain/value_objects.py, language: Python, classes: [{name: _TextValue, kind: frozen_dataclass, properties: [{name: value, type: str}, {name: field_name, type: ClassVar}, {name: ignore_placeholders, type: ClassVar}], methods: [{name: from_raw, signature: "classmethod (raw)"}, {name: to_payload_value, signature: "()->str"}, {name: __str__, signature: "()->str"}]}, {name: IncidentSysId, kind: value_object, properties: [], methods: [{name: looks_like_servicenow_sys_id, signature: "()->bool"}]}, {name: IncidentNumber, kind: value_object, properties: [], methods: []}, {name: ResolverGroupAlias, kind: value_object, properties: [], methods: [{name: lookup_key, signature: "()->str"}]}, {name: AssignmentGroup, kind: value_object, properties: [], methods: [{name: looks_like_servicenow_sys_id, signature: "()->bool"}]}, {name: AssignedTo, kind: value_object, properties: [], methods: [{name: looks_like_servicenow_sys_id, signature: "()->bool"}]}, {name: IncidentIdentity, kind: frozen_dataclass, properties: [{name: incident_sys_id, type: "IncidentSysId|null"}, {name: incident_number, type: "IncidentNumber|null"}], methods: [{name: from_payload_aliases, signature: "classmethod (dict)"}, {name: add_to_payload, signature: "(dict)->None"}]}, {name: AssignmentTarget, kind: frozen_dataclass, properties: [{name: assignment_group, type: "AssignmentGroup|null"}, {name: resolver_group, type: "ResolverGroupAlias|null"}, {name: assigned_to, type: "AssignedTo|null"}], methods: [{name: from_payload, signature: "classmethod (dict)"}, {name: add_to_payload, signature: "(dict)->None"}]}], functions: [{name: clean_optional_text, signature: "(raw)->str|null"}, {name: is_unresolved_placeholder, signature: "(raw)->bool"}]}
+    - {path: src/tool_servicenow/core/domain/policies.py, language: Python, classes: [{name: EndpointGovernanceViolation, kind: exception, properties: [], methods: []}, {name: EndpointGovernancePolicy, kind: frozen_dataclass, properties: [{name: enabled, type: bool}, {name: allowed_hosts, type: "tuple[str,...]"}, {name: allowed_methods, type: "tuple[str,...]"}], methods: [{name: validate_contract_request, signature: "(method,endpoint,payload)->None"}]}, {name: ReadinessPolicy, kind: frozen_dataclass, properties: [{name: require_credentials, type: bool}, {name: require_registry_api_key_on_autoreg, type: bool}], methods: [{name: evaluate, signature: "(ReadinessContext)->list[str]"}]}, {name: ReadinessContext, kind: frozen_dataclass, properties: [{name: servicenow_base_url, type: str}, {name: servicenow_username, type: str}, {name: servicenow_password, type: str}, {name: registration_auto_register_on_startup, type: bool}, {name: registry_api_key_present, type: bool}, {name: servicenow_auth_type, type: str}, {name: servicenow_default_headers, type: "dict[str,str]"}], methods: []}], functions: []}
+    - {path: src/tool_servicenow/core/domain/servicenow_policies.py, language: Python, classes: [{name: AssignmentSequenceDecision, kind: frozen_dataclass, properties: [{name: split_before_submit, type: bool}], methods: []}, {name: AssignmentErrorDecision, kind: frozen_dataclass, properties: [{name: return_partial_success, type: bool}, {name: warning, type: "str|null"}], methods: []}], functions: [{name: normalize_update_data, signature: "(dict)->dict"}, {name: read_result_field, signature: "(dict,key)"}, {name: normalize_update_value_for_compare, signature: "(key,value)->str"}, {name: update_field_matches, signature: "(key,expected,actual,*,allow_journal_contains=False)->bool"}, {name: find_mismatched_update_fields, signature: "(payload,response,*,allow_journal_contains=False)->list[str]"}, {name: assert_update_applied, signature: "(payload,response)->None"}, {name: looks_like_assignment_group_sys_id, signature: "(raw)->bool"}, {name: is_policy_group_abort, signature: "(status_code,detail)->bool"}, {name: should_split_assignment_update, signature: "(group,assignee)->bool"}, {name: plan_assignment_sequence, signature: "(group,assignee)->Decision"}, {name: plan_assignment_partial_success, signature: "(*,status_code,detail)->Decision"}, {name: read_reference_field, signature: "(result,field)->tuple"}, {name: unwrap_incident_result, signature: "(response)->dict"}, {name: assert_assignment_group_reflected, signature: "(response,requested)->None"}]}
+    - {path: src/tool_servicenow/core/domain/workflow_contract.py, language: Python, classes: [{name: ApiEndpointSpec, kind: frozen_dataclass, properties: [{name: capability, type: str}, {name: method, type: str}, {name: endpoint_template, type: str}, {name: purpose, type: str}], methods: []}, {name: WorkflowStepSpec, kind: frozen_dataclass, properties: [{name: step, type: int}, {name: name, type: str}, {name: capability, type: str}, {name: purpose, type: str}], methods: []}, {name: RuleSpec, kind: frozen_dataclass, properties: [{name: id, type: str}, {name: rule, type: str}], methods: []}], functions: []}
+    - {path: src/tool_servicenow/infrastructure/http_client.py, language: Python, classes: [{name: ServiceNowHttpClient, kind: adapter, properties: [{name: base_url, type: str}, {name: auth_type, type: str}, {name: username, type: str}, {name: password, type: str}, {name: default_headers, type: dict}, {name: _client, type: httpx.AsyncClient}], methods: [{name: __init__, signature: "(config)"}, {name: close, signature: "async ()"}, {name: _build_url, signature: "(str)->str"}, {name: _merge_headers, signature: "(dict|null)->dict|null"}, {name: request, signature: "async (method,path_or_url,data=None,headers=None,params=None)"}]}], functions: [{name: _sanitize_headers, signature: "(headers,*,blocked_names=None)->dict[str,str]"}]}
+    - {path: src/tool_servicenow/infrastructure/capability_executor.py, language: Python, classes: [{name: ServiceNowCapabilityExecutor, kind: adapter, properties: [{name: _router, type: OperationRouter}, {name: _client, type: ServiceNowHttpClient}], methods: [{name: execute, signature: "async (CapabilityRequest)->dict"}, {name: supported_capabilities, signature: "()->list[str]"}, {name: dependency_issues, signature: "async ()->list[str]"}, {name: close, signature: "async ()"}]}], functions: []}
+    - {path: src/tool_servicenow/infrastructure/operation_router.py, language: Python, classes: [{name: OperationRouter, kind: router, properties: [{name: _endpoint_governance_policy, type: EndpointGovernancePolicy}, {name: _capability_tool, type: ServiceNowCapabilityTool}, {name: _operation_map, type: dict}], methods: [{name: execute, signature: "async (CapabilityRequest,client)"}, {name: supported_capabilities, signature: "()->list[str]"}]}], functions: []}
+    - {path: src/tool_servicenow/infrastructure/operations, language: Python, classes: [{name: ServiceNowCapabilityTool, kind: capability_wrapper, properties: [{name: _governance_policy, type: EndpointGovernancePolicy}, {name: _contract_operation_configs, type: dict}, {name: _default_resolver_group_sys_id, type: "str|null"}, {name: _resolver_group_aliases, type: dict}], methods: [{name: create_incident, signature: async}, {name: retrieve_incident, signature: async}, {name: update_incident, signature: async}, {name: assign_resolver_group, signature: async}, {name: _execute_with_contract, signature: async}, {name: operation_map, signature: "()->dict"}]}], functions: [{name: execute_contract_endpoint, signature: "async (payload,client,method,endpoint_template,governance_policy=None)"}, {name: create_incident, signature: async}, {name: retrieve_incident, signature: async}, {name: update_incident, signature: async}, {name: assign_resolver_group, signature: async}, {name: resolve_incident_sys_id_from_number, signature: async}, {name: _execute_assignment_sequence, signature: async}, {name: _execute_split_assignment, signature: async}, {name: _resolve_endpoint, signature: "(template,payload)->str"}, {name: remove_path_parameter, signature: "(template,name)->str"}, {name: _resolve_body, signature: "(method,payload)"}, {name: _resolve_headers, signature: "(payload)"}]}
+    - {path: src/tool_servicenow/adapters/inbound/http/security.py, language: Python, classes: [], functions: [{name: _effective_settings, signature: "(Request)"}, {name: _auth_required, signature: "(Request)->bool"}, {name: _resolve_expected_token, signature: "(Request)->str"}, {name: validate_bearer_token, signature: "(Request,authorization=None)->None"}]}
+    - {path: src/tool_servicenow/adapters/inbound/http/s2s_controller.py, language: Python, classes: [{name: MissingGovernedContextError, kind: exception, properties: [], methods: []}], functions: [{name: handle_s2s, signature: "async (Request,ServiceMessage,ToolService)"}, {name: execute_api, signature: async}, {name: register_self, signature: async}, {name: ready, signature: async}, {name: capability_schemas, signature: async}, {name: get_incident, signature: async}, {name: put_incident_resolver_assignment, signature: async}, {name: put_incident_resolver_assignment_by_identifier, signature: async}, {name: put_incident, signature: async}, {name: put_incident_by_identifier, signature: async}, {name: _execute_operator_tool, signature: async}, {name: _idempotency_key, signature: "(ServiceMessage)->tuple|null"}, {name: _cached_protocol_response, signature: "(Request,key)->dict|null"}, {name: _remember_protocol_response, signature: "(Request,key,response)->dict"}, {name: _build_protocol_error, signature: "(**fields)->ServiceMessage"}, {name: _map_protocol_exception, signature: "(Exception)->tuple"}, {name: _raise_direct_endpoint_error, signature: "(Exception,code)->None"}]}
+    - {path: src/tool_servicenow/adapters/outbound/registry/registrar.py, language: Python, classes: [{name: RegistrarError, kind: exception, properties: [], methods: []}, {name: Registrar, kind: adapter, properties: [], methods: [{name: register, signature: "async (raise_on_error=False,*,settings=None)->dict"}, {name: heartbeat, signature: "async same"}, {name: deregister, signature: "async same"}, {name: _run_service_action, signature: async}, {name: _load_registration_context, signature: "(**args)->tuple"}]}], functions: [{name: resolve_registry_api_key, signature: "(configured_ref)->tuple[str|null,str]"}, {name: _build_registry_payload, signature: "(meta,port)->tuple[dict,str]"}, {name: _resolve_service_id, signature: "(name,static_id,port)->str"}, {name: _resolve_s2s_endpoint, signature: "(name,configured,port)->str"}]}
+    - {path: src/tool_servicenow/infrastructure/registry_client.py, language: Python, classes: [{name: RegistryClient, kind: adapter, properties: [{name: url, type: str}, {name: api_key, type: "str|null"}, {name: timeout_seconds, type: float}], methods: [{name: register, signature: "async (payload)->None"}, {name: heartbeat, signature: "async (service_id)->None"}, {name: deregister, signature: "async (service_id)->None"}, {name: _request, signature: "async (method,path,**kwargs)->None"}]}], functions: [{name: _candidate_base_urls, signature: "(url)->list[str]"}]}
+    - {path: src/tool_servicenow/client/agent_client.py, language: Python, classes: [{name: ServiceNowToolClientConfig, kind: frozen_dataclass, properties: [{name: base_url, type: str}, {name: auth_token, type: "str|null"}, {name: source, type: str}, {name: target, type: str}, {name: timeout_seconds, type: float}, {name: default_headers, type: dict}], methods: [{name: s2s_url, signature: property}]}, {name: ServiceNowToolClientError, kind: exception, properties: [{name: error_code, type: "str|null"}, {name: error_detail, type: "str|null"}, {name: envelope, type: dict}], methods: [{name: __init__, signature: "(message,*,error_code=None,error_detail=None,envelope=None)"}]}, {name: AsyncServiceNowToolClient, kind: client, properties: [{name: _config, type: config}, {name: _client, type: httpx.AsyncClient}, {name: _owns_client, type: bool}], methods: [{name: invoke, signature: "async (capability,payload=None,*,correlation_id=None)->dict"}, {name: create_incident, signature: async}, {name: retrieve_incident, signature: async}, {name: update_incident, signature: async}, {name: assign_resolver_group, signature: async}, {name: close, signature: async}, {name: _headers, signature: "()->dict"}]}], functions: []}
+    - {path: src/tool_servicenow/client/capabilities, language: Python, classes: [{name: CapabilityInvoker, kind: Protocol, properties: [], methods: [{name: invoke, signature: async}]}, {name: CreateIncidentCapability, kind: client_builder, properties: [{name: name, type: str}], methods: [{name: payload, signature: "(...)->dict"}, {name: execute, signature: async}]}, {name: RetrieveIncidentCapability, kind: client_builder, properties: [{name: name, type: str}], methods: [{name: payload, signature: "(...)->dict"}, {name: execute, signature: async}]}, {name: UpdateIncidentCapability, kind: client_builder, properties: [{name: name, type: str}], methods: [{name: payload, signature: "(...)->dict"}, {name: execute, signature: async}]}, {name: AssignResolverGroupCapability, kind: client_builder, properties: [{name: name, type: str}], methods: [{name: payload, signature: "(...)->dict"}, {name: execute, signature: async}]}], functions: [{name: copy_if_present, signature: "(payload,key,value)->None"}]}
+    - {path: src/tool_servicenow/observability/runtime.py, language: Python, classes: [], functions: [{name: configure_service_observability, signature: "(Settings,*,observability_utility=None)->DownstreamObservabilityPipeline"}]}
+    - {path: shared-contracts/platform-protocol/src/platform_protocol/domain/service_message.py, language: Python, classes: [{name: ServiceMessage, kind: Pydantic_model, properties: [{name: protocol_version, type: str}, {name: correlation_id, type: str}, {name: source, type: str}, {name: target, type: "str|null"}, {name: capability, type: "str|null"}, {name: skill, type: "str|null"}, {name: tool, type: "str|null"}, {name: message_type, type: MessageType}, {name: payload, type: "dict|null"}, {name: error, type: "str|null"}, {name: metadata, type: "dict|null"}, {name: timestamp, type: datetime}], methods: [{name: validate_protocol_rules, signature: "after validator"}]}], functions: []}
+    - {path: "remaining __init__.py/main.py and platform-protocol enum/metadata/validator modules", language: Python, classes: [{name: MessageType, kind: enum, properties: [{name: REQUEST, type: literal}, {name: RESPONSE, type: literal}, {name: EVENT, type: literal}, {name: ERROR, type: literal}], methods: []}, {name: ServiceType, kind: enum, properties: [{name: AGENT, type: literal}, {name: TOOL, type: literal}, {name: LLM, type: literal}, {name: ORCHESTRATOR, type: literal}, {name: INGRESS, type: literal}], methods: []}, {name: ServiceMetadata, kind: Pydantic_model, properties: [{name: service_id, type: str}, {name: service_name, type: str}, {name: service_type, type: ServiceType}, {name: version, type: "str|null"}, {name: instance_id, type: "str|null"}], methods: [{name: validate_service_id, signature: "field validator"}]}, {name: MessageValidator, kind: service, properties: [], methods: [{name: validate, signature: "static (ServiceMessage)->bool"}]}], functions: []}
+  config_keys:
+    - {name: "config.toml server.*,service.*,observability.*,tool_auth.*,registry.*,servicenow.*,servicenow.default_headers.*,endpoints.*,registration.*,guardrails.*", purpose: "Complete minimum runtime config", source_file: config.toml}
+    - {name: "tool.toml service.{name,version,description},network.s2s_endpoint,capabilities.list,metadata.{role,domain,protocol,provider}", purpose: registration contract, source_file: tool.toml}
+  config_artifacts:
+    - {path: config.toml, format: TOML, purpose: runtime baseline, keys: [server.host, server.port, server.reload, service.name, service.version, service.environment, observability.log_level, observability.log_name, observability.cloud_logging, observability.context_enabled, observability.generate_context_when_missing, observability.business_process, tool_auth.required, tool_auth.token_env, registry.url, registry.api_key_env, registry.timeout_seconds, servicenow.base_url, servicenow.auth_type, servicenow.username, servicenow.password, servicenow.timeout_seconds, servicenow.ready_check_upstream, servicenow.default_headers.Accept, servicenow.default_headers.Content-Type, servicenow.default_headers.X-Transaction-Source, endpoints.create_incident, endpoints.retrieve_incident, endpoints.update_incident, endpoints.assign_resolver_group, registration.auto_register_on_startup, registration.fail_fast, registration.startup_register_attempts, registration.startup_register_retry_delay_seconds, registration.heartbeat_enabled, registration.heartbeat_interval_seconds, registration.deregister_on_shutdown, guardrails.enable_governance_controls, guardrails.allowed_endpoint_hosts, guardrails.allowed_http_methods, guardrails.operator_endpoints_enabled], structure: "Non-secret defaults exactly described in config_schema; username/password=<secret>; omit example_client."}
+    - {path: tool.toml, format: TOML, purpose: registry contract, keys: [service.name, service.version, service.description, network.s2s_endpoint, capabilities.list, metadata.role, metadata.domain, metadata.protocol, metadata.provider], structure: "tool-servicenow 1.0.0; governed wrapper; placeholder S2S endpoint; four capabilities; tool/itsm/s2s/servicenow metadata."}
+    - {path: pyproject.toml, format: TOML, purpose: minimum production build, keys: [project.name, project.version, project.description, project.requires-python, project.dependencies, project.optional-dependencies.service, project.scripts.tool-servicenow, build-system.requires, build-system.build-backend, tool.uv.build-backend.module-name, tool.uv.sources.platform-sdk, tool.uv.sources.platform-protocol], structure: "Omit dev, pytest, Postman script, readme, and cache-only settings."}
+    - {path: Containerfile, format: Containerfile, purpose: OCI deployment, keys: [builder_image, runtime_image, env, workdir, user, expose, command], structure: "Fedora python-312; uv 0.10.4; UID 1001; port 8086; tool-servicenow command."}
+  payload_schemas:
+    - {name: ServiceMessage, fields: [{name: protocol_version, type: str}, {name: correlation_id, type: str}, {name: source, type: str}, {name: target, type: "str|null"}, {name: capability, type: "str|null"}, {name: message_type, type: "REQUEST|RESPONSE|EVENT|ERROR"}, {name: payload, type: "object|null"}, {name: error, type: "str|null"}, {name: metadata, type: "object|null"}, {name: timestamp, type: datetime}], used_by: "/s2s"}
+    - {name: CreateIncidentPayload, fields: [{name: data, type: object}, {name: body, type: object}, {name: query, type: object}, {name: headers, type: object}], used_by: servicenow.create_incident}
+    - {name: RetrieveIncidentPayload, fields: [{name: incident_sys_id, type: "str optional"}, {name: incident_id, type: "str alias"}, {name: sys_id, type: "str alias"}, {name: incident_number, type: "str optional"}, {name: query, type: object}], used_by: servicenow.retrieve_incident}
+    - {name: UpdateIncidentPayload, fields: [{name: incident_sys_id, type: "str optional"}, {name: incident_number, type: "str optional"}, {name: data, type: object}, {name: body, type: object}, {name: query, type: object}, {name: headers, type: object}, {name: validate_update_applied, type: "bool|string"}], used_by: servicenow.update_incident}
+    - {name: AssignmentPayload, fields: [{name: incident_sys_id, type: "str optional"}, {name: incident_number, type: "str optional"}, {name: assignment_group, type: "str optional"}, {name: resolver_group, type: "str optional"}, {name: assigned_to, type: "str optional"}, {name: work_notes, type: "str optional"}, {name: headers, type: object}, {name: body, type: object}], used_by: servicenow.assign_resolver_group}
+    - {name: ServiceNowResponse, fields: [{name: result, type: "object|array|string|null"}, {name: tool_partial_success, type: "bool optional"}, {name: tool_warning, type: "str optional"}, {name: additional_fields, type: Any}], used_by: all capabilities}
+    - {name: ProtocolErrorPayload, fields: [{name: error, type: str}, {name: error_code, type: str}, {name: error_detail, type: "str optional"}], used_by: "ERROR ServiceMessage"}
+    - {name: ReadinessResult, fields: [{name: status, type: "READY|NOT_READY"}, {name: supported_capabilities, type: "list[str]"}, {name: readiness_issues, type: "list[str]"}, {name: dependency_checks, type: "object optional"}], used_by: readiness}
+    - {name: RegistryRegistration, fields: [{name: service_id, type: str}, {name: service_type, type: "literal tool"}, {name: name, type: str}, {name: version, type: str}, {name: description, type: str}, {name: capabilities, type: "list[str]"}, {name: tools, type: "empty list"}, {name: endpoint, type: str}, {name: tags, type: "[tool,servicenow]"}, {name: metadata, type: object}], used_by: platform-registry}
+  messaging:
+    - {channel: "HTTP POST /s2s", direction: bidirectional, message_shape: ServiceMessage}
+    - {channel: "HTTP platform-registry endpoints", direction: outbound, message_shape: "register payload; heartbeat/deregister service_id"}
+    - {channel: "queues/topics", direction: none, message_shape: none}
+  deploy_resources:
+    - {type: OCI_image, name: tool-servicenow, file: Containerfile}
+    - {type: Cloud_Run_service, name: tool-servicenow, file: ".env.cloud-run.example; no IaC in service"}
+    - {type: Secret_Manager_bindings, name: "inbound token, ServiceNow auth, registry key, Sumo endpoint", file: "environment injection only"}
+
+behavioral_tests:
+  scenarios: []
+  edge_cases: []
+
+adr:
+  - {id: ADR-001, decision: "Deterministic four-capability wrapper, not an agent reasoner", context: "ServiceNow credentials grant material write access", rationale: "Prevent arbitrary URL/verb/tool selection", alternatives_considered: ["generic HTTP proxy", "LLM tool router"], consequences: "Narrow safe contract"}
+  - {id: ADR-002, decision: "Wrapper owns all outbound authentication", context: "Callers are less trusted than integration service", rationale: "Prevent credential forwarding and override", alternatives_considered: ["pass-through Authorization"], consequences: "Separate inbound/outbound credentials"}
+  - {id: ADR-003, decision: "Resolve incident_number to sys_id before mutations", context: "Numbers are human-friendly but sys_ids are unique route identifiers", rationale: "Detect conflicts and use canonical record path", alternatives_considered: ["mutate by encoded query"], consequences: "One extra GET for number-based mutation"}
+  - {id: ADR-004, decision: "Split mixed-format group/assignee reference updates", context: "ServiceNow input display mode applies request-wide", rationale: "Each reference receives correct input mode", alternatives_considered: ["single combined PUT always"], consequences: "Potential two-step partial success"}
+  - {id: ADR-005, decision: "Process-local idempotency only for resolver assignment", context: "Duplicate assignment retries are risky", rationale: "Replay terminal response without repeated mutation", alternatives_considered: ["no cache", "durable database"], consequences: "Not shared across replicas/restarts"}
+  - {id: ADR-006, decision: "Optional one-attempt registry lifecycle", context: "Discovery must not create retry storms", rationale: "Explicit fail-fast or degraded startup", alternatives_considered: ["unbounded retry"], consequences: "Transient registry failure needs external recovery/manual registration"}
+
+abom:
+  frameworks: ["FastAPI >=0.135.1", "Pydantic >=2.12.5", "httpx >=0.28.1", "Uvicorn >=0.41.0", "python-dotenv >=1.2.1", "platform-sdk workspace", "platform-protocol 0.1.0"]
+  models: []
+  tools: ["ServiceNow create incident", "ServiceNow retrieve incident", "ServiceNow update incident", "ServiceNow assign resolver group"]
+  mcps: []
+  platforms: ["Python 3.12", "OCI/Podman", "Google Cloud Run", "ServiceNow", "platform-registry", "Google Cloud Logging/Trace", "optional Sumo Logic"]
+  data_classification: "Operational/confidential: incident identifiers, descriptions, work notes, assignee/group references, tenant/correlation context, and upstream diagnostics. Secrets: all auth tokens, usernames/passwords, API keys, and collector endpoints."
+  estimated_cost_profile: "No model cost. Per invocation uses one ServiceNow call normally; number resolution, sys_id fallback, or split assignment can add one call. Optional readiness, registry heartbeat, cloud telemetry, and Sumo ingestion add usage-based network/observability cost."
+
+# Extraction notes
+# overall_confidence: high for production source, configuration, payloads, and branch behavior; medium for platform-sdk internals and hosted resources outside this service.
+# inferred_sections: Cloud Run and secret bindings are inferred from Containerfile/environment templates; no IaC is present. No model, prompt, MCP, database, queue, or topic exists.
+# excluded_from_generation: tests, test helpers, examples/tool_client.py, Postman assets, runbooks/README files, configuration/postman_environment.py, prepare-postman script, config.toml example_client, development dependencies, caches, and local credentials.
+# redactions: ServiceNow username/password/header token, inbound bearer token, registry API keys, Sumo collector endpoint, and any local dotenv/credential files; no values copied.

@@ -1,0 +1,200 @@
+Excellent. We now have:
+
+✅ Step 7.1 – Bootstrap Project
+✅ Step 7.2 – Configure pyproject.toml
+✅ Step 7.3 – Install Dependencies
+✅ Step 7.4 – Create PD-HECA Project Structure
+✅ Step 7.5 – Bootstrap Architecture
+
+The next logical step is not FastAPI.
+
+The next step is Configuration Management, because every component in Bootstrap depends on configuration.
+
+The initialization order should be:
+Application Starts
+        │
+        ▼
+Load .env
+        │
+        ▼
+Load config.toml
+        │
+        ▼
+Create Settings Object
+        │
+        ▼
+Validate Configuration
+        │
+        ▼
+Dependency Injection Container
+        │
+        ▼
+Logging
+        │
+        ▼
+OpenTelemetry
+        │
+        ▼
+Google Cloud
+        │
+        ▼
+Vertex AI
+        │
+        ▼
+FastAPI
+
+
+Chapter 7:
+Step 7.6 – Configuration Management:
+
+
+Architecture Principle:
+Configuration is a first-class architectural component, not a collection of environment variables.
+Every component in the Enterprise AI Gateway depends on configuration, but configuration itself must remain independent of business logic.
+The Core never reads environment variables, .env files, or config.toml. It only receives validated configuration objects through dependency injection.
+
+Why Separate Configuration?:
+
+In many applications, configuration is accessed directly throughout the codebase:
+os.getenv("PROJECT_ID")
+or
+os.environ["PROJECT_ID"]
+This tightly couples business logic to the runtime environment and makes testing difficult.
+
+Instead, configuration is loaded once during application startup, validated, and exposed as immutable settings objects.
+
+Configuration Sources:
+
+The Enterprise AI Gateway loads configuration in the following order:
+
+| Priority | Source                | Purpose                                              |
+| -------- | --------------------- | ---------------------------------------------------- |
+| 1        | `pyproject.toml`      | Project metadata and Python tooling                  |
+| 2        | `.env`                | Environment-specific and sensitive values            |
+| 3        | `config.toml`         | Application configuration shared across environments |
+| 4        | Environment Variables | Override values for deployment environments          |
+
+
+If the same setting exists in multiple sources, the higher-priority source overrides the lower one.
+
+Configuration Directory:
+configuration/
+│
+├── __init__.py
+├── settings.py
+├── env_loader.py
+├── toml_loader.py
+├── validators.py
+└── models.py
+
+
+Responsibilities
+settings.py:
+
+Creates the immutable application settings object that will be injected throughout the application.
+
+
+env_loader.py:
+
+Responsible for loading values from the .env file.
+
+Examples include:
+
+Google Cloud Project ID
+Region
+Service Account
+Log Level
+
+
+toml_loader.py:
+
+Loads application configuration from config.toml.
+
+Examples include:
+
+AI model defaults
+Retry policies
+Timeout values
+Feature flags
+Observability options
+
+
+validators.py:
+
+Validates the complete configuration before the application starts.
+
+Examples include:
+
+Required settings are present.
+Numeric values are within acceptable ranges.
+Supported regions and model names are valid.
+Mandatory cloud configuration exists.
+
+If validation fails, the application should fail fast during startup rather than encountering runtime errors.
+
+
+models.py:
+
+Defines immutable configuration models that are shared across the application.
+
+Examples include:
+
+Application Settings
+Google Cloud Settings
+Vertex AI Settings
+Logging Settings
+Observability Settings
+
+Configuration Flow:
+            .env
+              │
+              ▼
+        Environment Loader
+              │
+              ▼
+         config.toml
+              │
+              ▼
+          TOML Loader
+              │
+              ▼
+      Configuration Validator
+              │
+              ▼
+     Immutable Settings Model
+              │
+              ▼
+ Dependency Injection Container
+ 
+ Dependency Direction:
+ Bootstrap
+     │
+     ▼
+Configuration
+     │
+     ▼
+Dependency Injection
+     │
+     ▼
+Core
+
+The Core never accesses configuration files directly. It receives only the configuration it needs through injected dependencies.
+
+What Happens During Startup?:
+
+During application startup, the configuration layer performs the following sequence:
+
+Load values from .env.
+Load values from config.toml.
+Apply environment variable overrides.
+Merge all configuration sources.
+Validate the merged configuration.
+Create immutable settings models.
+Register the settings in the Dependency Injection container.
+
+Only after these steps complete successfully does the Bootstrap layer continue with initializing logging, tracing, Google Cloud clients, and the FastAPI application.
+
+
+Principal Architect Insight:
+
+A robust configuration system isolates the application from its deployment environment. By centralizing loading, validation, and dependency injection of configuration, the Enterprise AI Gateway ensures that every component operates on consistent, validated settings. This approach supports repeatable deployments, simplifies testing, and keeps the Core completely independent of environment-specific concerns.

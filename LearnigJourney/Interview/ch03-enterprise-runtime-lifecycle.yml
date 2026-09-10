@@ -1,0 +1,2429 @@
+Part II — Enterprise Runtime Lifecycle:
+From HTTP Request to Standardized Enterprise Request
+Introduction:
+
+So far, we have viewed the Enterprise AI Gateway as an architectural component.
+
+We know:
+
+What it is.
+Why it exists.
+Where it fits.
+What responsibilities it owns.
+How it is internally decomposed.
+
+However, architecture diagrams are static.
+
+Real enterprise systems are dynamic.
+
+Every request entering the Enterprise AI Platform triggers a sequence of operations that must execute in a precise order. Each operation depends on the output of the previous one, gradually transforming an external HTTP request into a trusted enterprise request that downstream services can process confidently.
+
+Understanding this runtime lifecycle is essential because the implementation of the Enterprise AI Gateway follows exactly the same sequence. Rather than learning isolated classes or methods, we will build the gateway by following the lifecycle of a single request from arrival to handoff.
+
+By the end of this part, you will understand not only what each runtime step does, but also why it must occur in that order.
+
+
+Runtime Lifecycle Overview:
+
+Every request entering the Enterprise AI Platform passes through the following execution pipeline.
+External Client
+        │
+        ▼
+Google API Gateway
+        │
+        ▼
+═══════════════════════════════════════════════
+Enterprise AI Gateway
+═══════════════════════════════════════════════
+
+Step 1   Receive HTTP Request
+        │
+Step 2   Extract Distributed Trace Context
+        │
+Step 3   Create Root Span
+        │
+Step 4   Build ObservabilityContext
+        │
+Step 5   Build ExecutionContext
+        │
+Step 6   Build SecurityContext
+        │
+Step 7   Resolve PolicyContext
+        │
+Step 8   Build BusinessContext
+        │
+Step 9   Build RequestContext
+        │
+Step 10  Validate Enterprise Request
+        │
+Step 11  Structured Logging
+        │
+Step 12  Propagate Distributed Trace
+        │
+Step 13  Propagate Enterprise Headers
+        │
+Step 14  Forward Request
+        │
+═══════════════════════════════════════════════
+        ▼
+Responsible AI Input Pipeline
+
+
+Why Is the Sequence Important?:
+The runtime steps are intentionally ordered because each step depends on information produced by earlier steps.
+
+For example:
+
+You cannot create an ObservabilityContext until a trace has been extracted or initialized.
+You cannot resolve enterprise policies until the SecurityContext identifies the caller.
+You cannot build a complete RequestContext until all enterprise contexts have been created.
+You should not forward the request until it has been validated and enriched with trace and enterprise metadata.
+
+Changing this order can lead to incomplete context, inconsistent observability, or incorrect policy enforcement.
+
+Runtime Execution Philosophy:
+
+The Enterprise AI Gateway follows three guiding principles during runtime.
+
+1. Build Once, Reuse Everywhere:
+
+Enterprise metadata is created once at the platform boundary and reused by every downstream component.
+
+This avoids duplication and ensures consistency.
+
+
+2. Fail Fast:
+
+If a request is invalid, incomplete, or unauthorized, processing stops immediately.
+
+The gateway rejects the request before any business or AI processing begins.
+
+This protects downstream services from receiving malformed or untrusted requests.
+
+
+3. Produce a Trusted Execution Contract:
+
+The final output of the gateway is not a business response.
+
+It is a fully populated RequestContext that serves as the enterprise execution contract for the remainder of the platform.
+
+Every downstream component can rely on this contract instead of rebuilding enterprise metadata.
+
+
+
+Runtime Output:
+
+At the end of the runtime lifecycle, the gateway produces the following conceptual object:
+
+RequestContext
+├── HttpRequest
+├── ExecutionContext
+├── SecurityContext
+├── BusinessContext
+├── ObservabilityContext
+├── PolicyContext
+└── Enterprise Metadata
+
+This object represents everything the platform needs to process the request consistently, securely, and observab
+
+Enterprise Reference Card
+Runtime Overview Card:
+| Property            | Description                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| Runtime Trigger     | Authenticated HTTP request received from Google API Gateway |
+| Execution Model     | Sequential request pipeline                                 |
+| Processing Style    | Stateless per request                                       |
+| Primary Output      | Standardized `RequestContext`                               |
+| Downstream Consumer | Responsible AI Input Pipeline                               |
+| Failure Strategy    | Fail fast before business or AI processing                  |
+
+Chapter 3.6:
+Runtime Step 1 – Receive HTTP Request:
+Entering the Enterprise AI Platform
+
+Architecture Principle:
+Every enterprise request must enter the platform through a single, controlled application entry point before any business or AI processing begins.
+The Enterprise AI Gateway is that entry point.
+No downstream component should ever receive an external request directly.
+
+Introduction:
+
+Every interaction with the Enterprise AI Platform begins with an HTTP request.
+
+That request may originate from:
+
+ServiceNow
+A Web Portal
+A Mobile Application
+Another Enterprise Application
+REST APIs
+Internal Microservices
+
+Regardless of its origin, every request follows the same journey.
+Client
+      │
+      ▼
+Google API Gateway
+      │
+      ▼
+Enterprise AI Gateway
+
+At this stage, no business logic has been executed.:
+
+No AI model has been invoked.
+
+No agent has started.
+
+The only objective is:
+
+Safely receive the request and bring it under the control of the Enterprise AI Platform.
+
+Why Is This Step Necessary?:
+Although Google API Gateway has already authenticated and routed the request, the application has not yet taken ownership of it.
+The request still exists as an HTTP message.
+The Enterprise AI Gateway must convert this transport-level request into an application-level object that the platform can understand and process.
+This transition marks the beginning of enterprise request processing.
+
+Runtime Sequence:
+External Client
+        │
+        ▼
+Google API Gateway
+        │
+        ▼
+Cloud Run
+        │
+        ▼
+FastAPI Server
+        │
+        ▼
+Enterprise AI Gateway
+        │
+        ▼
+Request Receiver
+
+At the end of this step:
+
+The HTTP request has entered the application.
+FastAPI has parsed the request.
+Control has been transferred to the Enterprise AI Gateway.
+No enterprise processing has started yet.
+
+
+What Happens During This Step?:
+
+The Request Receiver performs only the responsibilities required to accept the request.
+
+It:
+
+Accepts the incoming HTTP request.
+Parses the request using FastAPI.
+Reads request headers.
+Reads path parameters.
+Reads query parameters.
+Reads the request body.
+Creates the initial request object.
+Passes control to the Enterprise Gateway pipeline.
+
+Notice what it does not do.
+
+It does not:
+
+Validate business rules.
+Resolve enterprise policies.
+Initialize tracing.
+Build contexts.
+Call Vertex AI.
+Execute AI agents.
+
+Those responsibilities belong to later runtime steps.
+
+Runtime Flow:
+HTTP Request
+      │
+      ▼
+Receive Request
+      │
+      ▼
+Parse HTTP Message
+      │
+      ▼
+Extract Headers
+      │
+      ▼
+Extract Path Parameters
+      │
+      ▼
+Extract Query Parameters
+      │
+      ▼
+Extract Request Body
+      │
+      ▼
+Create Initial Request
+      │
+      ▼
+Next Runtime Step
+
+At this point, the application has only received the request.
+
+It has not yet interpreted or enriched it.
+
+Technology Card:
+| Category           | Technology                   |
+| ------------------ | ---------------------------- |
+| Cloud Platform     | Google Cloud Run             |
+| Web Framework      | FastAPI                      |
+| ASGI Server        | Uvicorn                      |
+| HTTP Protocol      | HTTP/HTTPS                   |
+| Request Object     | `fastapi.Request`            |
+| Validation Library | Pydantic (later step)        |
+| Runtime Model      | Stateless Request Processing |
+These technologies form the entry layer of the application.
+
+---
+Chapter 3.7:
+Runtime Step 2 – Extract Distributed Trace Context:
+Establishing the Foundation for Enterprise Observability
+
+Architecture Principle:
+Every enterprise request must participate in a distributed trace before any enterprise processing begins.
+Observability is not something added after development.
+It is established at the beginning of every request.
+
+Without a distributed trace, an enterprise platform cannot reliably answer questions such as:
+
+Which services handled this request?
+How long did each service take?
+Where did the failure occur?
+Which downstream APIs were called?
+Which LLM invocation caused the latency?
+Which user initiated the request?
+
+For this reason, trace extraction is the first enterprise operation after receiving the HTTP request.
+
+Introduction:
+
+In the previous runtime step, the Enterprise AI Gateway accepted an incoming HTTP request and transferred control to the runtime pipeline.
+
+At that moment, the application knew only one thing:
+
+A request has arrived.
+
+It did not yet know:
+
+Whether the request belongs to an existing distributed transaction.
+Whether another service has already created a trace.
+Whether a new trace must be started.
+Which Trace ID should be used.
+Which Span ID should become the parent span.
+
+Before the platform performs validation, logging, policy resolution, or business processing, it must first determine the request's observability context.
+
+This is the responsibility of the Trace Manager.
+
+
+What Is a Distributed Trace?:
+Modern enterprise applications are rarely composed of a single service.
+A single user request may travel through multiple components before reaching its destination.
+
+For example:
+Client
+   │
+   ▼
+Google API Gateway
+   │
+   ▼
+Enterprise AI Gateway
+   │
+   ▼
+Responsible AI Pipeline
+   │
+   ▼
+AI Orchestrator
+   │
+   ▼
+Agent Runtime
+   │
+   ▼
+Vertex AI Adapter
+   │
+   ▼
+Vertex AI
+
+Although this appears to be one request, it is actually processed by multiple services.
+
+A distributed trace connects these independent operations into a single logical transaction.
+
+Instead of viewing isolated logs from different services, engineers can observe the complete journey of the request across the entire platform.
+
+
+What Is Trace Context?:
+A Trace Context is the metadata that identifies a distributed request as it travels through multiple services.
+It enables every component in the platform to recognize that it is participating in the same end-to-end operation.
+The Trace Context typically includes:
+
+Trace ID – A globally unique identifier shared by all services participating in the same request.
+Parent Span ID – The identifier of the operation that invoked the current service.
+Trace Flags – Information such as whether the request should be sampled for tracing.
+
+These values are propagated between services using standard HTTP headers defined by the W3C Trace Context specification.
+
+
+Where Does the Trace Context Come From?:
+
+The Trace Context may already exist before the request reaches the Enterprise AI Gateway.
+
+For example:
+User
+ │
+ ▼
+Frontend Application
+ │
+ │ Creates Trace
+ ▼
+Google API Gateway
+ │
+ │ Forwards Trace Context
+ ▼
+Enterprise AI Gateway
+
+In this case, the gateway should continue the existing trace rather than creating a new one.
+
+If no trace information is present, the gateway becomes responsible for creating a new distributed trace in the next runtime step.
+
+Runtime Sequence:
+HTTP Request
+       │
+       ▼
+Request Receiver
+       │
+       ▼
+Read HTTP Headers
+       │
+       ▼
+Locate traceparent Header
+       │
+       ▼
+Parse W3C Trace Context
+       │
+       ▼
+Determine
+
+• Existing Trace?
+        or
+• New Trace Required?
+
+At the end of this step, the gateway knows whether it should continue an existing distributed trace or create a new one.
+
+No spans are created yet.
+
+This step is concerned only with extracting and interpreting the incoming trace metadata.
+
+
+Why Does Trace Extraction Happen First?:
+
+Many enterprise capabilities depend on the Trace ID.
+
+For example:
+
+Structured logs should include the Trace ID.
+Metrics should be correlated with the Trace ID.
+Exceptions should reference the Trace ID.
+AI inference latency should be associated with the Trace ID.
+Downstream services should inherit the Trace ID.
+
+If tracing were initialized later, earlier events would not be linked to the same distributed transaction, making troubleshooting significantly more difficult.
+
+Technology Card:
+| Category                   | Technology               |
+| -------------------------- | ------------------------ |
+| Observability Standard     | OpenTelemetry            |
+| Trace Propagation Standard | W3C Trace Context        |
+| HTTP Header                | `traceparent`            |
+| Optional Header            | `tracestate`             |
+| Python Library             | OpenTelemetry Python SDK |
+| Cloud Platform             | Google Cloud Trace       |
+
+The Enterprise AI Gateway follows the W3C Trace Context specification to ensure interoperability with other services and cloud providers.
+
+Runtime Card:
+| Stage      | Description                                               |
+| ---------- | --------------------------------------------------------- |
+| Input      | HTTP request with optional tracing headers                |
+| Processing | Read and parse the W3C Trace Context                      |
+| Decision   | Continue an existing trace or prepare to create a new one |
+| Output     | Extracted trace metadata available to the Trace Manager   |
+
+Sequence Card:
+Receive HTTP Request
+
+↓
+
+Extract Trace Context
+
+↓
+
+Create Root Span
+
+↓
+
+Build ObservabilityContext
+This step provides the information required by the next stages of the runtime lifecycle.
+
+
+Principal Architect Insight:
+A common misconception is that tracing begins when the application creates its first span.
+In reality, distributed tracing begins before the application executes any business logic. The first responsibility of the Enterprise AI Gateway is to determine whether the incoming request already belongs to an existing distributed transaction.
+
+If a valid Trace Context exists, the gateway becomes another participant in that transaction. If it does not exist, the gateway will establish a new trace in the next runtime step.
+
+This distinction is critical. Extraction identifies the distributed transaction, while span creation records the work performed by the current service. Keeping these responsibilities separate results in a clearer architecture and a more accurate observability model.
+
+Chapter Summary:
+
+In this chapter, the Enterprise AI Gateway established the foundation for observability by extracting the incoming distributed Trace Context. We learned how the W3C Trace Context standard enables multiple services to participate in the same distributed transaction and why this information must be available before logging, policy resolution, or business processing begins.
+
+At the end of this step, the gateway knows whether it should continue an existing distributed trace or prepare to create a new one.
+
+---
+Chapter 3.8:
+Runtime Step 3 – Create Root Application Span:
+Recording the Enterprise AI Gateway's Work
+
+
+Architecture Principle:
+Every application-owned component should record its work within a span so that the complete lifecycle of a request can be observed across the enterprise platform.
+
+A distributed trace tells us which transaction is being processed.
+
+A span tells us what work a specific component performed within that transaction.
+
+After extracting the distributed Trace Context, the Enterprise AI Gateway becomes an active participant by creating its own application span.
+
+Introduction:
+
+In the previous runtime step, the Enterprise AI Gateway extracted the incoming Trace Context.
+
+At this point, the gateway knows:
+
+The Trace ID.
+Whether the request belongs to an existing distributed transaction.
+The Parent Span ID (if present).
+Whether a new trace must be created.
+
+However, the gateway has not yet recorded any work.
+
+Observability systems know that a trace exists, but they do not yet know what the Enterprise AI Gateway is doing.
+
+To record its work, the gateway creates its own Root Application Span.
+
+This span measures everything performed inside the Enterprise AI Gateway and becomes the parent span for all internal operations executed during request processing.
+
+
+What Is a Span?:
+
+A Span represents a single unit of work performed by a component.
+
+It records:
+
+When the work started.
+When the work finished.
+How long it took.
+Whether it succeeded or failed.
+Important attributes describing the work.
+Any errors or exceptions that occurred.
+
+If a distributed trace is the entire journey, a span is one stop along that journey.
+
+
+Trace vs Span:
+
+A common source of confusion is the relationship between a Trace and a Span.
+| Distributed Trace                           | Span                                             |
+| ------------------------------------------- | ------------------------------------------------ |
+| Represents the complete end-to-end request. | Represents one unit of work within that request. |
+| Shared by all participating services.       | Owned by a single component or operation.        |
+| Identified by a Trace ID.                   | Identified by a Span ID.                         |
+| May contain many spans.                     | Belongs to exactly one trace.                    |
+
+
+Think of it this way:
+Distributed Trace
+│
+├── Google API Gateway Span
+│
+├── Enterprise AI Gateway Span
+│      ├── Build Context Span
+│      ├── Resolve Policy Span
+│      └── Validate Request Span
+│
+├── Responsible AI Pipeline Span
+│
+├── AI Orchestrator Span
+│
+└── Vertex AI Adapter Span
+
+One trace contains many spans, each describing the work performed by a specific component.
+
+
+Why Create the Root Application Span?
+
+The Enterprise AI Gateway performs several operations after receiving the request:
+
+Build enterprise contexts.
+Resolve policies.
+Validate the request.
+Initialize logging.
+Propagate headers.
+Forward the request.
+
+Rather than creating unrelated spans, the gateway first creates a Root Application Span that represents the entire lifecycle of the gateway itself.
+
+Every subsequent operation becomes a child of this root span.
+
+This hierarchical structure makes traces easier to understand and analyze.
+
+
+Runtime Sequence:
+Receive HTTP Request
+        │
+        ▼
+Extract Trace Context
+        │
+        ▼
+Create Root Application Span
+        │
+        ▼
+Enterprise AI Gateway Runtime
+        │
+        ├── Build ObservabilityContext
+        ├── Build ExecutionContext
+        ├── Build SecurityContext
+        ├── Resolve PolicyContext
+        ├── Build BusinessContext
+        └── Build RequestContext
+        
+The Root Application Span remains active while the Enterprise AI Gateway performs its work.
+
+When the gateway finishes processing the request, the span is closed, recording the total execution time.
+
+What Information Does the Root Span Capture?:
+
+The Root Application Span typically records:
+
+Gateway name.
+Service name.
+Service version.
+Deployment environment.
+HTTP method.
+HTTP route.
+Request protocol.
+Processing duration.
+Response status.
+Error information (if any).
+
+This metadata helps engineers analyze performance and troubleshoot issues across the platform.        
+
+Runtime Flow:
+Extract Trace Context
+        │
+        ▼
+Create Root Span
+        │
+        ▼
+Activate Span
+        │
+        ▼
+Execute Gateway Processing
+        │
+        ▼
+Complete Span
+The span is active throughout the gateway's processing lifecycle.
+Technology Card:
+| Category                | Technology                |
+| ----------------------- | ------------------------- |
+| Observability Framework | OpenTelemetry             |
+| Python SDK              | OpenTelemetry Python SDK  |
+| Tracer                  | `Tracer`                  |
+| Runtime Object          | `Span`                    |
+| Cloud Backend           | Google Cloud Trace        |
+| Context Management      | OpenTelemetry Context API |
+
+The Tracer is responsible for creating spans, while the Span represents the work performed by the Enterprise AI Gateway.
+Runtime Card:
+| Stage      | Description                                     |
+| ---------- | ----------------------------------------------- |
+| Input      | Extracted Trace Context                         |
+| Processing | Create and activate the Root Application Span   |
+| Output     | Active span associated with the current request |
+
+Sequence Card:
+Receive Request
+        │
+Extract Trace Context
+        │
+Create Root Span
+        │
+Build ObservabilityContext
+The Root Application Span provides the observability foundation for all remaining runtime steps.
+
+Principal Architect Insight
+
+A common mistake is creating dozens of top-level spans for a single request. This produces fragmented traces that are difficult to interpret because there is no clear parent–child relationship.
+
+The Enterprise AI Gateway should create one Root Application Span representing its entire lifecycle. Any finer-grained operations—such as policy resolution, request validation, or context creation—can be represented as child spans beneath it.
+
+This hierarchy mirrors the architecture itself: the gateway owns the overall request preparation, while its internal components own specific tasks. The resulting trace becomes both a performance tool and a visual representation of the platform's design.
+
+Chapter Summary:
+
+In this chapter, the Enterprise AI Gateway became an active participant in the distributed trace by creating its Root Application Span. We distinguished between a Trace, which represents the complete end-to-end request, and a Span, which represents the work performed by a single component.
+
+The Root Application Span now provides the observability boundary for all gateway processing that follows.
+
+With tracing established, the gateway can begin creating the enterprise contexts required by downstream services.
+
+---
+Chapter 3.9:
+Runtime Step 4 – Build ObservabilityContext:
+Creating a Unified Observability Context for Enterprise Requests
+
+
+A Principal Architect asks a different question:
+
+"Is a Trace ID and Span ID enough for an enterprise platform?"
+
+The answer is No.
+
+A Trace ID only explains where the request traveled.
+
+An enterprise platform also needs to know:
+
+Which customer initiated the request?
+Which tenant owns it?
+Which environment is processing it?
+Which correlation ID should appear in logs?
+Which request ID should support use?
+Which business transaction does it belong to?
+
+This is why we introduce the ObservabilityContext.
+
+Architecture Principle:
+
+Distributed tracing alone is not sufficient for enterprise observability. Every request requires a unified observability context that combines tracing, logging, correlation, and operational metadata into a single reusable object.
+
+The Enterprise AI Gateway creates this object once so every downstream component shares the same observability information.
+
+
+Introduction:
+
+At this point in the request lifecycle:
+
+The HTTP request has entered the platform.
+The distributed Trace Context has been extracted.
+The Root Application Span has been created.
+
+The platform can now record execution time.
+
+However, the platform still lacks the operational information required for effective monitoring and troubleshooting.
+
+For example, if an engineer searches production logs, they need answers such as:
+
+Which request generated this log?
+Which trace contains this request?
+Which environment processed it?
+Which service generated the log?
+Which deployment version handled the request?
+
+The Root Span alone cannot answer all of these questions.
+
+To solve this, the Enterprise AI Gateway creates an ObservabilityContext.
+
+
+Why Do We Need an ObservabilityContext?:
+
+Imagine an enterprise AI platform handling thousands of requests every second.
+
+A support engineer receives the following incident:
+
+"Customer ABC experienced an AI timeout at 10:43 AM."
+
+Without a centralized observability context, the engineer must manually correlate:
+
+Application logs
+Distributed traces
+Metrics
+Error reports
+Audit records
+
+Each system may use different identifiers, making troubleshooting slow and error-prone.
+
+By creating an ObservabilityContext, every observability artifact shares the same identifiers and metadata.
+
+This enables engineers to move seamlessly between logs, traces, metrics, and monitoring dashboards.
+
+
+
+Observability Components:
+The ObservabilityContext consolidates the information required for operational visibility.
+
+Typical contents include:
+
+Trace ID
+Span ID
+Correlation ID
+Request ID
+Service Name
+Service Version
+Deployment Environment
+Timestamp
+Processing Start Time
+
+These values provide a consistent reference for every downstream component.
+
+Runtime Sequence:
+Receive HTTP Request
+        │
+        ▼
+Extract Trace Context
+        │
+        ▼
+Create Root Span
+        │
+        ▼
+Create Correlation ID
+        │
+        ▼
+Collect Service Metadata
+        │
+        ▼
+Create ObservabilityContext
+
+At the end of this step, the Enterprise AI Gateway has established a shared observability foundation for the entire request.
+
+What Is a Correlation ID?:
+
+Many engineers confuse the Trace ID and the Correlation ID.
+
+Although they are related, they serve different purposes.
+
+Trace ID:
+Defined by the W3C Trace Context specification.
+Used by distributed tracing systems.
+Shared across all participating services.
+Correlation ID:
+Defined by the enterprise.
+Used for operational support and log correlation.
+May exist even when distributed tracing is disabled.
+
+Many organizations expose the Correlation ID in customer support portals because it is easier to communicate than a full distributed trace
+
+
+Trace ID vs Correlation ID:
+| Trace ID                       | Correlation ID                           |
+| ------------------------------ | ---------------------------------------- |
+| OpenTelemetry standard         | Enterprise-defined identifier            |
+| Used by tracing systems        | Used by operations and support           |
+| Connects spans across services | Connects logs, tickets, and audit events |
+| Primarily technical            | Primarily operational                    |
+Both identifiers are valuable and often appear together in enterprise systems.
+
+
+ObservabilityContext Model:
+
+The Enterprise AI Gateway creates a reusable object similar to the following conceptual model.
+ObservabilityContext
+│
+├── Trace ID
+├── Span ID
+├── Correlation ID
+├── Request ID
+├── Service Name
+├── Service Version
+├── Environment
+├── Start Timestamp
+└── Processing Metadata
+
+This object is passed to every downstream component through the RequestContext.
+
+Runtime Flow:
+Trace Context
+        │
+        ▼
+Root Span
+        │
+        ▼
+Generate Correlation ID
+        │
+        ▼
+Collect Runtime Metadata
+        │
+        ▼
+Create ObservabilityContext
+        │
+        ▼
+Attach to RequestContext
+
+Notice that the gateway does not immediately send the context downstream.
+
+It first completes the remaining enterprise contexts before aggregating them into the final RequestContext.
+
+Technology Card:
+| Category            | Technology              |
+| ------------------- | ----------------------- |
+| Distributed Tracing | OpenTelemetry           |
+| Logging             | Structured JSON Logging |
+| Cloud Logging       | Google Cloud Logging    |
+| Metrics             | OpenTelemetry Metrics   |
+| Monitoring          | Google Cloud Monitoring |
+| Trace Storage       | Google Cloud Trace      |
+The ObservabilityContext acts as the bridge between these observability services by providing a consistent set of identifier
+
+Runtime Card:
+| Stage      | Description                                        |
+| ---------- | -------------------------------------------------- |
+| Input      | Active Root Span and Trace Context                 |
+| Processing | Create Correlation ID and collect runtime metadata |
+| Output     | ObservabilityContext                               |
+
+Sequence Card:
+Receive Request
+        │
+Extract Trace Context
+        │
+Create Root Span
+        │
+Build ObservabilityContext
+        │
+Build ExecutionContext
+
+The ObservabilityContext is the first enterprise context created during request processing.
+
+
+Principal Architect Insight:
+
+Many systems scatter observability information across different components. One service generates a Correlation ID, another creates structured logs, while a third records deployment metadata. As a result, engineers must reconstruct the request history from multiple unrelated sources.
+
+The Enterprise AI Gateway avoids this fragmentation by creating a single ObservabilityContext at the application boundary. Every downstream component receives the same object and enriches it rather than replacing it. This creates a unified observability model that remains consistent throughout the platform and significantly simplifies production support.
+
+
+Chapter Summary:
+
+In this chapter, we introduced the ObservabilityContext, the first enterprise context created by the Enterprise AI Gateway. We learned why distributed tracing alone is not sufficient for enterprise operations and how the ObservabilityContext combines trace information, correlation identifiers, service metadata, and operational details into a reusable object shared by all downstream components.
+
+At this point in the runtime lifecycle, the platform has established its observability foundation.
+
+The next step is to create the ExecutionContext, which captures runtime information such as execution identifiers, deployment characteristics, and processing metadata that describe how and where the request is executing within the Enterprise AI Platform.
+
+---
+Chapter 3.10:
+Runtime Step 5 – Build ExecutionContext:
+Establishing the Runtime Environment for Enterprise Processing
+Receive HTTP Request
+        │
+Extract Trace Context
+        │
+Create Root Span
+        │
+Build ObservabilityContext
+        │
+Build ExecutionContext
+        │
+Build SecurityContext
+        │
+Build PolicyContext
+        │
+Build BusinessContext
+        │
+Aggregate RequestContext
+
+
+Architecture Principle:
+
+Every enterprise request must execute within a well-defined runtime environment. The ExecutionContext captures where, how, and under which runtime conditions the request is being processed.
+
+Unlike the ObservabilityContext, which focuses on monitoring and diagnostics, the ExecutionContext describes the runtime environment itself.
+
+It provides downstream components with consistent execution metadata without requiring them to query the underlying infrastructure.
+
+
+Introduction:
+
+At this point in the request lifecycle, the Enterprise AI Gateway has already established the platform's observability foundation.
+
+The platform now knows:
+
+The request has entered the application.
+The distributed Trace Context has been extracted.
+A Root Application Span is active.
+The ObservabilityContext has been created.
+
+However, downstream components still lack information about where and how the request is executing.
+
+For example:
+
+Which environment is processing the request?
+Which region is serving the request?
+Which application version is running?
+Which deployment instance received the request?
+Which runtime generated this response?
+
+These details are not part of observability; they describe the execution environment.
+
+To provide this information consistently, the Enterprise AI Gateway creates an ExecutionContext.
+
+
+What Is an ExecutionContext?:
+
+The ExecutionContext is a reusable object that describes the runtime environment in which the current request is executing.
+
+Unlike the ObservabilityContext, which helps engineers understand what happened, the ExecutionContext helps the application understand where and how it is running.
+
+Every downstream component receives the same execution information without directly accessing platform-specific APIs.
+
+
+Why Do We Need an ExecutionContext?:
+
+Imagine the same AI platform is deployed in multiple environments.
+Production
+│
+├── us-central1
+├── europe-west1
+└── asia-south1
+
+Staging
+│
+└── us-central1
+
+Development
+│
+└── Local Docker
+
+
+A request processed in one environment may behave differently from a request processed in another.
+
+Examples include:
+
+Different feature flags.
+Different model versions.
+Different compliance requirements.
+Different infrastructure resources.
+Different deployment strategies.
+
+Without a shared ExecutionContext, every service would independently determine its runtime environment, leading to duplicated logic and inconsistent behavior.
+
+
+What Information Does the ExecutionContext Contain?:
+
+A typical ExecutionContext includes:
+
+Environment (Development, Test, Staging, Production)
+Cloud Provider
+Cloud Region
+Deployment Platform
+Service Name
+Service Version
+Deployment Revision
+Runtime Instance Identifier
+Processing Start Time
+Runtime Configuration
+
+These values describe the execution environment rather than the request itself.
+
+
+Runtime Sequence:
+Receive HTTP Request
+        │
+        ▼
+Extract Trace Context
+        │
+        ▼
+Create Root Span
+        │
+        ▼
+Build ObservabilityContext
+        │
+        ▼
+Read Runtime Configuration
+        │
+        ▼
+Collect Deployment Metadata
+        │
+        ▼
+Create ExecutionContext
+
+
+The Enterprise AI Gateway reads runtime metadata from the hosting platform and configuration sources, then packages it into a reusable object.
+
+ObservabilityContext vs ExecutionContext:
+
+These two contexts are closely related but serve different purposes.
+
+| ObservabilityContext                   | ExecutionContext                                       |
+| -------------------------------------- | ------------------------------------------------------ |
+| Focuses on monitoring and diagnostics. | Focuses on the runtime environment.                    |
+| Contains Trace ID and Correlation ID.  | Contains environment and deployment metadata.          |
+| Used for tracing and logging.          | Used for runtime behavior and configuration decisions. |
+| Shared with monitoring systems.        | Shared with application components.                    |
+
+Keeping these concerns separate results in a cleaner design and makes each context easier to evolve independently.
+
+ExecutionContext Model
+
+Conceptually, the ExecutionContext looks like this:
+ExecutionContext
+│
+├── Environment
+├── Cloud Provider
+├── Region
+├── Platform
+├── Service Name
+├── Service Version
+├── Deployment Revision
+├── Runtime Instance
+├── Processing Timestamp
+└── Runtime Configuration
+
+This object becomes part of the final RequestContext.
+
+Technology Card:
+| Category                 | Technology                 |
+| ------------------------ | -------------------------- |
+| Runtime Platform         | Google Cloud Run           |
+| Configuration            | Environment Variables      |
+| Service Metadata         | Cloud Run Runtime Metadata |
+| Configuration Management | Pydantic Settings          |
+| Dependency Injection     | FastAPI Dependencies       |
+The Enterprise AI Gateway should isolate platform-specific details within the ExecutionContext so that downstream services remain infrastructure-agnostic.
+
+Runtime Card:
+| Stage      | Description                              |
+| ---------- | ---------------------------------------- |
+| Input      | Active request and runtime configuration |
+| Processing | Read deployment and environment metadata |
+| Output     | ExecutionContext                         |
+
+Sequence Card:
+Build ObservabilityContext
+        │
+        ▼
+Build ExecutionContext
+        │
+        ▼
+Build SecurityContext
+
+The ExecutionContext is now available for every subsequent runtime step.
+
+Principal Architect Insight:
+
+A common anti-pattern is allowing each service to query the runtime environment independently. One component reads environment variables, another calls the cloud metadata service, and a third loads configuration files. This duplicates logic, increases coupling to the hosting platform, and makes testing more difficult.
+
+The Enterprise AI Gateway eliminates this problem by creating a single ExecutionContext at the application boundary. Every downstream component receives the same immutable execution metadata, making the platform easier to test, more portable across environments, and less dependent on infrastructure-specific APIs.
+
+Chapter Summary:
+
+In this chapter, we created the ExecutionContext, the second enterprise context in the request lifecycle. Unlike the ObservabilityContext, which captures information for tracing and monitoring, the ExecutionContext describes the runtime environment in which the request is executing.
+
+By creating this context once in the Enterprise AI Gateway, every downstream component receives a consistent view of the deployment environment without interacting directly with cloud infrastructure.
+
+---
+Chapter 3.11:
+Runtime Step 6 – Build SecurityContext
+Establishing the Identity and Trust Model for Enterprise Requests
+
+Architecture Principle:
+Every enterprise request must have a verified security identity before authorization, policy evaluation, or business processing begins.
+
+Authentication proves who the caller is.
+
+The Enterprise AI Gateway transforms that identity into a reusable SecurityContext that every downstream component can trust.
+
+Introduction:
+
+When the request entered the Enterprise AI Platform, Google API Gateway had already performed infrastructure-level authentication.
+
+Depending on the organization's security architecture, it may have validated:
+
+OAuth 2.0
+OpenID Connect (OIDC)
+JWT Access Tokens
+API Keys
+Mutual TLS (mTLS)
+Google Cloud IAM Identity Tokens
+
+This means the request is authenticated.
+
+However, authentication alone is not enough.
+
+The Enterprise AI Platform still needs a standardized representation of the caller's identity.
+
+Rather than forcing every downstream component to repeatedly inspect tokens and decode claims, the Enterprise AI Gateway creates a SecurityContext once and shares it throughout the request lifecycle.
+
+Authentication vs Authorization:
+
+One of the most common misunderstandings in enterprise architecture is confusing authentication with authorization.
+
+They answer two different questions.
+
+| Authentication                                      | Authorization                      |
+| --------------------------------------------------- | ---------------------------------- |
+| Who are you?                                        | What are you allowed to do?        |
+| Identity verification                               | Permission evaluation              |
+| Performed before application processing             | Performed using application rules  |
+| Usually handled by Identity Provider or API Gateway | Usually handled by the application |
+
+
+The Enterprise AI Gateway assumes authentication has already occurred.
+
+Its responsibility is to establish the application's trusted security identity.
+
+
+Why Build a SecurityContext?:
+
+Imagine the following services:
+Responsible AI Pipeline
+
+↓
+
+AI Orchestrator
+
+↓
+
+Agent Runtime
+
+↓
+
+Prompt Service
+
+↓
+
+Policy Engine
+
+↓
+
+Vertex AI Adapter
+
+Without a SecurityContext, every service would need to:
+
+Read the Authorization header.
+Decode the JWT.
+Validate token claims.
+Extract user information.
+Determine tenant information.
+Determine user roles.
+Determine scopes.
+
+This creates duplicated security logic throughout the platform.
+
+Instead, the Enterprise AI Gateway performs this work once.
+
+Runtime Sequence:
+Receive HTTP Request
+        │
+        ▼
+Authentication Completed
+(Google API Gateway)
+        │
+        ▼
+Read Identity Information
+        │
+        ▼
+Extract User Claims
+        │
+        ▼
+Extract Tenant Information
+        │
+        ▼
+Extract Roles & Permissions
+        │
+        ▼
+Create SecurityContext
+
+Notice that the gateway is not authenticating the user.:
+
+It is transforming an authenticated identity into a reusable enterprise object.
+
+What Information Does the SecurityContext Contain?
+
+A typical SecurityContext contains:
+Authenticated Principal
+User Identifier
+Subject (sub)
+Organization
+Tenant ID
+Roles
+Groups
+Permissions (or Scopes)
+Authentication Method
+Token Issuer
+Token Expiration
+Trust Level
+
+The exact fields depend on the organization's identity provider, but the goal is always the same:
+
+Represent the authenticated caller in a consistent, platform-wide format.
+
+
+SecurityContext Model:
+SecurityContext
+│
+├── Principal
+├── User ID
+├── Subject
+├── Tenant ID
+├── Organization
+├── Roles
+├── Groups
+├── Permissions
+├── Authentication Method
+├── Token Issuer
+├── Token Expiration
+└── Trust Level
+
+This object becomes part of the final RequestContext
+Why Doesn't Every Service Read the JWT?:
+
+Because doing so creates several architectural problems:
+
+Duplicate token parsing.
+Inconsistent authorization logic.
+Increased coupling to the identity provider.
+Harder testing.
+Greater security risk due to repeated token handling.
+
+Instead, downstream components receive a trusted SecurityContext.
+
+They no longer need to understand OAuth, JWT, or identity provider-specific details.
+
+Technology Card:
+| Category                | Technology                                           |
+| ----------------------- | ---------------------------------------------------- |
+| Identity Standard       | OAuth 2.0                                            |
+| Authentication Protocol | OpenID Connect (OIDC)                                |
+| Token Format            | JWT                                                  |
+| Identity Provider       | Google Cloud IAM / Entra ID / Okta / Auth0 (example) |
+| Security Library        | Google Auth / PyJWT (depending on implementation)    |
+| Authorization Model     | RBAC / ABAC                                          |
+
+The Enterprise AI Gateway abstracts these technologies behind a common SecurityContext, ensuring downstream components remain independent of any specific identity provider.
+
+Runtime Card:
+| Stage      | Description                                            |
+| ---------- | ------------------------------------------------------ |
+| Input      | Authenticated HTTP request                             |
+| Processing | Extract identity claims and create the SecurityContext |
+| Output     | Immutable SecurityContext                              |
+
+Sequence Card:
+Build ExecutionContext
+        │
+        ▼
+Build SecurityContext
+        │
+        ▼
+Resolve PolicyContext
+
+The SecurityContext provides the identity information required for policy evaluation in the next runtime step.
+
+Principal Architect Insight:
+
+A common anti-pattern is allowing every microservice to parse JWTs independently. This leads to duplicated security logic, inconsistent role interpretation, and tight coupling to a particular identity provider.
+
+The Enterprise AI Gateway avoids this by transforming the authenticated request into a normalized SecurityContext at the application boundary. From that point onward, downstream components work with a trusted identity model rather than raw authentication tokens.
+
+This design also future-proofs the platform. If the organization migrates from one identity provider to another—for example, from Okta to Microsoft Entra ID—only the Enterprise AI Gateway requires modification. The rest of the platform continues to consume the same SecurityContext without change.
+
+Chapter Summary:
+
+In this chapter, we created the SecurityContext, the enterprise representation of the authenticated caller. We distinguished authentication from authorization and explained why the Enterprise AI Gateway centralizes identity extraction instead of allowing every downstream service to parse authentication tokens independently.
+
+The SecurityContext now provides the trusted identity information required for the remainder of the request lifecycle.
+
+At this stage, the Enterprise AI Gateway has established:
+
+ObservabilityContext – How do we observe this request?
+ExecutionContext – Where and how is this request executing?
+SecurityContext – Who is making this request?
+
+These three contexts form the foundation for the next stage: determining which enterprise policies apply.
+
+---
+Chapter 3.12:
+Runtime Step 7 – Resolve PolicyContext
+Determining the Enterprise Rules That Govern the Request
+
+
+Architecture Principle:
+
+Policies should be resolved before business or AI processing begins so that every downstream component operates under a consistent set of enterprise governance rules.
+
+Policies are not business logic.
+
+Policies define the constraints, guardrails, and governance requirements under which business logic executes.
+
+By resolving policies once at the Enterprise AI Gateway, the platform avoids inconsistent policy interpretation across downstream services.
+
+Introduction:
+
+The Enterprise AI Gateway now knows:
+
+The request has entered the platform.
+A distributed trace has been established.
+The execution environment is known.
+The caller's identity has been verified.
+
+However, one critical question remains unanswered:
+
+What enterprise policies govern this request?
+
+The answer depends on several factors, including:
+
+The authenticated user.
+The tenant.
+The application.
+The requested operation.
+The deployment environment.
+Regulatory requirements.
+Organizational governance rules.
+
+Rather than allowing every downstream service to independently determine these rules, the Enterprise AI Gateway resolves them once and creates a reusable PolicyContext.
+
+What Is a Policy?:
+
+A policy is a declarative rule that governs how the platform should behave under specific conditions.
+
+Unlike application logic, which performs work, a policy defines the boundaries within which that work is allowed to occur.
+
+Examples include:
+
+Which LLM models are permitted?
+Should personally identifiable information (PII) be masked?
+Is prompt logging allowed?
+Which tools may an AI agent invoke?
+What is the maximum token limit?
+Should human approval be required before executing an action?
+
+Policies provide consistent governance without embedding rules directly into application code.
+
+
+Why Do We Need a PolicyContext?:
+Imagine a platform with the following services:
+
+Responsible AI Pipeline
+
+↓
+
+AI Orchestrator
+
+↓
+
+Agent Runtime
+
+↓
+
+Prompt Service
+
+↓
+
+Tool Executor
+
+↓
+
+Vertex AI Adapter
+
+Without a centralized PolicyContext:
+
+Each service must determine applicable policies.
+Different services may interpret the same policy differently.
+Policy changes require updates across multiple components.
+Governance becomes inconsistent.
+
+Instead, the Enterprise AI Gateway evaluates the applicable policies once and shares the result with every downstream component.
+
+Policy Resolution Inputs:
+
+Policy resolution typically considers information from previously created contexts.
+SecurityContext
+        │
+        ├── User
+        ├── Roles
+        ├── Tenant
+        │
+ExecutionContext
+        │
+        ├── Environment
+        ├── Region
+        │
+Business Request
+        │
+        ├── Operation
+        ├── AI Capability
+        │
+        ▼
+Policy Resolver
+        │
+        ▼
+PolicyContext
+
+Notice that the Policy Resolver consumes existing contexts. It does not create them.
+Types of Enterprise Policies:
+
+A production AI platform commonly evaluates multiple categories of policies.
+| Policy Category          | Example                                                               |
+| ------------------------ | --------------------------------------------------------------------- |
+| Security Policies        | Allowed roles, authentication requirements, network restrictions      |
+| Responsible AI Policies  | Prompt safety, toxicity thresholds, content filtering                 |
+| Data Governance Policies | PII masking, encryption, data residency                               |
+| Tenant Policies          | Model selection, quotas, feature enablement                           |
+| Compliance Policies      | GDPR, HIPAA, PCI DSS, SOC 2 requirements                              |
+| Operational Policies     | Timeouts, retry limits, rate limits                                   |
+| AI Governance Policies   | Approved models, temperature limits, token budgets, tool restrictions |
+
+These policies are evaluated together to create a single enterprise policy view for the request.
+Runtime Sequence:
+Build SecurityContext
+        │
+        ▼
+Collect Policy Inputs
+        │
+        ▼
+Evaluate Applicable Policies
+        │
+        ▼
+Resolve Policy Decisions
+        │
+        ▼
+Create PolicyContext
+
+At the end of this step, every policy applicable to the request has been determined.
+
+No policy enforcement occurs yet.
+
+The goal is to establish what rules apply, not to execute them.
+
+What Does the PolicyContext Contain?:
+
+Conceptually, the PolicyContext may contain:
+PolicyContext
+│
+├── Security Policies
+├── Responsible AI Policies
+├── Data Governance Policies
+├── Compliance Policies
+├── Tenant Policies
+├── Operational Policies
+├── AI Governance Policies
+└── Feature Flags
+
+The exact structure varies by organization, but the principle remains the same:
+
+One request, one policy view.
+Policy Resolution vs Policy Enforcement
+
+This distinction is critical.
+| Policy Resolution                       | Policy Enforcement                                |
+| --------------------------------------- | ------------------------------------------------- |
+| Determines which policies apply.        | Applies those policies during execution.          |
+| Performed in the Enterprise AI Gateway. | Performed by downstream components.               |
+| Produces a PolicyContext.               | Uses the PolicyContext to make runtime decisions. |
+For example:
+
+The Enterprise AI Gateway may determine that PII masking is required.
+The Responsible AI Pipeline actually performs the masking.
+The AI Orchestrator may determine that only approved tools can be executed.
+The Agent Runtime enforces that restriction.
+
+This separation keeps responsibilities clear and prevents the gateway from becoming a "God Component."
+
+Technology Card:
+| Category             | Technology                                                                        |
+| -------------------- | --------------------------------------------------------------------------------- |
+| Policy Format        | YAML / JSON / Database-backed configuration                                       |
+| Policy Engine        | Open Policy Agent (OPA), Google Cloud Policy Controller, or custom implementation |
+| Feature Management   | Feature Flags / Configuration Service                                             |
+| Configuration Source | GitOps, Configuration Store, Secret Manager                                       |
+The Enterprise AI Gateway should remain independent of any specific policy engine by interacting through well-defined interfaces.
+
+Runtime Card:
+| Stage      | Description                                         |
+| ---------- | --------------------------------------------------- |
+| Input      | SecurityContext, ExecutionContext, request metadata |
+| Processing | Evaluate applicable enterprise policies             |
+| Output     | Immutable PolicyContext                             |
+Sequence Card:
+Build SecurityContext
+        │
+        ▼
+Resolve PolicyContext
+        │
+        ▼
+Build BusinessContext
+The PolicyContext becomes the governance contract for all downstream processing.
+
+Principal Architect Insight:
+
+One of the most common mistakes in enterprise AI platforms is embedding governance rules directly into business logic. Developers often write conditional statements such as "if tenant is premium" or "if environment is production" throughout the codebase. Over time, these scattered rules become difficult to maintain, audit, and evolve.
+
+PD-HECA separates policy resolution from policy enforcement. The Enterprise AI Gateway determines the applicable governance rules once and encapsulates them within the PolicyContext. Downstream components simply consume this context and enforce the relevant rules without needing to understand how they were selected.
+
+This approach centralizes governance, simplifies testing, and allows enterprise policies to evolve independently of application logic
+
+Chapter Summary
+
+In this chapter, we introduced the PolicyContext, which defines the enterprise governance rules that apply to a request. We distinguished between policy resolution and policy enforcement, demonstrating why the Enterprise AI Gateway determines applicable policies before any business or AI processing begins.
+
+At this point, the gateway has established:
+
+ObservabilityContext – How do we observe the request?
+ExecutionContext – Where is the request executing?
+SecurityContext – Who is making the request?
+PolicyContext – What enterprise rules govern the request?
+
+The platform now knows who the caller is and which rules apply. The only remaining missing context is what business operation the caller is trying to perform.
+
+---
+Chapter 3.13:
+Runtime Step 8 – Build BusinessContext:
+Understanding the Business Intent Behind the Request
+
+At this point we have answered:
+
+How do we observe the request? → ObservabilityContext
+Where is it executing? → ExecutionContext
+Who is making the request? → SecurityContext
+What governance rules apply? → PolicyContext
+
+Now we answer the final enterprise question:
+
+"What business operation is the caller trying to perform?"
+
+Architecture Principle:
+
+Business logic should operate on business intent, not on transport-layer details.
+
+The Enterprise AI Gateway transforms an incoming HTTP request into a standardized BusinessContext that represents the business meaning of the request rather than its technical representation.
+
+Introduction:
+
+By this stage, the Enterprise AI Gateway understands:
+
+How to observe the request.
+Where the request is executing.
+Who the caller is.
+Which enterprise policies govern the request.
+
+However, one essential piece of information is still missing.
+
+The platform still does not know what business capability the caller wants to execute.
+
+For example:
+
+Is the caller asking an AI question?
+Summarizing a document?
+Performing semantic search?
+Creating an incident?
+Executing an autonomous workflow?
+Invoking a multi-agent orchestration?
+Running a compliance audit?
+
+The HTTP request contains these details, but they are still embedded inside transport objects such as JSON payloads, query parameters, and HTTP headers.
+
+The Enterprise AI Gateway extracts this information and converts it into a reusable BusinessContext.
+
+
+Why Do We Need a BusinessContext?:
+
+Without a BusinessContext, every downstream service must repeatedly inspect the HTTP request.
+
+For example:
+Responsible AI Pipeline
+
+↓
+
+AI Orchestrator
+
+↓
+
+Planner Agent
+
+↓
+
+Retriever
+
+↓
+
+Prompt Builder
+
+↓
+
+LLM Adapter
+
+
+Each component would need to determine:
+
+Which business capability is requested?
+Which workflow should execute?
+Which AI use case is involved?
+Which customer owns the request?
+Which business identifiers should be propagated?
+
+This duplicates request parsing throughout the platform.
+
+Instead, the Enterprise AI Gateway performs this work once.
+
+
+Business Intent vs HTTP Request:
+
+This distinction is extremely important.
+
+The HTTP request is merely a transport mechanism.
+
+The BusinessContext represents the meaning of the request.
+
+For example:
+POST /v1/chat
+
+{
+   "prompt":"Summarize this contract",
+   "customer":"ABC",
+   "department":"Legal"
+}
+
+The downstream platform should not need to understand HTTP.
+
+Instead, it receives:
+BusinessContext
+│
+├── Capability = Document Summarization
+├── Domain = Legal
+├── Customer = ABC
+├── Business Operation = AI Chat
+├── Workflow = Summarization
+
+The business meaning is now separated from transport concerns.
+
+What Information Does the BusinessContext Contain?:
+
+A BusinessContext typically includes:
+
+Business Capability
+Business Operation
+AI Use Case
+Workflow Identifier
+Customer
+Department
+Line of Business
+Tenant Business Metadata
+Conversation Identifier
+Session Identifier
+Request Classification
+Business Priority
+
+Unlike previous contexts, these values describe what the business wants to accomplish, not how the platform processes the request.
+
+Runtime Sequence:
+Build PolicyContext
+        │
+        ▼
+Parse Business Request
+        │
+        ▼
+Determine Business Capability
+        │
+        ▼
+Determine Workflow
+        │
+        ▼
+Determine AI Use Case
+        │
+        ▼
+Create BusinessContext
+
+
+Once this step is complete, the Enterprise AI Gateway fully understands the business purpose of the request.
+BusinessContext Model:
+BusinessContext
+│
+├── Business Capability
+├── Business Operation
+├── AI Use Case
+├── Workflow
+├── Customer
+├── Department
+├── Line of Business
+├── Conversation ID
+├── Session ID
+├── Request Classification
+└── Business Priority
+This context is added to the overall enterprise request model.
+
+
+Why Doesn't the AI Orchestrator Build This?:
+
+A common question is:
+
+"Why can't the AI Orchestrator determine the business operation?:
+
+Because that would violate separation of responsibilities.
+
+The AI Orchestrator should focus on:
+
+Selecting the execution strategy.
+Coordinating agents.
+Managing workflow execution.
+
+It should not:
+
+Parse HTTP payloads.
+Interpret REST endpoints.
+Read transport-layer metadata.
+Extract business identifiers.
+
+Those responsibilities belong to the Enterprise AI Gateway.
+
+This keeps orchestration logic independent of APIs and transport protocols.
+
+BusinessContext vs PolicyContext:
+
+Although these contexts are related, they answer different questions.
+| BusinessContext                             | PolicyContext                         |
+| ------------------------------------------- | ------------------------------------- |
+| What business operation is requested?       | What enterprise rules apply?          |
+| Business intent                             | Governance intent                     |
+| Describes the request                       | Governs the request                   |
+| Used by orchestrators and business services | Used by policy enforcement components |
+
+
+Keeping these concerns separate allows business capabilities to evolve independently of governance policies.
+Technology Card:
+| Category            | Technology                           |
+| ------------------- | ------------------------------------ |
+| API Framework       | FastAPI                              |
+| Request Validation  | Pydantic                             |
+| Workflow Definition | LangGraph / OpenAI Agents SDK        |
+| Business Metadata   | Enterprise Domain Model              |
+| Session Management  | Conversation Store / Session Service |
+The BusinessContext should remain independent of any specific AI framework so that orchestration technologies can change without affecting the enterprise request model.
+Runtime Card:
+| Stage      | Description                                                     |
+| ---------- | --------------------------------------------------------------- |
+| Input      | HTTP request, validated payload, SecurityContext, PolicyContext |
+| Processing | Extract business intent and normalize it into a BusinessContext |
+| Output     | Immutable BusinessContext                                       |
+Sequence Card:
+Build SecurityContext
+        │
+        ▼
+Resolve PolicyContext
+        │
+        ▼
+Build BusinessContext
+        │
+        ▼
+Aggregate RequestContext
+The BusinessContext is the final domain-specific context created before all contexts are combined into the canonical request model.
+
+Principal Architect Insight:
+
+Many enterprise platforms unintentionally couple business logic to HTTP by allowing downstream services to parse REST endpoints, headers, and JSON payloads directly. As the number of APIs grows, this creates duplicated parsing logic, inconsistent terminology, and tight coupling between transport protocols and business processing.
+
+PD-HECA addresses this by introducing the BusinessContext as the canonical representation of business intent. From this point onward, downstream components no longer work with HTTP concepts—they work with business concepts. Whether a request originated from REST, gRPC, GraphQL, an event bus, or an AI agent becomes irrelevant because every request is represented using the same business model.
+
+This abstraction improves portability, simplifies testing, and enables new interaction channels without changing core business logic.
+
+Chapter Summary:
+
+In this chapter, we created the BusinessContext, completing the set of enterprise contexts established by the Enterprise AI Gateway. We distinguished transport-layer data from business intent and showed how the gateway converts HTTP requests into a standardized business representation that downstream components can consume consistently.
+
+The Enterprise AI Gateway has now established the complete enterprise context foundation:
+
+ObservabilityContext – How do we observe the request?
+ExecutionContext – Where and how is the request executing?
+SecurityContext – Who is making the request?
+PolicyContext – Which governance rules apply?
+BusinessContext – What business operation is being requested?
+
+These five immutable contexts together describe everything the platform needs to know before executing business or AI logic.
+---
+Chapter 3.14:
+Runtime Step 9 – Build RequestContext:
+Creating the Canonical Enterprise Execution Contract
+
+Everything we've built so far exists for one purpose:
+
+Create a single immutable object that represents the entire enterprise request.
+
+Architecture Principle:
+
+Every downstream component should receive one complete, immutable, technology-agnostic execution contract instead of multiple transport, infrastructure, or security artifacts.
+
+The Enterprise AI Gateway aggregates all previously created enterprise contexts into a single RequestContext.
+
+From this point onward, no downstream component should depend directly on:
+
+HTTP
+FastAPI Request
+JWT Tokens
+Trace Headers
+Environment Variables
+Cloud SDKs
+API Gateway Metadata
+
+Every component depends only on the RequestContext.
+
+Introduction:
+
+The Enterprise AI Gateway has now completed the construction of five enterprise contexts:
+
+ObservabilityContext
+ExecutionContext
+SecurityContext
+PolicyContext
+BusinessContext
+
+Each context answers one specific enterprise question.
+
+However, passing five independent objects throughout the platform creates unnecessary complexity.
+
+Instead, the gateway aggregates them into one immutable execution contract:
+
+RequestContext
+
+This becomes the only request object understood by the Enterprise AI Platform.
+
+Why Build a RequestContext?:
+
+Imagine the AI Orchestrator needs to execute an AI workflow.
+
+Without a RequestContext, it may require:
+
+HTTP Request
+
++
+
+JWT
+
++
+
+Headers
+
++
+
+Policy Objects
+
++
+
+Execution Metadata
+
++
+
+Trace Information
+
++
+
+Business Payload
+
+
+The method signature quickly becomes:
+execute(
+    request,
+    jwt,
+    headers,
+    trace,
+    policies,
+    execution,
+    tenant,
+    business
+)
+
+This creates:
+
+Tight coupling
+Large method signatures
+Hidden dependencies
+Difficult testing
+Technology leakage
+
+Instead, every component receives:
+execute(request_context)
+One parameter.
+
+One dependency.
+
+One enterprise contract.
+
+The Enterprise Request Contract:
+
+Conceptually, the RequestContext looks like this:
+RequestContext
+│
+├── ObservabilityContext
+│
+├── ExecutionContext
+│
+├── SecurityContext
+│
+├── PolicyContext
+│
+└── BusinessContext
+
+Notice that it contains contexts, not implementation objects.
+
+There is:
+
+no HTTP Request
+no JWT
+no FastAPI Request
+no Google SDK objects
+
+Only enterprise abstractions.
+
+Runtime Sequence
+Build ObservabilityContext
+        │
+        ▼
+Build ExecutionContext
+        │
+        ▼
+Build SecurityContext
+        │
+        ▼
+Resolve PolicyContext
+        │
+        ▼
+Build BusinessContext
+        │
+        ▼
+Aggregate RequestContext
+
+This is the final responsibility of the Enterprise AI Gateway before the request moves into the application layer.
+
+
+Why Is RequestContext Immutable?:
+
+The RequestContext represents the enterprise's understanding of the request at the moment it enters the application.
+
+If downstream services modify it:
+
+Security assumptions may change.
+Policies may become inconsistent.
+Business information may diverge.
+Audit trails become unreliable.
+Debugging becomes significantly more difficult.
+
+Instead, every component consumes the same immutable object.
+
+If additional runtime information is needed, components should create local execution state, not modify the RequestContext itself.
+
+RequestContext Model
+
+A conceptual representation of the object is shown below.
+RequestContext
+│
+├── ObservabilityContext
+│     ├── Trace ID
+│     ├── Span ID
+│     ├── Correlation ID
+│     └── Service Metadata
+│
+├── ExecutionContext
+│     ├── Environment
+│     ├── Region
+│     ├── Version
+│     └── Runtime Metadata
+│
+├── SecurityContext
+│     ├── Principal
+│     ├── Roles
+│     ├── Permissions
+│     └── Tenant
+│
+├── PolicyContext
+│     ├── Responsible AI
+│     ├── Security
+│     ├── Compliance
+│     ├── Governance
+│     └── Operational Policies
+│
+└── BusinessContext
+      ├── Capability
+      ├── Workflow
+      ├── AI Use Case
+      └── Customer Metadata
+
+The structure provides a complete enterprise view of the request.
+
+
+Why Doesn't the AI Orchestrator Create It?:
+
+Because the AI Orchestrator is an application component.
+
+Its responsibilities include:
+
+Selecting workflows.
+Coordinating AI agents.
+Managing execution.
+Handling orchestration.
+
+It should not:
+
+Parse HTTP.
+Read JWTs.
+Resolve enterprise policies.
+Read cloud metadata.
+Build execution contexts.
+
+Those concerns belong exclusively to the Enterprise AI Gateway.
+
+This separation keeps orchestration focused on orchestration.
+
+
+RequestContext vs HTTP Request:
+
+This distinction is fundamental to PD-HECA.
+| HTTP Request                         | RequestContext                   |
+| ------------------------------------ | -------------------------------- |
+| Transport object                     | Enterprise object                |
+| Framework-specific                   | Framework-independent            |
+| Mutable                              | Immutable                        |
+| Contains protocol details            | Contains enterprise information  |
+| Created by FastAPI                   | Created by Enterprise AI Gateway |
+| Lives at the infrastructure boundary | Lives throughout the application |
+
+
+The HTTP request ends at the application boundary.
+
+The RequestContext begins there.
+
+Technology Card:
+| Category             | Technology                                       |
+| -------------------- | ------------------------------------------------ |
+| Design Pattern       | Context Object Pattern                           |
+| Architectural Style  | Hexagonal Architecture                           |
+| Immutability         | Frozen Data Models / Immutable Objects           |
+| Validation           | Pydantic Models                                  |
+| Dependency Injection | FastAPI Dependencies                             |
+| Runtime Consumption  | LangGraph, OpenAI Agents SDK, Services, Adapters |
+
+Runtime Card:
+| Stage      | Description                                       |
+| ---------- | ------------------------------------------------- |
+| Input      | All enterprise contexts                           |
+| Processing | Aggregate contexts into a single immutable object |
+| Output     | RequestContext                                    |
+
+Sequence Card:
+Build BusinessContext
+        │
+        ▼
+Aggregate RequestContext
+        │
+        ▼
+Validate RequestContext
+
+The RequestContext becomes the canonical input for the remainder of the application.
+
+Principal Architect Insight:
+
+The RequestContext is the architectural boundary between infrastructure and application.
+
+Many systems claim to follow Hexagonal or Clean Architecture, yet business services still depend on FastAPI.Request, HTTP headers, JWTs, or cloud-specific SDKs. Those dependencies leak infrastructure concerns into the core of the application, making testing, portability, and evolution more difficult.
+
+PD-HECA eliminates this leakage by introducing the RequestContext as the single enterprise contract. Infrastructure concerns are translated once at the Enterprise AI Gateway into enterprise concepts. From that point onward, the rest of the platform—including the Responsible AI Pipeline, AI Orchestrator, Agent Runtime, RAG Engine, Tool Executor, and model adapters—operates solely on this immutable abstraction.
+
+This design ensures that if the ingress mechanism changes—from REST to gRPC, GraphQL, asynchronous messaging, or another protocol—the core application remains unchanged because its contract is independent of the transport technology.
+
+Chapter Summary:
+
+In this chapter, we created the RequestContext, the canonical execution contract for the Enterprise AI Platform. We combined the five enterprise contexts into a single immutable object that encapsulates everything the application needs to process a request while remaining independent of transport protocols, authentication mechanisms, and cloud infrastructure.
+
+At this point, the Enterprise AI Gateway has completed its primary context-building responsibilities. Every downstream component now receives the same trusted, consistent, and technology-agnostic representation of the request.
+---
+Chapter 3.15:
+Runtime Step 10 – Validate RequestContext:
+Ensuring the Enterprise Execution Contract Is Complete and Consistent
+
+Architecture Principle:
+
+No request should enter the Enterprise Application Layer unless its execution contract is complete, valid, and internally consistent.
+
+The RequestContext is the single source of truth for the request.
+
+Before it is handed to downstream components, the Enterprise AI Gateway performs a comprehensive validation to ensure the platform is operating on trusted and complete information.
+
+
+Introduction:
+
+The Enterprise AI Gateway has now created:
+
+ObservabilityContext
+ExecutionContext
+SecurityContext
+PolicyContext
+BusinessContext
+
+These have been aggregated into the immutable RequestContext.
+
+However, simply creating the RequestContext is not sufficient.
+
+The gateway must verify that:
+
+every mandatory context exists,
+required attributes are populated,
+enterprise policies have been resolved,
+identity information is consistent,
+business information is complete,
+the RequestContext is safe for downstream execution.
+
+Only after this validation succeeds can the request enter the Enterprise Application Layer.
+
+Why Validate the RequestContext?:
+
+Imagine the following situations:
+
+Example 1:
+SecurityContext exists
+
+↓
+
+Tenant ID is missing
+The Policy Engine cannot determine tenant-specific governance.
+Example 2:
+PolicyContext exists
+
+↓
+
+Responsible AI Policy missing
+The AI platform could invoke an LLM without required safety controls.
+
+Example 3:
+BusinessContext exists
+
+↓
+
+Workflow ID missing
+The AI Orchestrator cannot determine which workflow should execute.
+
+Example 4:
+ObservabilityContext exists
+
+↓
+
+Trace ID missing
+The request becomes impossible to troubleshoot across distributed services.
+Every one of these problems should be detected before application execution begins.
+
+
+What Does Validation Verify?:
+
+The Enterprise AI Gateway validates several aspects of the RequestContext.
+
+Context Completeness
+
+Ensure that all required contexts exist.
+✓ ObservabilityContext
+
+✓ ExecutionContext
+
+✓ SecurityContext
+
+✓ PolicyContext
+
+✓ BusinessContext
+
+Required Attributes
+
+Each context contains mandatory fields.
+
+Examples include:
+
+ObservabilityContext
+
+Trace ID
+Correlation ID
+
+ExecutionContext
+
+Environment
+Region
+
+SecurityContext
+
+Principal
+Tenant ID
+
+PolicyContext
+
+Responsible AI Policy
+Compliance Policy
+
+BusinessContext
+
+Capability
+Workflow
+Business Operation
+
+
+Context Consistency:
+
+Validation also verifies relationships between contexts.
+
+Examples:
+Authenticated User
+
+↓
+
+Tenant
+
+↓
+
+Resolved Tenant Policies
+
+↓
+
+Business Capability
+If the tenant in the SecurityContext does not match the tenant used during policy resolution, the RequestContext is inconsistent and must be rejected.
+
+Enterprise Rules:
+
+Validation ensures that enterprise governance requirements have been satisfied.
+
+Examples:
+
+Required policies resolved
+Supported AI capability
+Approved workflow
+Required compliance controls
+Supported deployment environment
+
+These checks ensure that downstream components operate on trusted information.
+
+Runtime Sequence:
+Build RequestContext
+        │
+        ▼
+Validate Required Contexts
+        │
+        ▼
+Validate Required Attributes
+        │
+        ▼
+Validate Cross-Context Consistency
+        │
+        ▼
+Validate Enterprise Rules
+        │
+        ▼
+RequestContext Approved
+
+Only after all validation stages succeed does the request proceed.
+
+Validation Categories:
+| Validation               | Purpose                                 |
+| ------------------------ | --------------------------------------- |
+| Structural Validation    | Verify required contexts exist          |
+| Schema Validation        | Verify required fields                  |
+| Cross-Context Validation | Verify contexts agree with each other   |
+| Enterprise Validation    | Verify governance requirements          |
+| Business Validation      | Verify supported business capability    |
+| Runtime Validation       | Verify deployment/runtime compatibility |
+Each category protects a different aspect of the platform.
+
+Validation vs Business Rules:
+This distinction is essential.
+| RequestContext Validation                  | Business Validation                        |
+| ------------------------------------------ | ------------------------------------------ |
+| Ensures the execution contract is complete | Ensures the business request is acceptable |
+| Performed by the Enterprise AI Gateway     | Performed by application services          |
+| Validates enterprise contexts              | Validates business rules                   |
+| Runs before application execution          | Runs during business execution             |
+
+
+For example:
+
+The gateway validates:
+
+Tenant exists.
+Workflow exists.
+Required policy exists.
+
+The application validates:
+
+Customer account is active.
+Incident exists.
+Contract is eligible.
+User may submit a reimbursement request.
+
+These belong to different architectural layers.
+
+Failure Handling:
+
+If validation fails:
+RequestContext
+
+↓
+
+Validation Failed
+
+↓
+
+Return Enterprise Error
+
+↓
+
+Do NOT enter Application Layer
+The Responsible AI Pipeline, AI Orchestrator, Agent Runtime, and adapters never see an invalid RequestContext.
+
+This protects the core application from incomplete or inconsistent requests.
+
+Technology Card:
+| Category             | Technology                                          |
+| -------------------- | --------------------------------------------------- |
+| Validation Framework | Pydantic                                            |
+| Domain Validation    | Enterprise Validators                               |
+| Error Model          | RFC 9457 Problem Details (or enterprise equivalent) |
+| Logging              | Structured JSON Logging                             |
+| Observability        | OpenTelemetry                                       |
+Validation should be implemented using enterprise validation services rather than scattered conditional logic.
+
+Runtime Card:
+| Stage      | Description                                        |
+| ---------- | -------------------------------------------------- |
+| Input      | Immutable RequestContext                           |
+| Processing | Validate completeness, consistency, and governance |
+| Output     | Approved RequestContext or validation error        |
+
+Sequence Card:
+Aggregate RequestContext
+        │
+        ▼
+Validate RequestContext
+        │
+        ▼
+Forward Request
+Validation is the final quality gate before the request leaves the Enterprise AI Gateway
+
+
+Principal Architect Insight:
+
+A common anti-pattern is allowing partially initialized requests to enter the application layer and expecting downstream services to compensate for missing information. One service checks for a tenant, another checks for policies, and a third validates workflow identifiers. This distributes validation across the platform, resulting in inconsistent behavior and duplicated logic.
+
+PD-HECA centralizes this responsibility. The Enterprise AI Gateway acts as the platform's quality gate, ensuring that every request entering the application layer satisfies the structural and governance requirements of the enterprise. Downstream components can therefore assume that the RequestContext is complete, internally consistent, and ready for execution, allowing them to focus exclusively on business and AI responsibilities.
+
+Chapter Summary
+
+In this chapter, we established the final responsibility of the Enterprise AI Gateway: validating the immutable RequestContext before it enters the Enterprise Application Layer. We distinguished execution contract validation from business validation and showed how structural, cross-context, and governance checks protect the platform from incomplete or inconsistent requests.
+
+At this point, the Enterprise AI Gateway has completed its lifecycle:
+
+Receive the request
+Extract distributed trace information
+Create the Root Application Span
+Build the enterprise contexts
+Aggregate the RequestContext
+Validate the execution contract
+
+The request is now fully prepared for application processing.
+
+

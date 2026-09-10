@@ -1,0 +1,263 @@
+Chapter 7:
+Step 7.7 – Build the Dependency Injection Container
+
+Architecture Principle:
+
+The Dependency Injection (DI) Container is the composition root of the application.
+
+The DI Container assembles the entire application by wiring implementations to interfaces. It ensures that the Core remains completely independent of infrastructure, frameworks, and cloud SDKs.
+
+The Core never creates objects using new, constructors, or factory methods. Instead, every dependency is provided by the DI Container.
+
+
+Why Dependency Injection?:
+
+Without a DI container, business logic often creates its own dependencies:
+model = VertexAIAdapter()
+logger = GoogleLogger()
+
+This tightly couples the Core to infrastructure.
+
+Instead, the Core depends only on abstractions (Ports), and the DI Container provides the concrete Adapter implementations.
+
+Runtime Position:
+Application Starts
+        │
+        ▼
+Load Configuration
+        │
+        ▼
+Initialize Infrastructure
+        │
+        ▼
+► Build Dependency Injection Container
+        │
+        ▼
+Register Ports
+        │
+        ▼
+Register Adapters
+        │
+        ▼
+Build FastAPI Application
+        │
+        ▼
+Start Uvicorn
+
+
+Container Responsibilities:
+
+The DI Container is responsible for:
+
+Creating singleton services
+Managing object lifecycles
+Resolving dependencies
+Registering Port implementations
+Wiring infrastructure to the Core
+Providing request-scoped services when needed
+
+It does not contain business logic.
+
+
+Container Package Structure:
+bootstrap/
+└── container/
+    ├── __init__.py
+    ├── dependency_container.py
+    ├── providers.py
+    ├── registrations.py
+    └── wiring.py
+    
+Dependency Registration Flow:
+                Configuration
+                      │
+                      ▼
+              Dependency Container
+                      │
+     ┌────────────────┼────────────────┐
+     ▼                ▼                ▼
+ Register Ports   Register Adapters  Register Services
+     │                │                │
+     └────────────────┼────────────────┘
+                      ▼
+               Build Application
+
+
+What Gets Registered?:
+
+The container assembles the application by registering components in dependency order.
+
+Configuration
+Application Settings
+Environment Settings
+Google Cloud Settings
+Vertex AI Settings       
+
+Infrastructure
+Structured Logger Factory
+OpenTelemetry Tracer Provider
+Meter Provider
+Cloud Logging Client
+Google Cloud Clients
+Secret Manager Client
+Cloud Storage Client
+Pub/Sub Client
+AI Platform
+Vertex AI Client
+Model Registry
+Embedding Service
+Ports
+
+The Core depends only on these interfaces.
+
+Examples include:
+
+ModelPort
+ToolPort
+MemoryPort
+PolicyPort
+AuditPort
+LoggingPort
+Adapters
+
+Concrete implementations registered against the Ports.
+
+Examples include:
+
+VertexAIModelAdapter
+MCPToolAdapter
+RESTToolAdapter
+CloudStorageAdapter
+SecretManagerAdapter
+Shared Services
+Policy Engine
+Prompt Registry
+Context Cache
+AI Evaluation Service
+Dependency Direction
+
+The Dependency Injection Container enforces the dependency rule.
+
+                Core
+                 │
+                 ▼
+               Ports
+                 ▲
+                 │
+             Adapters
+                 ▲
+                 │
+      Dependency Injection Container
+The Core is completely unaware of the Adapters. It interacts only with the Ports, while the container supplies the appropriate implementation.
+
+
+Lifecycle Management:
+Not every object has the same lifetime.
+The DI Container manages different scopes.      
+
+| Lifecycle | Examples                                                                               |
+| --------- | -------------------------------------------------------------------------------------- |
+| Singleton | Configuration, Logger Factory, Tracer Provider, Google Cloud Clients, Vertex AI Client |
+| Request   | RequestContext, ObservabilityContext, SecurityContext, PolicyContext, BusinessContext  |
+| Transient | Validators, Mappers, Formatters, Helper Services                                       |
+
+
+This ensures efficient resource utilization while maintaining request isolation.
+
+Benefits:
+
+Using a Dependency Injection Container provides several advantages:
+
+Loose coupling between Core and infrastructure.
+Easy replacement of Adapter implementations.
+Improved testability through mock Port implementations.
+Centralized object creation and lifecycle management.
+Compliance with the Dependency Inversion Principle.
+
+
+Principal Architect Insight:
+
+The Dependency Injection Container is the composition root of the Policy-Driven Hexagonal Enterprise Clean Architecture. Its sole purpose is to assemble the application by connecting abstractions (Ports) to concrete implementations (Adapters). By centralizing object creation and lifecycle management, the container ensures that the Core remains framework-agnostic, cloud-agnostic, and fully testable. This preserves the architectural integrity of the system while allowing infrastructure to evolve independently.
+
+
+The DI container only registers services. It should not initialize them.
+
+For example:
+
+Logger Provider → Registered
+Tracer Provider → Registered
+Vertex AI Adapter → Registered
+Secret Manager Adapter → Registered
+
+The actual initialization of these infrastructure components should happen before the FastAPI application is created.
+
+
+Step 7.8 – Initialize Infrastructure Services:
+Why This Step?:
+
+Before the application starts accepting requests, all infrastructure services must be initialized and verified.
+
+These services are cross-cutting concerns used throughout the application but remain outside the Core.
+
+The Core never initializes infrastructure directly.
+
+Initialization Order:
+Dependency Injection Container
+          │
+          ▼
+Initialize Structured Logging
+          │
+          ▼
+Initialize OpenTelemetry
+          │
+          ▼
+Initialize Google Cloud Clients
+          │
+          ▼
+Initialize Vertex AI
+          │
+          ▼
+Initialize Policy Engine
+          │
+          ▼
+Infrastructure Ready
+
+
+Infrastructure Components
+
+The Bootstrap layer initializes the following components:
+| Component            | Purpose                                         |
+| -------------------- | ----------------------------------------------- |
+| Structured Logging   | Centralized JSON logging with trace correlation |
+| OpenTelemetry        | Distributed tracing and metrics                 |
+| Google Cloud Clients | Secret Manager, Storage, Pub/Sub, Cloud Logging |
+| Vertex AI            | Model runtime and AI services                   |
+| Policy Engine        | Enterprise policy enforcement and governance    |
+Each component is initialized once during application startup and then registered with the Dependency Injection Container for reuse.
+
+Responsibility Separation:
+Bootstrap
+    │
+    ├── Initialize Infrastructure
+    ├── Verify Connectivity
+    ├── Register Services
+    └── Build Application
+    
+The Core remains completely unaware of how these services are initialized.
+What Happens During Startup?:
+
+The infrastructure initialization phase performs the following sequence:
+
+Configure the structured logging subsystem.
+Configure the OpenTelemetry tracer provider and exporters.
+Create and verify Google Cloud service clients.
+Initialize the Vertex AI SDK with the configured project and region.
+Initialize the enterprise policy engine.
+Confirm that all required infrastructure services are available.
+Expose the initialized services through the Dependency Injection Container.
+
+If any mandatory component fails to initialize, the application fails to start. This fail-fast approach prevents accepting requests when the platform is not fully operational.
+
+Principal Architect Insight:
+
+Initialization and registration are distinct responsibilities. The Dependency Injection Container defines what services exist and how they relate to one another, while the Bootstrap layer determines when those services are created and validated. Separating these concerns keeps the composition root simple, ensures predictable startup behavior, and allows infrastructure failures to be detected before the application begins serving traffic.    

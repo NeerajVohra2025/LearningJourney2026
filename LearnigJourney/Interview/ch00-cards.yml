@@ -1,0 +1,226 @@
+Google Service Card:
+┌──────────────────────────────────────────────┐
+│ Google Service                               │
+├──────────────────────────────────────────────┤
+│ Name                                         │
+│ Cloud Logging                                │
+├──────────────────────────────────────────────┤
+│ Purpose                                      │
+│ Enterprise Structured Logging                │
+├──────────────────────────────────────────────┤
+│ Authentication                               │
+│ Workload Identity / ADC                      │
+├──────────────────────────────────────────────┤
+│ IAM Role                                     │
+│ Logs Writer                                  │
+└──────────────────────────────────────────────┘
+
+
+SDK Card:
+┌──────────────────────────────────────────────┐
+│ Python SDK                                   │
+├──────────────────────────────────────────────┤
+│ Package                                      │
+│ google-cloud-logging                         │
+├──────────────────────────────────────────────┤
+│ Class                                        │
+│ logging.Client                               │
+├──────────────────────────────────────────────┤
+│ Logger                                       │
+│ Logger                                       │
+└──────────────────────────────────────────────┘
+
+API Card:
+┌──────────────────────────────────────────────┐
+│ Primary APIs                                 │
+├──────────────────────────────────────────────┤
+│ logger()                                     │
+│ log_struct()                                 │
+│ setup_logging()                              │
+└──────────────────────────────────────────────┘
+
+Runtime Flow Card:
+┌──────────────────────────────────────────────┐
+│ Runtime Flow                                 │
+├──────────────────────────────────────────────┤
+│ Request                                      │
+│      ↓                                       │
+│ Logger                                       │
+│      ↓                                       │
+│ Cloud Logging                                │
+└──────────────────────────────────────────────┘
+
+Example:
+┌──────────────────────────────────────────────┐
+│ OpenTelemetry                                │
+├──────────────────────────────────────────────┤
+│ SDK                                          │
+│ opentelemetry-api                            │
+├──────────────────────────────────────────────┤
+│ Module                                       │
+│ trace                                        │
+├──────────────────────────────────────────────┤
+│ Class                                        │
+│ Tracer                                       │
+├──────────────────────────────────────────────┤
+│ Methods                                      │
+│ • get_tracer()                               │
+│ • start_as_current_span()                    │
+│ • get_current_span()                         │
+└──────────────────────────────────────────────┘
+
+Even Better – Layered Architecture Cards:
+For each step (for example, Extract Context), we can present information as a stack of compact cards:
+───────────────────────────────────────────────
+Step 2 : Extract OpenTelemetry Context
+───────────────────────────────────────────────
+
+┌──────────────────────────────────────────────┐
+│ Google Service                               │
+│ None                                         │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ Python SDK                                   │
+│ opentelemetry-propagate                      │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ Module                                       │
+│ opentelemetry.propagate                      │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ Methods                                      │
+│ • extract()                                  │
+│ • inject()                                   │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ Input                                        │
+│ traceparent                                  │
+│ tracestate                                   │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ Output                                       │
+│ OpenTelemetry Context                        │
+└──────────────────────────────────────────────┘
+
+
+📗 Four Standard Cards:
+
+Instead of large tables, the entire book will use four reusable cards.
+
+Card 1 — Business Card:
+┌──────────────────────────────────────┐
+│ Business Overview                    │
+├──────────────────────────────────────┤
+│ Component                            │
+│ Enterprise AI Gateway                │
+├──────────────────────────────────────┤
+│ Purpose                              │
+│ Enterprise Request Entry Point       │
+├──────────────────────────────────────┤
+│ Owner                                │
+│ Platform Team                        │
+├──────────────────────────────────────┤
+│ Upstream                             │
+│ Google API Gateway                   │
+├──────────────────────────────────────┤
+│ Downstream                           │
+│ Responsible AI Input Pipeline        │
+└──────────────────────────────────────┘
+
+
+Card 2 — Architecture Card:
+┌──────────────────────────────────────┐
+│ Architecture                         │
+├──────────────────────────────────────┤
+│ Pattern                              │
+│ Policy-Driven Hexagonal              │
+├──────────────────────────────────────┤
+│ Layer                                │
+│ Presentation + Policy                │
+├──────────────────────────────────────┤
+│ Runtime                              │
+│ Cloud Run                            │
+├──────────────────────────────────────┤
+│ Framework                            │
+│ FastAPI                              │
+└──────────────────────────────────────┘
+
+
+Card 3 — Google Technology Card:
+┌──────────────────────────────────────┐
+│ Google Technology                    │
+├──────────────────────────────────────┤
+│ Service                              │
+│ Cloud Logging                        │
+├──────────────────────────────────────┤
+│ SDK                                  │
+│ google-cloud-logging                 │
+├──────────────────────────────────────┤
+│ Class                                │
+│ logging.Client                       │
+├──────────────────────────────────────┤
+│ APIs                                 │
+│ logger()                             │
+│ log_struct()                         │
+└──────────────────────────────────────┘
+
+Card 4 — Runtime Card:
+┌──────────────────────────────────────┐
+│ Runtime                              │
+├──────────────────────────────────────┤
+│ Input                                │
+│ HTTP Request                         │
+├──────────────────────────────────────┤
+│ Creates                              │
+│ RequestContext                       │
+├──────────────────────────────────────┤
+│ Updates                              │
+│ ObservabilityContext                 │
+├──────────────────────────────────────┤
+│ Output                               │
+│ AI Request                           │
+└──────────────────────────────────────┘
+
+
+Principal Architect Insight:
+┌──────────────────────────────────────┐
+│ Principal Architect Insight          │
+├──────────────────────────────────────┤
+│ Why is this step required?           │
+│                                      │
+│ Common mistakes                      │
+│                                      │
+│ Enterprise best practice             │
+│                                      │
+│ Why we implement it this way         │
+└──────────────────────────────────────┘
+
+
+ADR card:
+┌──────────────────────────────────────┐
+│ Architecture Decision Record         │
+├──────────────────────────────────────┤
+│ Decision                             │
+│ Introduce Enterprise AI Gateway      │
+├──────────────────────────────────────┤
+│ Problem                              │
+│ Direct requests lack enterprise      │
+│ policy enforcement and unified       │
+│ execution context.                   │
+├──────────────────────────────────────┤
+│ Decision                             │
+│ Introduce a dedicated Enterprise     │
+│ AI Gateway as the ingress component  │
+│ in the PD-HECA architecture.         │
+├──────────────────────────────────────┤
+│ Consequences                         │
+│ • Centralized policy enforcement     │
+│ • Unified RequestContext             │
+│ • Standard observability             │
+│ • Consistent downstream contracts    │
+└──────────────────────────────────────┘

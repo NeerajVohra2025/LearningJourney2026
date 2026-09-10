@@ -1,0 +1,224 @@
+Chapter 3.17:
+Runtime Step 12 – Enter the Responsible AI Pipeline
+Enforcing Enterprise Governance Before AI Execution:
+Architecture Principle:
+
+Every AI request must satisfy enterprise governance requirements before entering orchestration, retrieval, tool execution, or model inference.
+
+The Responsible AI Pipeline is the first component in the Enterprise Application Layer.
+
+Its purpose is not to execute AI workloads but to ensure that all downstream AI components operate within the enterprise policies established by the PolicyContext.
+
+Introduction:
+
+The Enterprise AI Gateway has completed its responsibilities.
+
+The request has crossed the application boundary carrying a validated and immutable RequestContext.
+
+At this stage, the platform knows:
+
+How the request should be observed.
+Where it is executing.
+Who the caller is.
+Which enterprise policies apply.
+What business operation is being requested.
+
+The platform is now technically capable of executing the request.
+
+However, being capable of executing a request does not mean it should execute it.
+
+Before any AI component begins processing, the platform must verify that the request complies with enterprise governance requirements.
+
+This is the responsibility of the Responsible AI Pipeline.
+
+Why Is the Responsible AI Pipeline First?:
+
+A common AI architecture looks like this:
+Client
+    │
+Gateway
+    │
+AI Orchestrator
+    │
+LLM
+
+This design assumes governance can be applied inside the orchestrator or after the model responds.
+
+PD-HECA rejects this assumption.
+
+Instead, the request flows through:
+
+Client
+    │
+Enterprise AI Gateway
+    │
+Responsible AI Pipeline
+    │
+AI Orchestrator
+    │
+Agent Runtime
+    │
+Model Adapter
+
+Governance is evaluated before any AI processing begins.
+
+Responsibilities of the Responsible AI Pipeline:
+
+The Responsible AI Pipeline is responsible for enforcing the policies that were previously resolved by the Enterprise AI Gateway.
+
+Typical responsibilities include:
+
+Validate policy prerequisites.
+Enforce Responsible AI policies.
+Apply content safety controls.
+Perform prompt sanitization.
+Mask or redact sensitive data.
+Validate tool permissions.
+Enforce tenant-specific AI restrictions.
+Validate approved model usage.
+Enforce token and cost limits.
+Generate governance audit events.
+
+Notice the distinction:
+
+The gateway determines which policies apply.
+
+The Responsible AI Pipeline ensures those policies are actually enforced.
+
+Policy Resolution vs Policy Enforcement:
+
+This separation is fundamental to PD-HECA.
+| Enterprise AI Gateway               | Responsible AI Pipeline     |
+| ----------------------------------- | --------------------------- |
+| Resolves policies                   | Enforces policies           |
+| Builds `PolicyContext`              | Consumes `PolicyContext`    |
+| Does not execute governance actions | Executes governance actions |
+| Infrastructure/Application boundary | Application layer           |
+
+This keeps responsibilities clear and allows governance rules to evolve independently from enforcement mechanisms.
+
+Runtime Sequence:
+Validated RequestContext
+        │
+        ▼
+Enter Responsible AI Pipeline
+        │
+        ▼
+Load PolicyContext
+        │
+        ▼
+Execute Governance Controls
+        │
+        ▼
+Approve Request
+        │
+        ▼
+Forward to AI Orchestrator
+
+The RequestContext remains unchanged throughout this process.
+
+The pipeline consumes the context and produces governance decisions without modifying the execution contract.
+
+Typical Governance Controls:
+
+A production Responsible AI Pipeline may execute controls such as:
+| Governance Control         | Purpose                                           |
+| -------------------------- | ------------------------------------------------- |
+| Prompt Validation          | Detect malformed or unsupported requests          |
+| Prompt Injection Detection | Identify attempts to manipulate system behavior   |
+| Sensitive Data Detection   | Detect PII, PHI, PCI, or confidential information |
+| Data Masking / Redaction   | Remove or obfuscate protected data                |
+| Content Safety             | Detect harmful, toxic, or unsafe content          |
+| Tool Authorization         | Ensure requested tools are permitted              |
+| Model Authorization        | Verify that the selected model is approved        |
+| Cost Governance            | Enforce token budgets and spending limits         |
+| Audit Logging              | Record governance decisions for compliance        |
+These controls may vary by organization, but the architectural role of the pipeline remains the same.
+
+Runtime Flow:
+RequestContext
+        │
+        ▼
+PolicyContext
+        │
+        ▼
+Responsible AI Controls
+        │
+        ▼
+Governance Decision
+        │
+        ├── Approved
+        │        │
+        │        ▼
+        │   AI Orchestrator
+        │
+        └── Rejected
+                 │
+                 ▼
+        Standardized Error Response
+        
+Every request receives a governance decision before orchestration begins.
+Why Doesn't the AI Orchestrator Perform Governance?
+
+Because governance and orchestration have different responsibilities.
+
+The AI Orchestrator focuses on:
+
+Selecting workflows.
+Coordinating agents.
+Managing execution.
+Handling retries and branching.
+
+It should not:
+
+Determine whether a prompt contains sensitive data.
+Decide whether a tool is authorized.
+Apply compliance controls.
+Perform safety validation.
+Enforce enterprise AI policies.
+
+Separating these concerns keeps the orchestrator focused on execution while the Responsible AI Pipeline focuses on governance.  
+
+Technology Card:
+| Category          | Technology                                                  |
+| ----------------- | ----------------------------------------------------------- |
+| Policy Input      | `PolicyContext`                                             |
+| Content Safety    | Google Model Armor, Vertex AI Safety Filters, or equivalent |
+| Data Protection   | Google Cloud DLP or equivalent                              |
+| Governance Engine | Enterprise Responsible AI Services                          |
+| Audit             | OpenTelemetry + Structured Logging                          |
+| AI Framework      | Independent of orchestration technology                     |
+The Responsible AI Pipeline should consume enterprise abstractions rather than directly depending on infrastructure-specific APIs wherever practical.
+
+Runtime Card:
+| Stage      | Description                                                                   |
+| ---------- | ----------------------------------------------------------------------------- |
+| Input      | Validated `RequestContext`                                                    |
+| Processing | Enforce Responsible AI and governance policies                                |
+| Output     | Governance decision and an approved `RequestContext` for downstream execution |
+
+
+Sequence Card:
+Forward RequestContext
+        │
+        ▼
+Responsible AI Pipeline
+        │
+        ▼
+AI Orchestrator
+
+The Responsible AI Pipeline is the mandatory first stop within the Enterprise Application Layer.
+
+Principal Architect Insight:
+
+A common anti-pattern is embedding governance checks throughout the AI stack—for example, validating prompts in the orchestrator, checking tool permissions in each agent, and applying data masking inside individual adapters. This scattered approach leads to inconsistent enforcement, duplicated logic, and governance gaps.
+
+PD-HECA centralizes governance in the Responsible AI Pipeline. The Enterprise AI Gateway determines which policies apply, while the Responsible AI Pipeline determines whether the request may proceed. Downstream components can then assume that governance prerequisites have already been satisfied and focus exclusively on delivering business value through AI execution.
+
+This separation strengthens security, improves auditability, and simplifies the evolution of governance policies over time.
+
+Chapter Summary:
+
+In this chapter, we introduced the Responsible AI Pipeline, the first component of the Enterprise Application Layer. We showed why governance must precede orchestration and distinguished policy resolution from policy enforcement. By consuming the immutable PolicyContext, the pipeline applies enterprise governance consistently before any AI workflow, retrieval process, tool invocation, or model inference begins.
+
+The request is now approved for AI execution under enterprise governance.      

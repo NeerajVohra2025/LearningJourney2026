@@ -1,0 +1,285 @@
+Chapter 3.16:
+Runtime Step 11 – Forward Request to the Enterprise Application Layer:
+Crossing the Boundary Between Infrastructure and Business Execution
+
+Architecture Principle:
+
+The Enterprise AI Gateway prepares the request but never executes business logic. Its final responsibility is to hand over a validated RequestContext to the Enterprise Application Layer.
+
+This handoff represents one of the most important architectural boundaries in PD-HECA.
+
+It marks the point where infrastructure preparation ends and business execution begins.
+
+Introduction:
+
+The Enterprise AI Gateway has completed all of its responsibilities.
+
+It has:
+
+Received the HTTP request.
+Extracted the distributed trace.
+Created the Root Application Span.
+Built the enterprise contexts.
+Aggregated the RequestContext.
+Validated the RequestContext.
+
+At this point, the request is ready for execution.
+
+The gateway does not:
+
+execute AI workflows,
+invoke LLMs,
+call vector databases,
+execute agents,
+perform RAG,
+apply business rules.
+
+Instead, it forwards the validated RequestContext to the Enterprise Application Layer.
+
+
+Where Does the Gateway End?:
+
+The Enterprise AI Gateway owns the Enterprise Ingress Layer.
+
+Client
+    │
+Google API Gateway
+    │
+Cloud Run
+    │
+FastAPI
+    │
+Enterprise AI Gateway
+────────────────────────────────────────
+Application Boundary
+────────────────────────────────────────
+Responsible AI Pipeline
+AI Orchestrator
+Agent Runtime
+RAG Engine
+Tool Executor
+Model Adapter
+
+Everything above the boundary belongs to infrastructure preparation.
+
+Everything below the boundary belongs to application execution.
+
+What Is Actually Forwarded?:
+
+Many architectures accidentally forward infrastructure objects.
+
+For example:
+HTTP Request
+
+↓
+
+JWT
+
+↓
+
+Headers
+
+↓
+
+FastAPI Request
+
+↓
+
+Cloud SDK Objects
+
+PD-HECA does not forward any of these.:
+
+Instead, only one object crosses the boundary.:
+RequestContext
+Nothing else.
+
+
+Why Only the RequestContext?:
+
+Because the application should never know:
+
+which API framework received the request,
+which cloud platform hosted the service,
+how authentication was performed,
+how traces were extracted,
+how headers were propagated.
+
+Those concerns belong to the Enterprise AI Gateway.
+
+The application receives only enterprise concepts.
+
+
+Runtime Sequence:
+Enterprise AI Gateway
+
+        │
+        ▼
+
+Validated RequestContext
+
+        │
+        ▼
+
+Application Boundary
+
+        │
+        ▼
+
+Responsible AI Pipeline
+
+This is the only transition between the Enterprise Ingress Layer and the Enterprise Application Layer.
+
+Why Doesn't the Gateway Call the LLM?:
+
+Because that would violate separation of responsibilities.:
+
+The Enterprise AI Gateway exists to prepare the request.
+
+The AI Orchestrator exists to execute AI workflows.
+
+The Model Adapter exists to invoke models.
+
+The Prompt Service exists to build prompts.
+
+The Responsible AI Pipeline exists to enforce AI governance.
+
+Mixing these responsibilities produces an oversized gateway that becomes difficult to maintain and evolve.
+
+Request Ownership:
+
+An important architectural question is:
+
+Who owns the RequestContext after it crosses the boundary?
+
+The answer is:
+
+The Enterprise Application Layer.
+
+However:
+
+Ownership of execution does not imply ownership of modification.
+
+The RequestContext remains immutable.
+
+Application components consume it but never change it.
+
+
+Enterprise Boundary Contract:
+
+The architectural contract can be summarized as follows.
+Enterprise AI Gateway
+
+INPUT
+
+HTTP Request
+
+OUTPUT
+
+Validated RequestContext
+
+──────────────────────────
+
+Enterprise Application Layer
+
+INPUT
+
+Validated RequestContext
+
+OUTPUT
+
+Business Result
+
+Neither side depends on the implementation details of the other.
+
+This preserves loose coupling.
+
+
+Runtime Flow:
+Validate RequestContext
+
+        │
+        ▼
+
+Freeze RequestContext
+
+        │
+        ▼
+
+Forward RequestContext
+
+        │
+        ▼
+
+Responsible AI Pipeline
+
+        │
+        ▼
+
+Gateway Responsibilities Complete
+
+At this point, the Enterprise AI Gateway becomes passive.
+
+It waits for the application to return a response.
+
+Technology Card:
+| Category                | Technology               |
+| ----------------------- | ------------------------ |
+| Design Pattern          | Boundary Object Pattern  |
+| Dependency Injection    | FastAPI                  |
+| Application Entry Point | Responsible AI Pipeline  |
+| Context Model           | Immutable RequestContext |
+| Architecture Style      | Hexagonal Architecture   |
+The handoff occurs through an application interface rather than direct knowledge of downstream implementations.
+
+Runtime Card:
+| Stage      | Description                                             |
+| ---------- | ------------------------------------------------------- |
+| Input      | Validated RequestContext                                |
+| Processing | Transfer control across the application boundary        |
+| Output     | RequestContext delivered to the Responsible AI Pipeline |
+
+Sequence Card:
+Validate RequestContext
+        │
+        ▼
+Forward RequestContext
+        │
+        ▼
+Responsible AI Pipeline
+The Enterprise AI Gateway has now completed its responsibilities.
+
+What Does the Application Layer Receive?:
+
+The Responsible AI Pipeline receives:
+RequestContext
+
+├── ObservabilityContext
+├── ExecutionContext
+├── SecurityContext
+├── PolicyContext
+└── BusinessContext
+
+It does not receive:
+
+HTTP requests
+Authentication tokens
+API Gateway metadata
+FastAPI objects
+Cloud SDK objects
+Infrastructure configuration
+
+This allows the application layer to remain independent of transport and hosting technologies.
+
+Principal Architect Insight:
+
+Many systems claim to implement Clean or Hexagonal Architecture, yet their application services still depend on framework objects such as FastAPI.Request, HTTP headers, or authentication tokens. Although business logic has been separated into different packages, the architectural boundary has not truly been established because infrastructure concerns continue to leak into the core.
+
+PD-HECA defines the application boundary through the immutable RequestContext. The Enterprise AI Gateway translates infrastructure concepts into enterprise abstractions before the handoff. From this point onward, every downstream component operates exclusively on the RequestContext, allowing the application to remain portable across protocols, cloud providers, and hosting environments. This clear separation is what transforms layer-based organization into genuine architectural decoupling.
+
+Chapter Summary:
+
+This chapter established the architectural handoff between the Enterprise Ingress Layer and the Enterprise Application Layer. The Enterprise AI Gateway completes its work by forwarding a validated, immutable RequestContext through a stable application interface. No transport, authentication, or infrastructure objects cross this boundary.
+
+This transition completes the gateway lifecycle and begins business-driven AI execution.
+
+At this point, the runtime enters the Responsible AI Pipeline, where governance is actively enforced before orchestration, retrieval, tool execution, or model invocation can occur.

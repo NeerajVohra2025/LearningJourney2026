@@ -1,0 +1,262 @@
+meta:
+  name: data-protection-dlp
+  purpose: Regenerate a synchronous Google Cloud Sensitive Data Protection adapter for inspection and deidentification.
+  domain: Data protection and sensitive-data transformation
+  description: Runtime utility code-generation blueprint only. Tests, test helpers, documentation validators, and operational runbooks are excluded.
+
+replication_profile:
+  language: { name: Python, version: ">=3.12 for package; dlp_client.py inline metadata permits >=3.11" }
+  agent_frameworks:
+    - { name: google-cloud-dlp, version: "declared >=3.30.0; locked 3.38.0", role: "Typed Google Sensitive Data Protection client" }
+  orchestration:
+    topology: pipeline
+    description: The demonstration inspects one text value and then deidentifies the same value; the reusable adapter exposes both operations independently.
+  model_provider: none
+  models: []
+  runtime: { type: "Python library and CLI script", description: "dlp_utility.py is reusable; dlp_client.py demonstrates both operations" }
+  hosting_platform: { type: none, description: "No server, container, function, or IaC" }
+  vector_store: none
+  secrets_management: Application Default Credentials and Cloud IAM; no credentials are stored in utility configuration.
+  supporting_services:
+    - { name: "Google Cloud Sensitive Data Protection", type: "managed DLP API", purpose: "Inspect and transform text with enterprise templates" }
+    - { name: "ADC and Cloud IAM", type: "identity controls", purpose: "Authenticate and authorize DLP calls" }
+  presentation_layer: { framework: none, type: console, backend_binding: "dlp_client.main -> DlpUtility", description: "Print findings and protected text" }
+
+source_structure:
+  tree: |
+    data-protection-dlp/
+    |-- .env
+    |-- config.toml
+    |-- dlp_client.py
+    |-- dlp_utility.py
+    |-- pyproject.toml
+    `-- uv.lock
+  entry_points:
+    - { path: dlp_client.py, purpose: "Run inspection followed by deidentification" }
+    - { path: dlp_utility.py, purpose: "Expose DlpUtility to host applications" }
+  modules:
+    - path: dlp_utility.py
+      role: Outbound provider adapter
+      key_responsibilities: ["Validate resource configuration", "Construct DLP requests", "Invoke inspection", "Return ordered InfoType names", "Invoke deidentification", "Return transformed text"]
+    - path: dlp_client.py
+      role: Local demonstration client
+      key_responsibilities: ["Load dotenv content", "Load TOML", "Build utility", "Call both operations", "Print results"]
+  config_files:
+    - { path: .env, purpose: "Synthetic active text for the client" }
+    - { path: config.toml, purpose: "Project, location, timeout, and full template resources" }
+    - { path: pyproject.toml, purpose: "Package and dependency definition" }
+    - { path: uv.lock, purpose: "Exact dependency resolution" }
+  notable_conventions: ["Thin policy-neutral adapter", "Plain Python return values", "Injected client support", "One synchronous provider call per public method", "Template-controlled detection/transformation"]
+
+architecture:
+  pattern: pipeline
+  components:
+    - { name: DlpUtility, role: "provider adapter", description: "Own request construction and SDK calls", inputs: [project, location, templates, timeout, text], outputs: ["tuple[str,...]", str] }
+    - { name: dlp_client, role: "configuration loader/presenter", description: "Run both operations against synthetic input", inputs: [.env, config.toml], outputs: [stdout] }
+    - { name: DlpServiceClient, role: "Google SDK transport", description: "Call enterprise templates", inputs: [request, timeout], outputs: [provider response] }
+  data_flows:
+    - { from: dlp_client.main, to: DlpUtility.inspect_content, data_type: str, description: "Inspect active text" }
+    - { from: DlpUtility.inspect_content, to: DlpServiceClient.inspect_content, data_type: InspectContentRequest-compatible mapping, description: "Submit parent/template/item" }
+    - { from: dlp_client.main, to: DlpUtility.deidentify_content, data_type: str, description: "Protect the same text" }
+    - { from: DlpUtility.deidentify_content, to: DlpServiceClient.deidentify_content, data_type: DeidentifyContentRequest-compatible mapping, description: "Submit parent/both templates/item" }
+  state_schema: { parent: str, inspect_template_name: str, deidentify_template_name: str, timeout_seconds: float, client: "dlp_v2.DlpServiceClient-compatible" }
+  entry_point: "dlp_client.main for demonstration; DlpUtility for integration"
+  terminal_conditions: ["Findings and protected text printed", "Validation/configuration/provider exception propagates"]
+
+api_contracts:
+  entry_points:
+    - name: DlpUtility.__init__
+      invocation_style: constructor
+      signature: "__init__(self, project_id: str, location: str, inspect_template_name: str, deidentify_template_name: str, timeout_seconds: float = 30.0, client: dlp_v2.DlpServiceClient | None = None) -> None"
+      inputs: [project_id, location, inspect_template_name, deidentify_template_name, timeout_seconds, optional client]
+      outputs: [DlpUtility]
+      description: Validate configuration, form parent resource, and create or retain the SDK client.
+    - name: DlpUtility.inspect_content
+      invocation_style: synchronous
+      signature: "inspect_content(self, text: str) -> tuple[str, ...]"
+      inputs: ["non-empty text"]
+      outputs: ["InfoType names in provider finding order"]
+      description: Run one template-based inspection.
+    - name: DlpUtility.deidentify_content
+      invocation_style: synchronous
+      signature: "deidentify_content(self, text: str) -> str"
+      inputs: ["non-empty text"]
+      outputs: ["response.item.value"]
+      description: Run one template-based transformation.
+    - name: dlp_client.main
+      invocation_style: script
+      signature: "main() -> None"
+      inputs: [.env, config.toml, ADC]
+      outputs: [stdout]
+      description: Execute both DLP operations.
+  internal_interfaces: []
+
+business_logic:
+  intent: Provide a small reusable boundary around enterprise-managed DLP templates without embedding application policy, thresholds, logging, retries, or workflow decisions.
+  rules:
+    - "If project_id.strip() or location.strip() is empty, raise ValueError('project_id and location are required')."
+    - "If inspect_template_name.strip() or deidentify_template_name.strip() is empty, raise ValueError('inspect and de-identify template names are required')."
+    - "If timeout_seconds <= 0, raise ValueError('timeout_seconds must be greater than zero')."
+    - "Set parent to projects/{project_id}/locations/{location} without further normalization."
+    - "Retain template names exactly as supplied."
+    - "Use a truthy injected client; otherwise create dlp_v2.DlpServiceClient using ADC."
+    - "inspect_content rejects falsey text with ValueError('text is required')."
+    - "Inspection calls client.inspect_content exactly once with parent, inspect_template_name, item.value=text, and timeout_seconds."
+    - "Inspection reads response.result.findings; if the attribute is absent, use an empty tuple."
+    - "Return tuple(finding.info_type.name) in provider order without deduplication, ranking, suppression, or reinterpretation."
+    - "deidentify_content rejects falsey text with ValueError('text is required')."
+    - "Deidentification calls client.deidentify_content exactly once with parent, inspect_template_name, deidentify_template_name, item.value=text, and timeout_seconds."
+    - "Return response.item.value unchanged without comparing it to the original."
+    - "Provider/authentication/authorization/retry/transport exceptions propagate unchanged."
+    - "The client reads .env line-by-line, ignoring blank lines, comments, and lines without '='."
+    - "For each accepted dotenv line, split only on the first '=' and overwrite os.environ[key]."
+    - "The client loads only config.toml['data_protection']['dlp']; missing keys propagate."
+    - "The client reads DLP_TEST_TEXT with empty-string default and passes it to both operations; utility validation rejects an empty value."
+    - "The client converts api_timeout_seconds to float and defaults it to 30 if absent."
+    - "The client prints 'Findings:' followed by the tuple or literal 'none', then 'Protected text:' followed by transformed text."
+  constraints: ["No application allow/block policy", "No local thresholds", "No credential handling", "No retry orchestration", "No logging or persistence", "No web endpoint", "Template definitions and transformations are external"]
+  assumptions: ["Templates exist in the configured project/location", "ADC/IAM authorize both operations", "The caller is permitted to send supplied text to the configured project"]
+  domain_terms:
+    InfoType: Google DLP classification name attached to a finding.
+    inspect_template: Enterprise-managed detection configuration used by both methods.
+    deidentify_template: Enterprise-managed transformations used only by deidentify_content.
+    parent: "projects/{project_id}/locations/{location}"
+
+tool_inventory:
+  tools:
+    - { name: DlpServiceClient.inspect_content, type: "Google DLP operation", description: "Detect configured InfoTypes", inputs: [parent, inspect_template_name, item.value, timeout], outputs: [findings] }
+    - { name: DlpServiceClient.deidentify_content, type: "Google DLP operation", description: "Transform detected sensitive text", inputs: [parent, inspect_template_name, deidentify_template_name, item.value, timeout], outputs: [item.value] }
+  mcps: []
+  external_services:
+    - { name: "Google Cloud Sensitive Data Protection", type: "managed API", purpose: "Inspect and deidentify content", auth_method: "Application Default Credentials and Cloud IAM" }
+  databases: []
+
+prompt_patterns: { system_prompts: [], user_prompt_templates: [], chains: [], evaluation_criteria: [] }
+
+config_schema:
+  env_vars:
+    - { name: DLP_TEST_TEXT, purpose: "Synthetic text used by demonstration client", required: true, example_format: "<synthetic-text>" }
+  parameters:
+    - { name: data_protection.dlp.project_id, type: str, default: mt-office-of-ai-poc, description: "Google project containing templates" }
+    - { name: data_protection.dlp.location, type: str, default: us-central1, description: "Parent/template location" }
+    - { name: data_protection.dlp.api_timeout_seconds, type: float, default: 30, description: "Positive deadline per call" }
+    - { name: data_protection.dlp.inspect_template_name, type: str, default: "projects/mt-office-of-ai-poc/locations/us-central1/inspectTemplates/mattel-inspect-template", description: "Full inspect-template resource" }
+    - { name: data_protection.dlp.deidentify_template_name, type: str, default: "projects/mt-office-of-ai-poc/locations/us-central1/deidentifyTemplates/mattel-de-identity-template", description: "Full deidentify-template resource" }
+  warnings: ["Resource names are nonsecret; credentials must come from ADC", ".env values are redacted synthetic data", "Do not log original or protected content by default"]
+
+component_manifest:
+  files:
+    - path: dlp_utility.py
+      language: Python
+      classes:
+        - name: DlpUtility
+          kind: class
+          properties:
+            - { name: parent, type: str }
+            - { name: inspect_template_name, type: str }
+            - { name: deidentify_template_name, type: str }
+            - { name: timeout_seconds, type: float }
+            - { name: client, type: "dlp_v2.DlpServiceClient-compatible" }
+          methods:
+            - { name: __init__, signature: "__init__(self, project_id: str, location: str, inspect_template_name: str, deidentify_template_name: str, timeout_seconds: float = 30.0, client: dlp_v2.DlpServiceClient | None = None) -> None" }
+            - { name: inspect_content, signature: "inspect_content(self, text: str) -> tuple[str, ...]" }
+            - { name: deidentify_content, signature: "deidentify_content(self, text: str) -> str" }
+      functions: []
+    - path: dlp_client.py
+      language: Python
+      classes: []
+      functions:
+        - { name: main, signature: "main() -> None" }
+  config_keys:
+    - { name: DLP_TEST_TEXT, purpose: "Demonstration text", source_file: .env }
+    - { name: data_protection.dlp.project_id, purpose: "DLP project", source_file: config.toml }
+    - { name: data_protection.dlp.location, purpose: "DLP location", source_file: config.toml }
+    - { name: data_protection.dlp.api_timeout_seconds, purpose: "Call deadline", source_file: config.toml }
+    - { name: data_protection.dlp.inspect_template_name, purpose: "Inspection policy resource", source_file: config.toml }
+    - { name: data_protection.dlp.deidentify_template_name, purpose: "Transformation policy resource", source_file: config.toml }
+  config_artifacts:
+    - path: .env
+      format: dotenv
+      purpose: "Synthetic demonstration catalogue"
+      keys: [DLP_TEST_TEXT]
+      structure: { DLP_TEST_TEXT: "<redacted-test-data>" }
+    - path: config.toml
+      format: TOML
+      purpose: "DLP runtime configuration"
+      keys: [data_protection, data_protection.dlp, data_protection.dlp.project_id, data_protection.dlp.location, data_protection.dlp.api_timeout_seconds, data_protection.dlp.inspect_template_name, data_protection.dlp.deidentify_template_name]
+      structure:
+        data_protection:
+          dlp:
+            project_id: mt-office-of-ai-poc
+            location: us-central1
+            api_timeout_seconds: 30
+            inspect_template_name: "projects/mt-office-of-ai-poc/locations/us-central1/inspectTemplates/mattel-inspect-template"
+            deidentify_template_name: "projects/mt-office-of-ai-poc/locations/us-central1/deidentifyTemplates/mattel-de-identity-template"
+    - path: pyproject.toml
+      format: TOML
+      purpose: "Package regeneration"
+      keys: [project.name, project.version, project.description, project.readme, project.requires-python, project.dependencies, build-system.requires, build-system.build-backend, tool.setuptools.py-modules, tool.uv.cache-dir]
+      structure:
+        project: { name: data-protection-dlp, version: 0.1.0, description: "Policy-aligned adapter for Google Cloud Sensitive Data Protection", readme: README.md, requires-python: ">=3.12", dependencies: ["google-cloud-dlp>=3.30.0"] }
+        build-system: { requires: ["setuptools>=68"], build-backend: setuptools.build_meta }
+        tool: { setuptools: { py-modules: [dlp_utility] }, uv: { cache-dir: .uv-cache } }
+    - path: uv.lock
+      format: "uv lockfile"
+      purpose: "Exact dependencies"
+      keys: [version, revision, requires-python, "package[]"]
+      structure: { version: 1, revision: 3, requires-python: ">=3.12", direct_runtime_dependency: { google-cloud-dlp: 3.38.0 }, note: "Retain source lockfile for exact transitive versions and hashes" }
+    - path: "dlp_client.py inline script metadata"
+      format: "PEP 723-style comment block"
+      purpose: "Standalone client execution"
+      keys: [requires-python, dependencies]
+      structure: { requires-python: ">=3.11", dependencies: ["google-cloud-dlp>=3.30.0"] }
+  payload_schemas:
+    - name: InspectContentRequest
+      fields:
+        - { name: parent, type: str }
+        - { name: inspect_template_name, type: str }
+        - { name: item, type: object }
+        - { name: item.value, type: str }
+      used_by: DlpUtility.inspect_content
+    - name: InspectContentResponse subset
+      fields:
+        - { name: result.findings, type: "iterable[Finding]" }
+        - { name: "result.findings[].info_type.name", type: str }
+      used_by: "tuple return normalization"
+    - name: DeidentifyContentRequest
+      fields:
+        - { name: parent, type: str }
+        - { name: inspect_template_name, type: str }
+        - { name: deidentify_template_name, type: str }
+        - { name: item, type: object }
+        - { name: item.value, type: str }
+      used_by: DlpUtility.deidentify_content
+    - name: DeidentifyContentResponse subset
+      fields:
+        - { name: item.value, type: str }
+      used_by: "direct string return"
+  messaging: []
+  deploy_resources:
+    - { type: "external DLP inspect template", name: mattel-inspect-template, file: config.toml }
+    - { type: "external DLP deidentify template", name: mattel-de-identity-template, file: config.toml }
+
+behavioral_tests: { scenarios: [], edge_cases: [] }
+
+adr:
+  - { id: ADR-001, decision: "Use enterprise-managed templates instead of local detection/transformation rules", context: "Security policy is governed centrally", rationale: "Keep adapter thin and policy-aligned", alternatives_considered: ["Hard-code regexes/InfoTypes/transformations"], consequences: "Behavior depends on externally deployed templates" }
+  - { id: ADR-002, decision: "Return simple Python values", context: "Hosts should not need provider response knowledge", rationale: "Small stable interface", alternatives_considered: ["Return raw SDK responses"], consequences: "Inspection metadata beyond ordered InfoType names is intentionally discarded" }
+  - { id: ADR-003, decision: "Propagate provider failures", context: "Failure policy belongs to host", rationale: "Avoid implicit fail-open/fail-closed behavior", alternatives_considered: ["Catch and return original text", "Retry internally"], consequences: "Hosts must implement approved resilience and enforcement" }
+
+abom:
+  frameworks: ["google-cloud-dlp 3.38.0", "setuptools >=68"]
+  models: []
+  tools: [DlpServiceClient.inspect_content, DlpServiceClient.deidentify_content, uv]
+  mcps: []
+  platforms: ["Python >=3.12", "Google Cloud Sensitive Data Protection", ADC, IAM]
+  data_classification: Input and transformed text may contain sensitive data; only synthetic .env values are present and they are redacted here.
+  estimated_cost_profile: One DLP API call per invoked method; the demonstration makes two calls. No LLM/token cost.
+
+# Extraction notes
+# overall_confidence: High for runtime code, signatures, configuration, request shapes, and branches; template internals remain external.
+# scope: Tests, test helpers, documentation, documentation validation, and operational runbooks are intentionally excluded.
+# redactions: .env DLP_TEST_TEXT catalogue values are represented as <redacted-test-data>; no credential was copied.
