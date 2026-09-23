@@ -1,0 +1,1740 @@
+Chapter 1 — Step 1: ServiceNow DEV Machine Identity
+Step 1.0 — First Understand What We Are Building:
+
+Before we build any AI agent, we first need to establish a secure path from ServiceNow to our Google Cloud platform.
+There Are Two One-Time Prerequisites:
+There are two different teams involved.
+| Step | Prerequisite                                   | Owner                 | Why we need it                                      |
+| ---- | ---------------------------------------------- | --------------------- | --------------------------------------------------- |
+| 1    | ServiceNow identity / OAuth-OIDC configuration | ServiceNow / IAM team | Gives ServiceNow a trusted machine identity         |
+| 2    | Google Cloud Workload Identity Federation      | GCP / IAM team        | Allows Google Cloud to trust that external identity |
+
+Think about it this way:
+                ONE-TIME SETUP
+
+        Step 1                    Step 2
+   ServiceNow / IAM              GCP / IAM
+         |                           |
+         | Create identity            | Create trust
+         |                           |
+         v                           v
+ ServiceNow Identity -------> Google Cloud Trust
+ 
+ Only after these two steps are completed do we configure and test the runtime webhook.
+
+Our objective is:
+Allow ServiceNow DEV to securely invoke the GenAI Application through GCP API Gateway.
+The application entry point is GCP API Gateway.
+Therefore, our high-level runtime path is:
+ServiceNow DEV
+     |
+     | HTTPS Request
+     v
+GCP API Gateway          ← GenAI Application Entry Point
+     |
+     v
+DEV Orchestrator
+     |
+     v
+Cloud Run
+But before ServiceNow can call the API Gateway, we must establish identity and trust.
+That is the purpose of Step 1.:
+
+
+Step 1 — Identify the ServiceNow DEV Caller:
+Our first question is:
+Who is calling the GenAI application?
+The answer is:
+ServiceNow DEV
+More specifically, the integration is represented by a machine identity such as:
+servicenowtestdev
+
+This is not a human identity.
+It represents:
+ServiceNow DEV Incident Integration
+
+So our first logical model is:
+ServiceNow DEV
+     |
+     | Machine Identity
+     v
+servicenowtestdev
+
+Why do we need this?:
+Because the API Gateway should never have to accept:
+Unknown caller
+     |
+     v
+API Gateway
+
+We want:
+Known ServiceNow DEV identity
+     |
+     v
+API Gateway
+
+
+Step 1.1 — ServiceNow Does Not Directly Establish Google Identity:
+This is an important distinction.
+ServiceNow is an external application.
+Google Cloud should not simply assume:
+"Anything coming from ServiceNow is trusted."
+Instead, ServiceNow authenticates through our corporate Identity Provider.
+In our environment:
+ServiceNow DEV
+      |
+      | Authenticate
+      v
+     Okta
+
+So:
+Okta is the Identity Provider for the ServiceNow DEV machine identity.
+
+
+Step 1.2 — Create the Okta Application for ServiceNow DEV:
+The Okta administrator creates/configures an application representing the ServiceNow DEV integration.
+Conceptually
+Okta
+ |
+ +--------------------------------+
+ | ServiceNow DEV Application     |
+ |                                |
+ | Client ID                      |
+ | Client Secret                  |
+ | Token Configuration            |
+ | Audience                       |
+ +--------------------------------+
+
+This establishes the relationship:
+ServiceNow DEV
+      ↕
+Okta
+
+The exact Okta configuration is owned by the Okta/IAM team.
+
+
+Step 1.3 — Configure OAuth 2.0 Client Credentials:
+Because ServiceNow is an application rather than a human, we use:
+OAuth 2.0 Client Credentials
+The conceptual flow is:
+ServiceNow DEV
+     |
+     | Client ID
+     | Client Secret
+     v
+Okta
+
+There is no:
+Username
+Password
+MFA
+
+in this machine-to-machine flow.
+The purpose is simply:
+ServiceNow proves to Okta that it is the registered ServiceNow DEV integration.
+
+
+Step 1.4 — ServiceNow Requests an Identity Token:
+When ServiceNow needs to authenticate, it contacts the configured Okta token endpoint.
+Conceptually:
+ServiceNow DEV
+servicenowtestdev
+       |
+       | OAuth 2.0 Client Credentials
+       v
+Okta Token Endpoint
+
+ServiceNow provides the credentials required by the configured OAuth client.
+Okta then authenticates the client.
+
+Step 1.5 — Okta Validates the ServiceNow Client:
+Okta checks:
+Is this a registered client?
+        |
+        v
+Are the client credentials valid?
+        |
+        v
+Is this client allowed to request this token?
+
+If everything is valid:
+ServiceNow DEV
+       |
+       v
+Okta
+       |
+       ✓
+Identity established
+
+If authentication fails:
+ServiceNow DEV
+       |
+       v
+Okta
+       |
+       X
+Request rejected
+No Google Cloud request should proceed from that failed authentication.
+
+
+Step 1.6 — Okta Issues the OIDC JWT:
+After successful authentication, Okta issues the configured OIDC identity token.
+Conceptually:
+ServiceNow DEV
+       |
+       v
+     Okta
+       |
+       | Signed OIDC JWT
+       v
+ServiceNow
+
+The JWT contains claims identifying the caller.
+
+For example:
+{
+  "iss": "https://your-okta-domain/oauth2/default",
+  "sub": "servicenowtestdev",
+  "aud": "gcp-genai-dev",
+  "iat": 1782322932,
+  "exp": 1782323232
+}
+These are example values. The actual issuer, subject and audience must come from your Okta/GCP configuration
+
+
+Step 1.7 — Understand the Important JWT Claims:
+We only need to understand four claims at this stage.
+
+iss — Issuer
+Who issued this token?
+Expected answer:
+Okta
+
+sub — Subject
+Which identity does this token represent?
+Expected conceptual value:
+servicenowtestdev
+
+aud — Audience
+Who is this token intended for?
+The audience must be agreed between the Okta/IAM and GCP/IAM teams.
+
+
+exp — Expiration
+Is the token still valid?
+An expired token must not be accepted.
+
+So conceptually Google receives:
+Token
+ |
+ +-- Issuer       → Is this a trusted issuer?
+ |
+ +-- Subject      → Is this the approved ServiceNow identity?
+ |
+ +-- Audience     → Is this token intended for us?
+ |
+ +-- Expiration   → Is the token still valid?
+ 
+ 
+Step 1.8 — Now Google Cloud Receives the External Identity:
+At this point we have:
+ServiceNow DEV
+      |
+      v
+Okta
+      |
+      | Signed OIDC JWT
+      v
+Google Cloud
+
+But Google Cloud does not automatically trust every Okta token.
+We need to configure that trust.
+That is where:
+Workload Identity Federation
+comes into the picture.
+---
+
+Step 1.9 — GCP Creates a Workload Identity Pool:
+The GCP/IAM administrator creates a DEV Workload Identity Pool.
+Conceptually:
+Google Cloud DEV
+       |
+       v
+Workload Identity Pool
+       |
+       +--- ServiceNow DEV
+       
+Think of the pool as:
+A controlled place where external identities can be recognized by Google Cloud.       
+
+
+Step 1.10 — GCP Creates an Okta OIDC Provider:
+Inside the Workload Identity Pool, GCP configures an OIDC provider for Okta.
+Conceptually:
+Workload Identity Pool
+        |
+        v
+Okta OIDC Provider
+        |
+        +-- Issuer
+        +-- Audience
+        +-- Attribute Mapping
+        +-- Attribute Conditions
+        
+This tells Google Cloud:
+"For this DEV integration, Okta is a trusted external identity provider."        
+
+
+
+Step 1.11 — Google Validates the Okta JWT:
+Now the external JWT reaches Google's token-exchange mechanism.
+Conceptually:
+Okta JWT
+   |
+   v
+Google Security Token Service
+
+Google validates the configured identity information.
+Conceptually:
+                Google STS
+                    |
+                    v
+          Is the signature valid?
+                    |
+                    v
+             Is issuer trusted?
+                    |
+                    v
+            Is audience correct?
+                    |
+                    v
+             Is token valid?
+                    |
+                    v
+          Is identity permitted?
+
+If validation fails:
+Okta JWT
+   |
+   v
+Google STS
+   |
+   X
+Rejected
+
+If validation succeeds:
+Okta JWT
+   |
+   v
+Google STS
+   |
+   ✓
+Federated identity established
+
+
+
+Step 1.12 — Google Maps the ServiceNow Identity
+Now Google needs to understand:
+Which external identity is this?
+For example:
+Okta
+ |
+ +-- sub = servicenowtestdev
+              |
+              v
+       Attribute Mapping
+              |
+              v
+       Google Identity
+       
+This mapping is configured once by the GCP/IAM team.
+It does not need to be created for every incident.       
+
+
+Step 1.13 — Restrict the Identity
+We don't want every identity in Okta to access the GenAI platform.
+We want only the approved DEV ServiceNow identity.
+Conceptually:
+Incoming Okta Identity
+          |
+          v
+Is this servicenowtestdev?
+       /       \
+     YES        NO
+      |          |
+      v          v
+   Continue    Reject
+   
+This is where the GCP IAM team can use an attribute condition to restrict the federation.
+
+
+Step 1.14 — Map to the DEV Google Service Account
+Now we establish the Google-side identity.
+For example:   
+servicenowtestdev
+       |
+       | WIF
+       v
+genai-orchestrator-dev
+The Google service account represents the permissions that the federated workload is allowed to use.
+For example:
+genai-orchestrator-dev
+        |
+        +-- API Gateway access
+        |
+        +-- Required DEV permissions
+
+Only the permissions actually required by the application should be granted.
+
+
+Step 1.15 — Important: ServiceNow Does Not Become the Service Account
+This is a common misunderstanding.
+We do not have:
+ServiceNow = Google Service Account
+Instead:
+ServiceNow Identity
+       |
+       | Federation
+       v
+Google Federated Identity
+       |
+       | IAM authorization
+       v
+DEV Google Service Account
+
+The important security benefit is:
+We don't give ServiceNow a permanent Google service-account private key.
+The external identity and Google service identity remain conceptually separate.
+
+
+Step 1.16 — Google Issues a Short-Lived Credential:
+After successful federation and, where the design uses service-account impersonation, successful service-account authorization, Google can issue a short-lived Google credential.
+Conceptually:
+Okta OIDC JWT
+       |
+       v
+Google STS
+       |
+       v
+Federated Identity
+       |
+       v
+genai-orchestrator-dev
+       |
+       v
+Short-Lived Google Credential
+
+The important security benefit is:
+We don't give ServiceNow a permanent Google service-account private key.
+
+
+Step 1.17 — Now the GenAI Application Entry Point Is Ready:
+Now we come to the most important point in your architecture.
+Our GenAI Application entry point is GCP API Gateway.
+Therefore:
+                  GENAI APPLICATION
+
+ServiceNow DEV
+      |
+      | Authenticated request
+      v
+┌───────────────────────────────┐
+│       GCP API Gateway         │
+│                               │
+│     GENAI ENTRY POINT         │
+└───────────────┬───────────────┘
+                |
+                v
+        DEV Orchestrator
+          Cloud Run
+
+The API Gateway is therefore the front door of the GenAI application.
+
+
+Step 1.18 — API Gateway Is the Security Front Door
+The gateway now receives the request.
+Its role is:
+              GCP API Gateway
+                     |
+          +----------+----------+
+          |                     |
+     Authentication        Routing
+          |                     |
+          v                     v
+     Is caller allowed?   Which backend?
+          |                     |
+          +----------+----------+
+                     |
+                     v
+              DEV Orchestrator
+
+The gateway should not become the AI workflow engine.
+Its job is to provide the controlled application entry point.
+
+The final state is:
+┌────────────────────┐
+│  ServiceNow DEV    │
+│ servicenowtestdev  │
+└─────────┬──────────┘
+          |
+          | Okta
+          v
+┌────────────────────┐
+│     Okta IdP       │
+└─────────┬──────────┘
+          |
+          | OIDC Identity
+          v
+┌────────────────────┐
+│ Google WIF / STS   │
+└─────────┬──────────┘
+          |
+          | Federated Identity
+          v
+┌────────────────────┐
+│ DEV Service        │
+│ Account            │
+└─────────┬──────────┘
+          |
+          | Authorized
+          v
+╔════════════════════╗
+║ GCP API GATEWAY    ║
+║                    ║
+║ GENAI ENTRY POINT  ║
+╚════════╤═══════════╝
+         |
+         v
+┌────────────────────┐
+│ DEV Orchestrator   │
+│ Cloud Run          │
+└────────────────────┘
+
+Step 1 — In Very Simple Words:
+Think of this like entering a secure office.
+
+1. ServiceNow gets an ID:
+ServiceNow DEV
+      ↓
+servicenowtestdev
+
+2. Okta verifies the ID:
+servicenowtestdev
+      ↓
+Okta
+      ↓
+Signed OIDC JWT
+
+
+3. Google verifies Okta's identity:
+OIDC JWT
+      ↓
+Google STS
+      ↓
+WIF
+
+
+4. Google maps it to the DEV identity:
+ServiceNow DEV
+      ↓
+Google Federation
+      ↓
+genai-orchestrator-dev
+
+
+5. ServiceNow calls the application:
+ServiceNow DEV
+      ↓
+GCP API Gateway
+      ↓
+DEV Orchestrator
+
+And the single most important architectural statement is:
+GCP API Gateway is the GenAI application's entry point. Cloud Run/Orchestrator is the backend application behind the gateway.
+
+At the end of Step 1, we only know:
+WHO?
+ServiceNow DEV / servicenowtestdev
+
+WHO AUTHENTICATES IT?
+Okta
+
+WHO TRUSTS IT?
+Google Cloud WIF
+
+WHICH GOOGLE IDENTITY?
+DEV service account
+
+WHERE DOES THE GENAI APPLICATION START?
+GCP API Gateway
+
+WHERE DOES THE REQUEST GO NEXT?
+DEV Orchestrator on Cloud Run
+---  
+#########################################################################################################################################
+
+# Step 2 — GCP Workload Identity Federation Setup
+
+I’ll keep the example concrete:
+Environment: DEV
+External caller: ServiceNow DEV
+ServiceNow machine identity: servicenowtestdev
+Identity Provider: Okta
+GCP entry point: API Gateway
+Backend: DEV Cloud Run Orchestrator
+GCP region: example us-central1
+Example GCP project: genai-dev-123456
+Workload Identity Pool: servicenow-dev-pool
+OIDC Provider: okta-servicenow-dev
+Google service account: genai-orchestrator-dev            
+The project ID, Okta issuer URL, Okta audience/client ID, and actual service-account email must be replaced with your organization's real values.
+Google's current documentation confirms that an OIDC Workload Identity Provider is configured with an issuer URI, allowed audience, attribute mappings, and optionally an attribute condition.
+
+## 2.0 What are we doing in Step 2?
+In Step 1, we established the external identity flow:
+
+```text
+ServiceNow DEV
+     |
+     |  OAuth 2.0 Client Credentials
+     v
+   Okta
+     |
+     |  OIDC JWT
+     v
+ Google Cloud
+```
+
+Now GCP needs to be configured so that it knows:
+
+“I trust tokens issued by this Okta issuer, but only for the specific ServiceNow DEV application that I have authorized.”
+
+We achieve this using:
+
+Workload Identity Pool
+        |
+        +---- OIDC Provider
+        |
+        +---- Attribute Mapping
+        |
+        +---- Attribute Condition
+        |
+        +---- DEV Service Account
+        |
+        +---- IAM Binding
+
+This is one-time platform configuration.
+
+It is not recreated for every ServiceNow incident.
+
+At runtime, Google validates the incoming Okta token against this configuration.
+
+---
+
+
+# Step 2.1 — Identify the GCP DEV Project
+
+Owner
+
+GCP Platform / Cloud Admin
+
+First, identify the Google Cloud project where the DEV GenAI platform is deployed.
+
+For this example:
+
+Project ID = genai-dev-123456
+
+Set the project:
+
+gcloud config set project genai-dev-123456
+
+Verify:
+
+gcloud config get-value project
+
+Expected:
+
+genai-dev-123456
+Why are we doing this?
+
+All subsequent commands must be executed against the correct DEV project.
+
+We do not want to accidentally create the identity federation configuration in QA or PROD.
+---
+
+# Step 2.2 — Set Some Environment Variables
+To avoid repeatedly typing long values, define variables.
+
+For Linux/macOS:
+
+export PROJECT_ID="genai-dev-123456"
+export PROJECT_NUMBER="$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')"
+
+export POOL_ID="servicenow-dev-pool"
+export PROVIDER_ID="okta-servicenow-dev"
+
+export SERVICE_ACCOUNT_ID="genai-orchestrator-dev"
+export SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
+For Windows PowerShell:
+
+$PROJECT_ID="genai-dev-123456"
+
+$PROJECT_NUMBER=(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+
+$POOL_ID="servicenow-dev-pool"
+$PROVIDER_ID="okta-servicenow-dev"
+
+$SERVICE_ACCOUNT_ID="genai-orchestrator-dev"
+$SERVICE_ACCOUNT_EMAIL="$SERVICE_ACCOUNT_ID@$PROJECT_ID.iam.gserviceaccount.com"
+
+Verify:
+
+echo $PROJECT_ID
+echo $PROJECT_NUMBER
+echo $POOL_ID
+echo $PROVIDER_ID
+echo $SERVICE_ACCOUNT_EMAIL
+
+On Windows PowerShell:
+
+$PROJECT_ID
+$PROJECT_NUMBER
+$POOL_ID
+$PROVIDER_ID
+$SERVICE_ACCOUNT_EMAIL
+
+---
+
+# Step 2.3 — Enable the Required Google APIs
+Before creating federation resources, enable the required APIs.
+
+Google documents the IAM, Security Token Service, Service Account Credentials, and related APIs as prerequisites for Workload Identity Federation and service-account impersonation.
+
+Run:
+
+gcloud services enable \
+    iam.googleapis.com \
+    iamcredentials.googleapis.com \
+    sts.googleapis.com \
+    serviceusage.googleapis.com
+
+For Windows PowerShell, one line is easier:
+
+gcloud services enable iam.googleapis.com iamcredentials.googleapis.com sts.googleapis.com serviceusage.googleapis.com
+Verify:
+gcloud services list --enabled
+You should see:
+iam.googleapis.com
+iamcredentials.googleapis.com
+sts.googleapis.com
+serviceusage.googleapis.com
+What does each API do?
+### What does each API do?
+
+| API                    | Purpose                                                             |
+| ---------------------- | ------------------------------------------------------------------- |
+| IAM                    | Google Cloud identity and permissions                               |
+| Security Token Service | Exchanges external identity tokens for Google federated credentials |
+| IAM Credentials        | Supports service-account impersonation                              |
+| Service Usage          | Allows APIs to be enabled                                           |
+
+
+# Step 2.4 — Create the Workload Identity Pool
+Now we create the Workload Identity Pool.
+
+Think of the pool as:
+
+“The GCP waiting area for trusted external workloads.”
+
+Our external workload is:
+
+ServiceNow DEV
+
+Create the pool:
+
+gcloud iam workload-identity-pools create servicenow-dev-pool \
+    --project="genai-dev-123456" \
+    --location="global" \
+    --display-name="ServiceNow DEV Workload Identity Pool" \
+    --description="Federation pool for ServiceNow DEV machine identity"
+
+Google uses the global location for Workload Identity Pools.
+
+Verify:
+
+gcloud iam workload-identity-pools describe servicenow-dev-pool \
+    --project="genai-dev-123456" \
+    --location="global"
+
+You should see something similar to:
+
+displayName: ServiceNow DEV Workload Identity Pool
+state: ACTIVE
+Important
+
+At this point we have only created:
+
+GCP
+ |
+ +-- servicenow-dev-pool
+
+We have not yet told GCP about Okta.
+
+That is the next step.
+
+
+# Step 2.5 — Obtain the Okta OIDC Issuer
+
+Before creating the GCP OIDC provider, we need information from the Okta Administrator.
+
+Owner
+
+Okta Administrator
+
+The Okta team provides:
+
+Issuer URI
+Audience / Client ID
+
+For example:
+
+Issuer:
+https://example.okta.com/oauth2/default
+
+Audience:
+api://servicenow-genai-dev
+
+These are example values only.
+
+Do not copy them literally into DEV.
+
+The actual issuer and audience must come from the Okta configuration.
+
+Why do we need the issuer?
+
+The issuer tells Google:
+
+“Which identity provider issued this JWT?”
+
+Google uses the issuer to obtain the OIDC metadata and public signing keys used to validate tokens. Google documents that when a JWK file is not supplied, Cloud can use the issuer's OIDC discovery endpoint to obtain the public keys.
+
+Conceptually:
+
+Okta
+ |
+ +-- Issuer
+ |
+ +-- Public signing keys
+ |
+ +-- OIDC metadata
+
+# Step 2.6 — Obtain the Okta Audience
+
+The Okta Administrator also needs to provide the expected audience.
+
+For our example:
+
+Audience = api://servicenow-genai-dev
+
+The audience must correspond to what Okta places in the aud claim of the JWT.
+
+Example JWT:
+
+{
+  "iss": "https://example.okta.com/oauth2/default",
+  "sub": "servicenowtestdev",
+  "aud": "api://servicenow-genai-dev",
+  "exp": 1790000000
+}
+
+The important values are:
+
+iss = who issued the token
+sub = which machine identity
+aud = which application the token is intended for
+exp = when the token expires
+
+
+
+# Step 2.7 — Create the GCP OIDC Provider
+Now we connect the Workload Identity Pool to Okta.
+
+We already have:
+
+Pool:
+servicenow-dev-pool
+
+Now create:
+
+Provider:
+okta-servicenow-dev
+
+Example command:
+
+gcloud iam workload-identity-pools providers create-oidc okta-servicenow-dev \
+    --project="genai-dev-123456" \
+    --location="global" \
+    --workload-identity-pool="servicenow-dev-pool" \
+    --display-name="Okta ServiceNow DEV OIDC Provider" \
+    --description="Okta OIDC provider for ServiceNow DEV" \
+    --issuer-uri="https://example.okta.com/oauth2/default" \
+    --allowed-audiences="api://servicenow-genai-dev" \
+    --attribute-mapping="google.subject=assertion.sub"
+
+Google's documented create-oidc command supports the issuer URI, allowed audiences, attribute mapping, and optional attribute condition.
+
+What did we just tell Google?
+
+We told Google:
+
+For this pool:
+
+servicenow-dev-pool
+
+trust OIDC tokens from:
+
+https://example.okta.com/oauth2/default
+
+and accept tokens intended for:
+
+api://servicenow-genai-dev
+
+and map:
+
+JWT sub
+   |
+   v
+google.subject
+
+
+
+# Step 2.8 — Understand the Attribute Mapping
+This line is very important:
+--attribute-mapping="google.subject=assertion.sub"
+It means:
+
+Okta JWT
+   |
+   +-- sub = servicenowtestdev
+              |
+              v
+      google.subject
+              |
+              v
+   Google federated identity
+
+So if the JWT contains:
+
+{
+  "sub": "servicenowtestdev"
+}
+
+Google maps it to:
+
+google.subject = servicenowtestdev
+This gives GCP a stable identity with which it can make IAM decisions.
+Google recommends mapping google.subject to assertion.sub for OIDC providers.
+
+
+# Step 2.9 — Add More Attribute Mapping When Needed
+Sometimes sub alone is not enough.
+
+For example, suppose the Okta JWT contains:
+
+{
+  "sub": "servicenowtestdev",
+  "aud": "api://servicenow-genai-dev",
+  "environment": "DEV"
+}
+
+We could map:
+
+google.subject = assertion.sub
+attribute.environment = assertion.environment
+
+Command:
+
+gcloud iam workload-identity-pools providers update-oidc okta-servicenow-dev \
+    --project="genai-dev-123456" \
+    --location="global" \
+    --workload-identity-pool="servicenow-dev-pool" \
+    --attribute-mapping="google.subject=assertion.sub,attribute.environment=assertion.environment"
+
+However, do not invent JWT claims.
+
+The exact claim names must be confirmed from the real Okta token.
+
+For the initial architecture, keep the mapping simple:
+
+google.subject = assertion.sub
+
+
+# Step 2.10 — Add an Attribute Condition
+Now we want another security boundary.
+
+We do not want every identity issued by the trusted Okta issuer to be allowed to use this federation configuration.
+
+Our intended machine identity is:
+
+servicenowtestdev
+
+Therefore, we can restrict the provider to that subject.
+
+Example:
+
+gcloud iam workload-identity-pools providers update-oidc okta-servicenow-dev \
+    --project="genai-dev-123456" \
+    --location="global" \
+    --workload-identity-pool="servicenow-dev-pool" \
+    --attribute-condition="assertion.sub == 'servicenowtestdev'"
+
+Now the policy becomes:
+
+Is the token issued by the trusted Okta issuer?
+             |
+             YES
+             |
+Is the audience correct?
+             |
+             YES
+             |
+Is the subject servicenowtestdev?
+             |
+             YES
+             |
+             v
+       Federation allowed
+
+If:
+
+sub = another-application
+
+the condition fails.
+
+Why is this important?
+
+It prevents the federation configuration from becoming:
+
+“Anything from our Okta organization can access the GenAI platform.”
+
+Instead, we make it:
+
+“Only the specific ServiceNow DEV machine identity is allowed.”
+
+Google supports attribute conditions using CEL expressions to restrict which external identities can authenticate.
+
+
+
+# Step 2.11 — Verify the OIDC Provider
+Run:
+
+gcloud iam workload-identity-pools providers describe okta-servicenow-dev \
+    --project="genai-dev-123456" \
+    --location="global" \
+    --workload-identity-pool="servicenow-dev-pool"
+
+Check that you see:
+
+issuerUri:
+https://example.okta.com/oauth2/default
+
+attributeMapping:
+  google.subject: assertion.sub
+
+attributeCondition:
+  assertion.sub == 'servicenowtestdev'
+
+state:
+  ACTIVE
+
+At this point:
+
+GCP
+ |
+ +-- Workload Identity Pool
+       |
+       +-- Okta OIDC Provider
+             |
+             +-- Issuer
+             +-- Audience
+             +-- Subject mapping
+             +-- Subject restriction
+
+The federation trust is now configured.
+
+
+
+# Step 2.12 — Create the DEV Google Service Account
+
+Now we need a Google identity representing the DEV GenAI workload.
+
+Owner
+
+GCP IAM / Platform Admin
+
+Create:
+
+genai-orchestrator-dev
+
+Command:
+
+gcloud iam service-accounts create genai-orchestrator-dev \
+    --project="genai-dev-123456" \
+    --display-name="GenAI Orchestrator DEV" \
+    --description="DEV service account for GenAI API/Orchestrator workload"
+
+Verify:
+
+gcloud iam service-accounts list \
+    --project="genai-dev-123456"
+
+Expected:
+
+genai-orchestrator-dev@genai-dev-123456.iam.gserviceaccount.com
+
+
+# Step 2.13 — Important: ServiceNow Does NOT Become the Service Account
+
+This distinction is extremely important.
+
+We have two identities:
+
+External identity
+servicenowtestdev
+
+owned by:
+
+Okta / ServiceNow
+Google identity
+genai-orchestrator-dev@genai-dev-123456.iam.gserviceaccount.com
+
+owned by:
+
+Google Cloud
+
+They are not the same identity.
+
+WIF establishes trust between them.
+
+Conceptually:
+
+ServiceNow
+   |
+   | sub = servicenowtestdev
+   v
+Okta
+   |
+   | OIDC JWT
+   v
+GCP WIF
+   |
+   | authorized federation
+   v
+DEV Google Service Account
+   |
+   v
+Google resources
+
+
+
+# Step 2.14 — Give the Federated Identity Permission to Impersonate the Service Account
+Now we create the IAM relationship.
+
+We want:
+
+servicenowtestdev
+        |
+        | allowed to impersonate
+        v
+genai-orchestrator-dev
+
+Google recommends dedicated service accounts for external workloads and supports granting the federated identity permission to impersonate that service account.
+
+The exact IAM principal syntax depends on whether you grant access to the entire pool, a subject, or another mapped attribute.
+
+For a subject-specific binding, the principal is based on the Workload Identity Pool and mapped subject.
+
+Example:
+
+gcloud iam service-accounts add-iam-policy-binding \
+    genai-orchestrator-dev@genai-dev-123456.iam.gserviceaccount.com \
+    --project="genai-dev-123456" \
+    --role="roles/iam.workloadIdentityUser" \
+    --member="principal://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/servicenow-dev-pool/subject/servicenowtestdev"
+    
+Replace:
+PROJECT_NUMBER
+with the actual numeric project number.
+
+For example:
+123456789012
+Then the principal becomes conceptually:
+principal://iam.googleapis.com/projects/123456789012/locations/global/workloadIdentityPools/servicenow-dev-pool/subject/servicenowtestdev    
+
+
+What does this permission mean?
+It says:
+The federated identity servicenowtestdev is allowed to impersonate the DEV Google service account.
+It does not give every identity in the pool access.
+That is why the subject-specific binding is useful.
+
+
+# Step 2.15 — Verify the Service Account IAM Binding
+Run:
+
+gcloud iam service-accounts get-iam-policy \
+    genai-orchestrator-dev@genai-dev-123456.iam.gserviceaccount.com \
+    --project="genai-dev-123456"
+
+Look for:
+
+roles/iam.workloadIdentityUser
+
+and the expected federated principal.
+
+
+
+# Step 2.16 — Grant the Service Account Its Actual DEV Permissions
+
+This is a separate concept from federation.
+
+WIF answers:
+
+“Who is allowed to become/use this Google service identity?”
+
+IAM roles answer:
+
+“What is this Google service identity allowed to do?”
+
+For example, if the DEV service account needs to invoke the Cloud Run Orchestrator:
+
+genai-orchestrator-dev
+        |
+        | Cloud Run Invoker
+        v
+DEV Cloud Run Orchestrator
+
+The Cloud Run service needs the appropriate IAM permission.
+
+For example:
+
+gcloud run services add-iam-policy-binding genai-orchestrator \
+    --project="genai-dev-123456" \
+    --region="us-central1" \
+    --member="serviceAccount:genai-orchestrator-dev@genai-dev-123456.iam.gserviceaccount.com" \
+    --role="roles/run.invoker"
+    
+This is an authorization permission.
+
+It is different from:
+
+roles/iam.workloadIdentityUser
+
+Think of them as:
+WorkloadIdentityUser
+        |
+        | "You may use this Google identity"
+        v
+genai-orchestrator-dev
+        |
+        | Run Invoker
+        | "You may invoke this Cloud Run service"
+        v
+Cloud Run    
+
+
+
+# Step 2.17 — Now Configure the API Gateway
+
+Our architecture says:
+
+ServiceNow DEV
+       |
+       v
+GCP API Gateway
+       |
+       v
+DEV Cloud Run Orchestrator
+
+Therefore:
+
+API Gateway is the GenAI application's front door.
+
+Cloud Run is the backend.
+
+Do not describe Cloud Run as the public application entry point.
+
+
+
+# Step 2.18 — Decide What Credential API Gateway Will Validate
+
+his is an important architecture decision.
+
+There are two separate authentication questions:
+
+Question 1
+
+How does Google trust ServiceNow?
+
+Answer:
+
+ServiceNow
+   ↓
+Okta
+   ↓
+OIDC JWT
+   ↓
+Workload Identity Federation
+Question 2
+
+What authentication mechanism does API Gateway validate?
+
+That depends on the API Gateway configuration.
+
+Google API Gateway supports JWT authentication and validates JWT claims according to the API configuration.
+
+Therefore, the architecture document should not blindly say:
+
+ServiceNow sends raw Okta JWT to API Gateway
+
+or:
+
+ServiceNow always sends a Google access token to API Gateway
+
+until the actual API Gateway authentication design is finalized.
+
+For our architecture, the important boundary is:
+
+ServiceNow
+      |
+      | authenticated request
+      v
+GCP API Gateway
+      |
+      | authorized backend call
+      v
+DEV Cloud Run
+
+The exact API Gateway security configuration must match the credential flow implemented by the calling system.
+
+
+
+# Step 2.19 — Configure API Gateway to Reach Cloud Run
+
+The API Gateway configuration needs to know its backend.
+
+Conceptually:
+
+API Gateway
+     |
+     | backend
+     v
+Cloud Run:
+genai-orchestrator
+
+For API Gateway → Cloud Run authentication, Google supports configuring a service account for backend authentication. The service account used for the API configuration needs appropriate Cloud Run invocation permission.
+
+For example:
+
+API Gateway backend service account:
+
+genai-api-gateway-dev@genai-dev-123456.iam.gserviceaccount.com
+
+This can be a dedicated gateway backend identity.
+
+Then:
+
+API Gateway service account
+        |
+        | roles/run.invoker
+        v
+DEV Cloud Run
+Important separation
+
+Do not automatically reuse:
+
+genai-orchestrator-dev
+
+for every identity.
+
+A clean design can distinguish:
+
+ServiceNow external identity
+        |
+        v
+WIF / federated identity
+        |
+        v
+calling identity
+
+API Gateway
+        |
+        v
+gateway backend service account
+        |
+        v
+Cloud Run
+
+The exact identity arrangement should be finalized with the GCP IAM/API Gateway team.
+
+
+
+# Step 2.20 — Validate the Workload Identity Configuration
+
+Before involving ServiceNow runtime testing, validate the configuration itself.
+
+First list the pool:
+
+gcloud iam workload-identity-pools list \
+    --project="genai-dev-123456" \
+    --location="global"
+
+Expected:
+
+servicenow-dev-pool
+
+List providers:
+
+gcloud iam workload-identity-pools providers list \
+    --project="genai-dev-123456" \
+    --location="global" \
+    --workload-identity-pool="servicenow-dev-pool"
+
+Expected:
+
+okta-servicenow-dev
+
+Describe provider:
+
+gcloud iam workload-identity-pools providers describe okta-servicenow-dev \
+    --project="genai-dev-123456" \
+    --location="global" \
+    --workload-identity-pool="servicenow-dev-pool"
+
+Check:
+
+issuer
+audience
+attributeMapping
+attributeCondition
+state
+
+
+
+# Step 2.21 — Validate the Service Account
+Run:
+
+gcloud iam service-accounts describe \
+    genai-orchestrator-dev@genai-dev-123456.iam.gserviceaccount.com \
+    --project="genai-dev-123456"
+
+Confirm the service account exists.
+
+Then:
+
+gcloud iam service-accounts get-iam-policy \
+    genai-orchestrator-dev@genai-dev-123456.iam.gserviceaccount.com \
+    --project="genai-dev-123456"
+
+Confirm that the federated ServiceNow identity has:
+
+roles/iam.workloadIdentityUser
+
+
+# Step 2.22 — Test With a Real Okta Token
+
+Now we move from configuration validation to authentication validation.
+
+The ServiceNow/Okta administrator obtains a real token using the configured machine identity:
+
+servicenowtestdev
+
+The resulting JWT should contain claims similar to:
+
+{
+  "iss": "https://example.okta.com/oauth2/default",
+  "sub": "servicenowtestdev",
+  "aud": "api://servicenow-genai-dev",
+  "exp": 1790000000
+}
+
+Again, these are example claims.
+
+The real values must come from your Okta configuration.
+
+Validate:
+
+iss
+aud
+sub
+exp
+signature
+
+Expected:
+
+iss  → trusted Okta issuer
+aud  → expected DEV audience
+sub  → servicenowtestdev
+exp  → token is still valid
+
+
+
+# Step 2.23 — What Happens When the Token Reaches Google?
+
+At runtime, conceptually:
+
+1. ServiceNow
+      |
+      | requests token
+      v
+
+2. Okta
+      |
+      | returns signed OIDC JWT
+      v
+
+3. Google Security Token Service
+      |
+      | validates token
+      |
+      +-- issuer?
+      +-- signature?
+      +-- audience?
+      +-- expiration?
+      +-- attribute mapping?
+      +-- attribute condition?
+      |
+      v
+
+4. Federated Google identity
+      |
+      v
+
+5. Service-account impersonation
+      |
+      v
+
+6. DEV Google service account
+
+The Workload Identity Pool and OIDC Provider are configuration objects.
+
+They are not created again for every request.
+
+
+
+# Step 2.24 — Complete GCP Configuration Picture
+
+After Step 2 is complete, we have:
+
+```text
+                         GOOGLE CLOUD DEV
+┌──────────────────────────────────────────────────────┐
+│                                                      │
+│  Workload Identity Pool                              │
+│  servicenow-dev-pool                                 │
+│           │                                          │
+│           │ contains                                 │
+│           ▼                                          │
+│  OIDC Provider                                       │
+│  okta-servicenow-dev                                 │
+│           │                                          │
+│           ├── Issuer = Okta                          │
+│           ├── Audience = DEV application             │
+│           ├── google.subject = assertion.sub         │
+│           └── subject condition = servicenowtestdev  │
+│                                                      │
+│           │                                          │
+│           ▼                                          │
+│  Federated Identity                                  │
+│  servicenowtestdev                                   │
+│           │                                          │
+│           │ IAM: WorkloadIdentityUser                │
+│           ▼                                          │
+│  DEV Service Account                                 │
+│  genai-orchestrator-dev                              │
+│           │                                          │
+│           │ authorized permissions                   │
+│           ▼                                          │
+│  DEV GenAI Resources                                 │
+│                                                      │
+│  API Gateway                                         │
+│       │                                              │
+│       ▼                                              │
+│  Cloud Run Orchestrator                              │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+---
+
+# Step 2.25 — End-to-End Runtime Flow
+
+Once all one-time configuration is complete, an actual incident follows this logical path:
+
+ServiceNow DEV
+servicenowtestdev
+        |
+        | 1. OAuth Client Credentials
+        v
+      Okta
+        |
+        | 2. OIDC JWT
+        v
+Google Cloud Federation
+        |
+        | 3. STS validates JWT
+        |
+        | 4. Attribute mapping
+        |
+        | 5. Attribute condition
+        |
+        | 6. Federated identity
+        v
+DEV Google Identity
+        |
+        | 7. Authorized request
+        v
+GCP API Gateway
+        |
+        | 8. Gateway authentication
+        |
+        | 9. Backend authentication
+        v
+DEV Cloud Run
+GenAI Orchestrator
+
+At this point we have not discussed:
+
+Agent
+RCA
+RAG
+MCP
+Kafka
+ServiceNow tool
+LLM
+
+Those belong to later chapters.
+
+This chapter is deliberately stopping at:
+
+ServiceNow
+      ↓
+Okta
+      ↓
+GCP Federation
+      ↓
+API Gateway
+      ↓
+Cloud Run Orchestrator
+
+
+
+# Step 2.26 — One-Time Configuration vs Runtime
+
+This distinction should be very clear in the final architecture document.
+
+One-time configuration
+
+Performed by platform administrators:
+
+1. Create GCP project/configuration
+2. Enable APIs
+3. Create Workload Identity Pool
+4. Create Okta OIDC Provider
+5. Configure issuer
+6. Configure audience
+7. Configure attribute mapping
+8. Configure attribute condition
+9. Create DEV service account
+10. Grant WorkloadIdentityUser
+11. Configure Cloud Run IAM
+12. Configure API Gateway
+Runtime
+
+Happens for every request:
+
+ServiceNow
+    ↓
+Request Okta token
+    ↓
+Receive OIDC JWT
+    ↓
+Call API Gateway
+    ↓
+Google/API Gateway validates configured identity
+    ↓
+Gateway forwards to Cloud Run
+    ↓
+Cloud Run receives incident request
+
+# Step 2.27 — Responsibility Matrix
+
+| Activity                                        | Owner                         |
+| ----------------------------------------------- | ----------------------------- |
+| ServiceNow machine identity `servicenowtestdev` | ServiceNow Admin              |
+| OAuth Client Credentials                        | ServiceNow Admin + Okta Admin |
+| Okta application                                | Okta Admin                    |
+| Okta issuer                                     | Okta Admin                    |
+| Okta audience/client ID                         | Okta Admin                    |
+| GCP project                                     | GCP Platform Admin            |
+| Required Google APIs                            | GCP Platform Admin            |
+| Workload Identity Pool                          | GCP IAM Admin                 |
+| OIDC Provider                                   | GCP IAM Admin                 |
+| Attribute Mapping                               | GCP IAM + Security            |
+| Attribute Condition                             | GCP IAM + Security            |
+| DEV Service Account                             | GCP IAM Admin                 |
+| `roles/iam.workloadIdentityUser`                | GCP IAM Admin                 |
+| Cloud Run authorization                         | GCP Platform Admin            |
+| API Gateway                                     | API Platform / GCP Admin      |
+| End-to-end validation                           | ServiceNow + Okta + GCP teams |
+
+---
+
+# Step 2.28 — Final Mental Model
+
+Remember these four things:
+
+1. Okta answers:
+
+Who is ServiceNow?
+
+servicenowtestdev
+2. Workload Identity Federation answers:
+
+Does Google trust this external identity?
+
+Yes — because issuer, audience, claims and federation policy match.
+3. IAM answers:
+
+What can this identity do?
+
+Allowed Google permissions
+4. API Gateway answers:
+
+What is the application's front door?
+
+GCP API Gateway
+
+And the backend is:
+
+DEV Cloud Run Orchestrator
+
+So the complete security chain is:
+
+                 IDENTITY
+                    │
+                    ▼
+ServiceNow → Okta → OIDC JWT
+                    │
+                    ▼
+          Workload Identity Federation
+                    │
+                    ▼
+             Google IAM
+                    │
+                    ▼
+              API Gateway
+                    │
+                    ▼
+             Cloud Run DEV
+

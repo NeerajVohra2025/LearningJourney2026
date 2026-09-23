@@ -1,0 +1,1278 @@
+Chapter 1 — Purpose and Objectives:
+1.1 Purpose:
+The purpose of the GenAI Observability capability is to provide a consistent and secure way to understand the complete journey of a business request across the GenAI platform.
+A single business request may pass through multiple independently deployed components such as:
+Enterprise Client
+       |
+       v
+Google API Gateway
+       |
+       v
+Business Orchestrator
+       |
+       +--------------------+
+       |                    |
+       v                    v
+Incident Agent         Action Agent
+       |                    |
+       v                    v
+ServiceNow Tool       Kafka Connector
+       |                    |
+       v                    v
+ServiceNow            Kafka Connect
+
+Observability connects these individual operations into one end-to-end business and technical journey.
+
+1.2 Business Questions Observability Must Answer:
+For every important request, the platform should be able to answer:
+Which business request was processed?
+Who or what initiated the request?
+Which service processed the request?
+Which AI agent participated?
+Which tool or enterprise system was called?
+In what order did the components execute?
+Where did a failure occur?
+How long did each operation take?
+What was the outcome of each operation?
+Was sensitive information protected before it was stored in logs?
+
+
+1.3 Observability Definition:
+For this platform, observability means:
+Providing enough safe and structured evidence to understand what happened to a business request from beginning to end.
+Observability does not mean logging everything.
+The objective is to capture the right operational information while protecting sensitive application data.
+---
+
+Chapter 2 — End-to-End Observability Architecture:
+2.1 High-Level Architecture:
+
+The complete observability flow is:
+
+                    ENTERPRISE REQUEST
+                           |
+                           v
+                  Google API Gateway
+                           |
+                           v
+                  Authenticate Caller
+                           |
+                           v
+               Establish Business Context
+                           |
+                           v
+                Establish Trace Context
+                           |
+                           v
+                 Observability Context
+                           |
+                           v
+                  Execute Business Logic
+                           |
+                           v
+                Create Structured Event
+                           |
+                           v
+                    Validate Event
+                           |
+                           v
+                Google Sensitive Data
+                  Protection / DLP
+                           |
+                           v
+                  Protected Event
+                           |
+                           v
+                 Google Cloud Logging
+                           |
+                     trace_id/span_id
+                           |
+                           v
+                    Google Cloud Trace
+
+This is the standard request lifecycle.
+
+2.2 Downstream Propagation:
+When one service calls another service:
+
+Business Orchestrator
+        |
+        | inject_headers()
+        v
+Incident Agent
+        |
+        | inject_headers()
+        v
+ServiceNow Tool
+
+The observability context travels with the request so that all participating services remain part of the same technical journey.
+
+2.3 Core Design Principle:
+Business Identity
+        +
+Technical Identity
+        |
+        v
+Observability Context
+
+Business Identity answers:
+What business request is this?
+
+Technical Identity answers:
+Where is this request executing and how did it get here?
+---
+
+Chapter 3 — Core Observability Concepts:
+Before implementing observability, the following concepts must be understood.
+
+3.1 Business Context:
+Business Context identifies the business transaction.
+Typical attributes include:
+execution_id
+correlation_id
+request_id
+tenant_id
+user_id
+business_process
+conversation_id
+incident_number
+
+Example:
+execution_id     = EXEC-1001
+correlation_id   = CORR-2001
+request_id       = REQ-3001
+tenant_id        = mattel
+business_process = incident-management
+user_id          = service-user
+incident_number  = INC2093356
+
+3.2 Trace Context:
+Trace Context identifies the technical execution path.
+It contains:
+trace_id
+span_id
+parent_span_id
+The implementation uses the W3C traceparent mechanism for distributed trace propagation.
+
+
+3.3 Trace ID:
+The trace_id represents the complete technical journey.
+Example:
+trace_id = TRACE-100
+The same trace_id remains associated with the complete distributed request.
+
+
+3.4 Span ID:
+A span_id represents one service operation.
+Example:
+Business Orchestrator
+    span_id = SPAN-001
+Incident Agent
+    span_id = SPAN-002
+ServiceNow Tool
+    span_id = SPAN-003
+    
+
+3.5 Parent Span ID:
+parent_span_id identifies the immediate upstream operation.
+Example:
+
+SPAN-001
+    |
+    v
+SPAN-002
+    |
+    v
+SPAN-003
+Therefore:
+SPAN-002 parent = SPAN-001
+SPAN-003 parent = SPAN-002 
+---
+
+
+Chapter 4 — Step 1: Request Enters the Platform
+4.1 Request Flow:
+Assume ServiceNow or another trusted enterprise application initiates a request.
+ServiceNow / Enterprise Client
+            |
+            v
+     Google API Gateway
+            |
+            v
+    Business Orchestrator
+
+Example business request:
+Investigate production database crash
+for Incident INC2093356. 
+
+
+4.2 Important Rule:
+At this point, the request has arrived, but business information supplied through HTTP headers is not automatically trusted.
+For example:
+X-Request-Id
+X-Correlation-Id
+X-Tenant-Id
+X-User-Id
+X-Incident-Number
+These values must not automatically become trusted observability information. 
+---
+
+Chapter 5 — Step 2: Authenticate the Caller
+5.1 Authentication Comes First:
+The application must authenticate the caller before trusting business identity information.
+The sequence is:
+
+Incoming Request
+       |
+       v
+Authenticate Caller
+       |
+       +------ NO ------> Reject Request
+       |
+      YES
+       |
+       v
+Continue Processing 
+
+
+5.2 Why This Is Required:
+Suppose an unauthenticated caller sends:
+X-Tenant-Id: trusted-company
+X-User-Id: administrator
+X-Incident-Number: INC2093356
+Those values cannot be treated as trusted audit information until the caller has been authenticated.
+
+
+5.3 Responsibility:
+Authentication answers:
+Who is calling?
+Observability answers:
+What happened during the request?
+These responsibilities must remain separate.
+---
+
+
+
+Chapter 6 — Step 3: Establish Business Identity
+Once authentication succeeds, the service establishes the business identity of the request.
+This is represented by:
+BusinessContext
+Example:
+BusinessContext
+------------------------------------------------
+execution_id       = EXEC-1001
+correlation_id     = CORR-2001
+request_id         = REQ-3001
+tenant_id          = mattel
+business_process   = incident-management
+user_id            = service-user
+incident_number    = INC2093356
+
+6.1 Understanding the IDs:
+
+ID	                                                Meaning
+execution_id	                                    This particular workflow execution
+correlation_id	                                    Connects related operational events
+request_id	                                        Identifies the original application request
+incident_number	                                    Identifies the business incident
+
+6.2 Example:
+The request:
+request_id = REQ-3001
+may travel through:
+REQ-3001
+    |
+    +-- Business Orchestrator
+    |
+    +-- Incident Agent
+    |
+    +-- ServiceNow Tool
+All participating services preserve the same business identity.
+---
+
+
+Chapter 7 — Step 4: Establish Technical Trace Identity
+Business identity alone is not sufficient.
+We also need to understand:
+Which service called which service?
+This is the purpose of distributed tracing.
+The implementation uses:
+W3C traceparent
+The technical identity consists of:
+TraceContext
+    |
+    +-- trace_id
+    +-- span_id
+    +-- parent_span_id
+---
+
+Chapter 8 — Step 5: Root Trace and Child Trace
+
+8.1 New Request — Root Trace:
+If the Business Orchestrator receives no valid incoming trace:
+No traceparent
+      |
+      v
+Create New Trace
+      |
+      v
+Create Root Span
+
+Example:
+trace_id = TRACE-100
+span_id  = SPAN-001    
+    
+8.2 Downstream Request — Child Span:
+If the Incident Agent receives:
+traceparent
+from the Business Orchestrator, it preserves the existing trace.
+It creates:
+trace_id        = TRACE-100
+span_id         = SPAN-002
+parent_span_id  = SPAN-001 
+
+
+8.3 Golden Rule:
+trace_id
+    = remains the same
+
+span_id
+    = changes for each operation
+
+parent_span_id
+    = points to the immediate caller   
+    
+    
+8.4 Trace Example:
+TRACE-100
+   |
+   +-- Business Orchestrator
+   |       SPAN-001
+   |
+   +-- Incident Agent
+   |       SPAN-002
+   |       Parent = SPAN-001
+   |
+   +-- ServiceNow Tool
+           SPAN-003
+           Parent = SPAN-002
+
+This creates the technical execution tree.    
+---
+
+
+Chapter 9 — Step 6: Create ObservabilityContext
+At this point we have:
+
+BusinessContext
+       +
+TraceContext
+       |
+       v
+ObservabilityContext
+
+Conceptually:
+ObservabilityContext
+|
++-- BusinessContext
+|   +-- execution_id
+|   +-- correlation_id
+|   +-- request_id
+|   +-- tenant_id
+|   +-- user_id
+|   +-- incident_number
+|
++-- TraceContext
+|   +-- trace_id
+|   +-- span_id
+|   +-- parent_span_id
+|
++-- current_service
++-- parent_service
++-- current_operation
++-- current_agent
++-- started_at
+
+9.1 Simple Mental Model:
+BusinessContext
+    |
+    +-- What business request is this?
+
+TraceContext
+    |
+    +-- What technical journey is this?
+
+ObservabilityContext
+    |
+    +-- What request is this
+        AND
+        where are we executing?
+The ObservabilityContext becomes the common context used by the observability utility throughout the current operation.
+
+
+Chapter 10 — Step 7: Execute the Business Logic
+Only after the observability context is established should the actual business operation execute.
+Example:
+
+Incident Agent
+      |
+      v
+Analyze Incident
+      |
+      v
+Apply Business Policy
+      |
+      v
+Determine Required Action
+      |
+      v
+Call ServiceNow Tool
+
+
+10.1 Important Responsibility Separation:
+Business Policy determines:
+What are we allowed to do?
+
+Observability records:
+What happened?
+Observability is therefore not an authorization engine.
+---
+
+Chapter 11 — Step 8: Create a Structured Event:
+The platform must use structured events rather than arbitrary free-text messages.
+Avoid:
+Agent worked.
+Everything OK.
+Tool executed.
+
+Instead, use typed payloads.
+11.1 Standard Payload Types:
+Component	                                                Payload
+Platform /Orchestrator	                                    PlatformServiceLogPayload
+AI Agent	                                                AgentLogPayload
+Tool	                                                    ToolLogPayload
+
+
+11.2 Agent Event Example:
+event_name       = agent.execution.completed
+agent_name       = incident-agent
+agent_framework  = google-adk
+operation        = execute
+outcome          = success
+input_tokens     = 20
+output_tokens    = 10
+total_tokens     = 30
+duration_ms      = 25
+
+
+11.3 Tool Event Example:
+event_name       = tool.execution.completed
+tool_name        = tool-servicenow
+operation        = create_incident
+target_system    = ServiceNow
+outcome          = success
+attempt_number   = 1
+duration_ms      = 120
+
+
+11.4 Why Structured Events?:
+Structured events allow operations teams to search and analyze information such as:
+Show failed agent executions.
+Show executions greater than 5 seconds.
+Show events for INC2093356.
+Show events for REQ-3001.
+Show token usage by agent.
+---
+
+Chapter 12 — Step 9: Validate the Structured Event
+Before the event is sent to Google Cloud, it must be validated.
+The logical flow is:
+
+Structured Event
+       |
+       v
+Validate Schema
+       |
+       v
+Validate Request Identity
+       |
+       v
+Validate Correlation Identity
+       |
+       v
+Add Technical Lineage
+       |
+       v
+Continue
+
+
+12.1 Request Identity Validation:
+Example:
+ObservabilityContext
+request_id = REQ-3001
+
+Event
+request_id = REQ-3001
+
+This is valid.
+
+But:
+
+ObservabilityContext
+request_id = REQ-3001
+
+Event
+request_id = REQ-9999
+
+must not be silently accepted.
+
+Otherwise events can be associated with the wrong business request.
+---
+
+Chapter 13 — Step 10: Protect Sensitive Data Using DLP
+Sensitive information must be protected before it enters enterprise logging.
+
+The required flow is:
+
+Application
+     |
+     v
+Structured Event
+     |
+     v
+Google Sensitive Data Protection
+          / DLP
+     |
+     v
+Protected Event
+     |
+     v
+Cloud Logging
+
+The reference implementation uses:
+DlpServiceClient.deidentify_content()
+
+for this protection step.
+
+13.1 DLP Example:
+Suppose the event contains:
+Incident created for john@example.com
+The protected value may become:
+Incident created for [EMAIL_ADDRESS]
+depending on the configured DLP templates.
+---
+
+Chapter 14 — Step 11: DLP Must Be Fail-Closed
+DLP protection is a security boundary.
+The required behavior is:
+                     DLP
+                      |
+              +-------+-------+
+              |               |
+           SUCCESS          FAILURE
+              |               |
+              v               X
+      Protected Event        STOP
+              |
+              v
+       Cloud Logging
+If DLP fails:
+DO NOT
+    |
+    +-- send raw event
+    +-- bypass DLP
+    +-- write unprotected sensitive data
+The system must not use raw logging as a fallback.
+---
+
+Chapter 15 — Step 12: Write Protected Event to Cloud Logging
+After DLP succeeds:
+Protected Event
+       |
+       v
+Cloud Logging Client
+       |
+       v
+Configured Logger
+       |
+       v
+logger.log_struct()
+       |
+       v
+Google Cloud Logging
+The structured event should contain the business and technical correlation information needed for operational investigation.
+Typical searchable fields include:
+request_id
+correlation_id
+incident_number
+event_name
+current_service
+parent_service
+operation
+outcome
+trace_id
+span_id
+---
+
+
+Chapter 16 — Step 13: Correlate Cloud Logging With Cloud Trace
+The Cloud Logging event carries technical lineage.
+Example:
+Log Entry
+--------------------------------
+request_id = REQ-3001
+trace_id   = TRACE-100
+span_id    = SPAN-002
+This allows the engineer to move conceptually from:
+
+Cloud Logging
+      |
+      | trace_id / span_id
+      v
+Cloud Trace
+An engineer can start with an error log and determine:
+Which trace?
+Which service?
+Which parent service?
+Which downstream service?
+---
+
+Chapter 17 — Step 14: Propagate Context to the Next Service
+Suppose the Incident Agent needs to call:
+ServiceNow Tool
+The agent uses:
+
+headers = observability.inject_headers(context)
+
+The observability headers contain the technical and business lineage.
+Example:
+traceparent
+
+X-Execution-Id
+X-Correlation-Id
+X-Request-Id
+X-Tenant-Id
+X-Business-Process
+X-User-Id
+X-Current-Service
+
+
+17.1 Result:
+The downstream service receives enough information to understand:
+Which business request?
+Which technical trace?
+Which upstream service?
+---
+
+
+Chapter 18 — Step 15: Authentication Is Separate
+Observability must not own downstream authentication.
+The correct conceptual flow is:
+headers = observability.inject_headers(context)
+headers["Authorization"] = service_identity_token
+Therefore:
+Authentication
+       !=
+Authorization
+       !=
+Observability
+
+Each capability has a different responsibility.
+
+Authentication
+Who are you?
+
+Authorization / Policy
+What are you allowed to do?
+
+Observability
+What happened?
+---
+
+Chapter 19 — Step 16: Downstream Service Creates Its Own Span
+The ServiceNow Tool receives the propagated traceparent.
+It creates a new child span.
+The final relationship becomes:
+
+TRACE-100
+   |
+   +-- SPAN-001 Business Orchestrator
+          |
+          +-- SPAN-002 Incident Agent
+                 |
+                 +-- SPAN-003 ServiceNow Tool
+The trace_id remains:
+TRACE-100
+while each operation has its own span.
+---
+
+
+Chapter 20 — Step 17: Export Completed Span to Cloud Trace
+Creating IDs in application memory does not by itself create a visual Cloud Trace span.
+At operation completion, the application explicitly exports the completed span.
+
+Conceptually:
+observability.write_trace_span(
+    context,
+    display_name="tool-servicenow:create-incident"
+)
+The underlying Google Cloud API is:
+TraceServiceClient.create_span()
+The completed span contains information such as:
+
+trace_id
+span_id
+parent_span_id
+display_name
+start_time
+end_time
+---
+
+Chapter 21 — Complete End-to-End Example:
+Assume:
+Incident Number = INC2093356
+Request ID      = REQ-3001
+Trace ID        = TRACE-100
+The complete journey is:
+                         INC2093356
+                              |
+                              v
+                    Google API Gateway
+                              |
+                              v
+                    Business Orchestrator
+                         SPAN-001
+                              |
+                              v
+                       Incident Agent
+                         SPAN-002
+                              |
+                              v
+                      ServiceNow Tool
+                         SPAN-003
+                              |
+                              v
+                         ServiceNow
+
+Business identity:
+execution_id   = EXEC-1001
+correlation_id = CORR-2001
+request_id     = REQ-3001
+incident       = INC2093356
+
+Technical identity:
+trace_id = TRACE-100
+
+SPAN-001
+SPAN-002
+SPAN-003
+---
+
+
+Chapter 22 — What Happens to One Event?:
+Consider the Incident Agent completion event.   
+The lifecycle is:
+
+Incident Agent
+      |
+      | 1. Build AgentLogPayload
+      v
+Structured Event
+      |
+      | 2. Validate
+      v
+Validated Event
+      |
+      | 3. Add Trace / Span
+      v
+Correlated Event
+      |
+      | 4. DLP Protection
+      v
+Protected Event
+      |
+      | 5. log_struct()
+      v
+Google Cloud Logging
+
+At the same time:
+
+Incident Agent
+      |
+      | write_trace_span()
+      v
+TraceServiceClient.create_span()
+      |
+      v
+Google Cloud Trace
+
+Both systems therefore represent the same service operation using the same trace/span identity. 
+---
+
+Chapter 23 — Google Cloud Capabilities:
+The observability implementation uses a small number of Google Cloud capabilities.
+Google Cloud Capability	                                API / Method	                                    Purpose
+Sensitive Data Protection	                            DlpServiceClient.deidentify_content()	            Protect sensitive log values
+Cloud Logging	                                        cloud_logging.Client()	                            Create Logging client
+Cloud Logging	                                        Client.logger()	                                    Select configured log
+Cloud Logging	                                        Logger.log_struct()	                                Write structured event
+Cloud Trace	                                            TraceServiceClient()	                            Create Trace client
+Cloud Trace                                         	TraceServiceClient.create_span()	                Export completed span
+ADC                                                 	Google authentication chain	                        Authenticate workload
+IAM	                                                    Google Cloud IAM	                                Control permissions
+---
+
+Chapter 24 — Google Cloud Prerequisites:
+Before application implementation, the required Google Cloud services must be available.
+
+24.1 Required APIs:
+dlp.googleapis.com
+logging.googleapis.com
+cloudtrace.googleapis.com
+
+
+24.2 DLP Configuration:
+DLP inspection and de-identification templates must be available according to the target environment and configured deployment model.
+Example:
+Environment: DEV
+Region:       us-central1
+DLP Inspect Template
+DLP De-identification Template
+
+24.3 Runtime Identity:
+The service runtime identity must have the required minimum permissions for:
+DLP
+Cloud Logging
+Cloud Trace
+Possible runtime environments include:
+Cloud Run
+GKE with Workload Identity
+Virtual Machines
+---
+
+Chapter 25 — Observability Utility Initialization:
+The observability utility must be initialized once during application startup.
+Conceptually:
+observability = build_observability_utility(settings)
+Do not create a new observability utility for every HTTP request.
+
+25.1 Typical Configuration:
+project_id
+log_name
+DLP configuration
+logging failure behavior
+trace generation behavior
+Example:
+project_id = my-dev-project
+log_name = genai-application
+logging_failure_behavior = continue
+generate_context_when_missing = true
+The utility can then be reused by all requests handled by the service.
+---
+
+Chapter 26 — What Must Never Be Logged:
+The observability platform must not become a repository for sensitive application content.
+
+The following must not be logged:
+Passwords
+Credentials
+Access Tokens
+Authorization Headers
+Raw Prompts
+Model Responses
+Chain-of-Thought
+Complete Customer Payloads
+Complete Tool Inputs
+Complete Tool Outputs
+DLP is an additional protection layer.
+It is not permission to log information that should never have been logged.
+---
+
+Chapter 27 — Failure Handling Standard:
+Observability failures must have explicitly defined behavior.
+The three primary failure boundaries are:
+
+                   Observability
+                       |
+          +------------+------------+
+          |            |            |
+          v            v            v
+         DLP        Logging       Trace
+       Failure      Failure      Failure
+          |            |            |
+          v            v            v
+      Fail Closed   Continue/      Raise
+                    Raise
+
+
+27.1 DLP Failure:
+Required behavior:
+
+DLP Failure
+    |
+    v
+STOP LOG DELIVERY
+    |
+    v
+Never send raw event
+
+
+27.2 Cloud Logging Failure — Continue Mode:
+Conceptually:
+
+Logging Failure
+      |
+      v
+Return failure status
+      +
+Increment logging failure metric
+      +
+Continue business processing
+
+The exact continuation behavior remains subject to the service's configured policy.
+
+
+27.3 Cloud Logging Failure — Raise Mode:
+Logging Failure
+      |
+      v
+Propagate provider exception
+
+The behavior must be explicitly configured rather than being left to individual developers.
+---
+
+Chapter 28 — Local Validation:
+
+Before connecting to real Google Cloud services, the observability implementation should be validated locally.
+Minimum validation should confirm:
+
+PASS — Same trace ID across services
+PASS — Unique span IDs
+PASS — Correct parent span
+PASS — Correct parent service
+PASS — Structured event format
+PASS — DLP protection behavior
+PASS — Configured log name
+
+The purpose is to identify implementation problems before consuming cloud resources.
+---
+
+Chapter 29 — Google Cloud Smoke Test:
+After local validation, execute a real cloud smoke test.
+
+The test should follow:
+
+Create Synthetic Event
+        |
+        v
+Create ObservabilityContext
+        |
+        v
+Create Structured Payload
+        |
+        v
+DLP Protection
+        |
+        v
+Cloud Logging
+        |
+        v
+Cloud Trace
+        |
+        v
+Query Cloud Logging
+        |
+        v
+Verify Original Synthetic PII
+Is NOT Stored
+        |
+        v
+PASS
+
+The most important security validation is:
+
+Original synthetic sensitive value
+        |
+        X
+        |
+Not present in stored log
+
+This confirms that the implementation is not merely logging successfully; it is logging with the required protection.
+---
+
+Chapter 30 — Operational Troubleshooting Flow:
+When an incident occurs, operations should follow this sequence.
+
+Step 1 — Start With Business Identity:
+Search using:
+incident_number
+Example:
+INC2093356
+
+Step 2 — Identify the Request:
+Find:
+request_id
+correlation_id
+execution_id
+Example:
+request_id = REQ-3001
+
+Step 3 — Find the Trace:
+Identify:
+trace_id = TRACE-100
+
+Step 4 — Follow the Span Tree:
+TRACE-100
+   |
+   +-- Orchestrator
+   |
+   +-- Incident Agent
+   |
+   +-- ServiceNow Tool
+
+Step 5 — Identify the Failed Operation:
+Check:
+service
+operation
+event_name
+outcome
+duration_ms
+
+Step 6 — Review Protected Logs:
+Review the corresponding Cloud Logging events.
+Do not expect raw prompts, complete tool payloads, credentials, or other prohibited content to be present.
+---
+
+Chapter 31 — Responsibility Model:
+The architecture separates responsibilities clearly.
+
+Capability	                                                    Primary Question
+Authentication	                                                Who is calling?
+Authorization /Business Policy	                                What are they allowed to do?
+BusinessContext	                                                Which business request is this?
+TraceContext	                                                Which technical journey is this?
+ObservabilityContext	                                        Where are we executing now?
+Structured Logging	                                            What happened?
+DLP	                                                            Is eligible logged data protected?
+Cloud Logging	                                                Where is searchable operational evidence stored?
+Cloud Trace	                                                    How did the request execute across services?
+
+This separation keeps the architecture understandable and governable.
+---
+
+Chapter 32 — Developer Implementation Checklist:
+Every new GenAI service integrating the observability utility should follow this checklist.
+
+Application Startup:
+[ ] Load observability configuration
+[ ] Initialize DLP configuration
+[ ] Initialize Cloud Logging configuration
+[ ] Initialize Cloud Trace configuration
+[ ] Create one observability utility instance
+
+Request Entry:
+[ ] Authenticate caller
+[ ] Establish trusted business identity
+[ ] Extract/create trace context
+[ ] Create ObservabilityContext
+
+Business Processing:
+[ ] Execute business logic
+[ ] Measure duration
+[ ] Determine outcome
+[ ] Create appropriate typed payload
+
+Logging:
+[ ] Validate payload
+[ ] Validate request/correlation identity
+[ ] Add trace/span lineage
+[ ] Apply DLP
+[ ] Fail closed if DLP fails
+[ ] Write protected event to Cloud Logging
+
+Trace:
+[ ] Create completed service span
+[ ] Export span to Cloud Trace
+
+Downstream Calls:
+[ ] Call inject_headers()
+[ ] Propagate trace context
+[ ] Propagate approved business context
+[ ] Add authentication separately
+[ ] Call downstream service
+
+Cleanup:
+[ ] Clear request-local context
+[ ] Prevent context leakage between requests
+---
+
+Chapter 33 — Enterprise Golden Rules:
+The following rules are mandatory design principles for the observability implementation.
+
+Rule 1 — Authenticate Before Trusting Context:
+Authenticate
+     ↓
+Trust Business Context
+
+Rule 2 — One Distributed Journey Uses One Trace ID:
+Orchestrator
+     |
+     +-- Agent
+            |
+            +-- Tool
+
+All belong to the same trace_id.
+
+Rule 3 — Every Service Operation Gets Its Own Span:
+Orchestrator → SPAN-001
+Agent        → SPAN-002
+Tool         → SPAN-003
+
+Rule 4 — Business Identity and Technical Identity Are Different:
+BusinessContext = What business request?
+TraceContext    = What technical journey?
+
+Rule 5 — Use Structured Events:
+Do not rely on arbitrary free-text logs.
+
+Rule 6 — Never Log Sensitive Application Content:
+Do not log credentials, tokens, raw prompts, model responses, chain-of-thought, or complete customer/tool payloads.
+
+Rule 7 — DLP Is Fail-Closed:
+DLP Success
+    ↓
+Protected Log
+    ↓
+Cloud Logging
+DLP Failure
+    ↓
+STOP
+
+Rule 8 — DLP Is Not Permission to Log Everything:
+Data that should never be logged must not be logged even if DLP exists.
+
+
+Rule 9 — Authentication Must Remain Separate From Observability:
+Observability propagates identity and trace lineage.
+Authentication provides authorization credentials.
+
+Rule 10 — Observability Records; It Does Not Decide:
+Business policy decides what the application is allowed to do.
+Observability records what happened.
+---
+
+Chapter 34 — Final End-to-End Reference Architecture:
+The following is the authoritative logical flow for the implementation:
+
+                         ENTERPRISE REQUEST
+                                |
+                                v
+                       Google API Gateway
+                                |
+                                v
+                    Authenticate / Authorize
+                                |
+                                v
+                     Business Orchestrator
+                                |
+                                |
+                    +-----------+-----------+
+                    |                       |
+                    v                       v
+             BusinessContext          TraceContext
+                    |                       |
+                    +-----------+-----------+
+                                |
+                                v
+                     ObservabilityContext
+                                |
+                                v
+                       Execute Use Case
+                                |
+                                v
+                    Structured Event
+                                |
+                                v
+                       Validate Event
+                                |
+                                v
+                  Sensitive Data Protection
+                            / DLP
+                                |
+                       +--------+--------+
+                       |                 |
+                    SUCCESS            FAILURE
+                       |                 |
+                       v                 X
+                Protected Event        STOP
+                       |
+                       v
+                 Cloud Logging
+                       |
+                       | trace_id/span_id
+                       v
+                  Cloud Trace
+
+
+DOWNSTREAM FLOW
+─────────────────────────────────────────
+
+Business Orchestrator
+        |
+        | inject_headers()
+        | + authentication
+        v
+Incident Agent
+        |
+        | inject_headers()
+        | + authentication
+        v
+ServiceNow Tool
+        |
+        v
+ServiceNow
+
+
+TRACE RELATIONSHIP
+─────────────────────────────────────────
+
+TRACE-100
+    |
+    +-- SPAN-001  Business Orchestrator
+          |
+          +-- SPAN-002  Incident Agent
+                |
+                +-- SPAN-003  ServiceNow Tool
+---
+
+Chapter 35 — Final Mental Model:
+The complete observability implementation can be remembered as:
+
+AUTHENTICATE
+      ↓
+BUSINESS CONTEXT
+      +
+TRACE CONTEXT
+      ↓
+OBSERVABILITY CONTEXT
+      ↓
+EXECUTE BUSINESS LOGIC
+      ↓
+CREATE STRUCTURED EVENT
+      ↓
+VALIDATE EVENT
+      ↓
+DLP PROTECT
+      ↓
+CLOUD LOGGING
+      +
+CLOUD TRACE
+      ↓
+PROPAGATE CONTEXT
+      ↓
+NEXT SERVICE
+
+Or, in simple enterprise language:
+First establish who is calling. Then establish what business request is being processed. Establish the technical trace for that request. Combine both into the Observability Context. Execute the business operation and create a structured event. Validate the event, protect eligible data with DLP, and write the protected event to Cloud Logging. Export the completed operation to Cloud Trace. If another service is called, propagate the same business and technical lineage while handling authentication separately.
+                
+                

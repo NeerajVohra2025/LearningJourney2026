@@ -1,0 +1,868 @@
+Policy-Driven Hexagonal Enterprise Clean Architecture:
+1. Purpose
+This document defines the canonical architecture, terminology, responsibilities, dependency rules, and mental model for building enterprise GenAI/Agentic AI systems using:
+Policy-Driven + Hexagonal (Ports & Adapters) + Clean Architecture
+
+
+2. The One Mental Model
+Remember this first:
+                    EXTERNAL WORLD
+                         │
+             ┌───────────┼───────────┐
+             │           │           │
+            REST         MCP        Events
+             │           │           │
+             └───────────┼───────────┘
+                         ▼
+                 INBOUND ADAPTERS
+                         │
+                         ▼
+                  INBOUND PORTS
+                         │
+                         ▼
+              ┌─────────────────────┐
+              │     APPLICATION     │
+              │                     │
+              │    Use Cases        │
+              │    Orchestration    │
+              │    Agent Workflow   │
+              └──────────┬──────────┘
+                         │
+                         ▼
+                 POLICY DECISIONS
+                         │
+                         ▼
+              ┌─────────────────────┐
+              │       DOMAIN        │
+              │                     │
+              │ Entities            │
+              │ Value Objects       │
+              │ Business Rules      │
+              │ Domain Events       │
+              └──────────┬──────────┘
+                         │
+                         ▼
+                 OUTBOUND PORTS
+                         │
+                         ▼
+                OUTBOUND ADAPTERS
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+         LLM          ServiceNow       RAG
+          │              │              │
+          ▼              ▼              ▼
+      OpenAI/Gemini   ServiceNow    Vector DB
+
+
+       ┌─────────────────────────────────────┐
+       │            CROSS-CUTTING            │
+       │                                     │
+       │ Security | Observability | Audit    │
+       └─────────────────────────────────────┘
+       
+The six statements to memorize:
+
+Core decides WHAT.
+Ports define the CONTRACT.
+Adapters implement HOW.
+Policies decide WHETHER it is allowed.
+Configuration provides SETTINGS.
+Observability tells us WHAT HAPPENED.
+
+This is the canonical mental model for this project.
+       
+       
+3. What Are We Actually Combining?:
+
+There are four architectural ideas here.    
+| Architecture                              | Main question                                         |
+| ----------------------------------------- | ----------------------------------------------------- |
+| **Clean Architecture**                    | How do we keep business logic independent?            |
+| **Hexagonal Architecture**                | How does the core communicate with the outside world? |
+| **Policy-Driven Architecture**            | Who decides what is allowed?                          |
+| **Enterprise Cross-Cutting Architecture** | How do we secure, observe and govern everything?      |
+
+They are complementary.
+
+They are not four competing architectures.  
+
+
+4. Clean Architecture
+The central idea: 
+    Infrastructure
+          ↓
+    Application
+          ↓
+    Domain
+
+Dependencies point toward the core.
+The domain should not know about:
+FastAPI
+AWS
+GCP
+OpenAI
+ServiceNow
+PostgreSQL
+Kubernetes
+LangGraph
+Google ADK
+MCP
+
+
+
+5. Hexagonal Architecture:
+Hexagonal Architecture is also called:
+
+Ports & Adapters
+Its basic structure is:
+External System
+      │
+      ▼
+   Adapter
+      │
+      ▼
+    Port
+      │
+      ▼
+    Core
+    
+    
+The core communicates through contracts, not technologies.:
+For example:    
+Core
+ │
+ └── LLMPort
+       │
+       ├── OllamaAdapter
+       ├── OpenAIAdapter
+       ├── GeminiAdapter
+       └── VertexAIAdapter
+       
+The core says:
+"I need an LLM capability."
+It does not say:
+"I need OpenAI."
+That distinction is fundamental to technology independence       
+
+
+6. The Core:
+For our SSOT:
+core/
+├── domain/
+├── application/
+└── ports/
+
+The Core contains:
+Domain
+Application
+Ports
+
+It does not contain infrastructure implementations.
+
+
+7. Domain Layer:
+The Domain represents:
+
+Business meaning + business rules
+For Incident Management:
+Incident
+IncidentStatus
+IncidentPriority
+RootCause
+Recommendation
+RemediationAction
+AgentDecision
+ConfidenceScore
+
+
+The attached material correctly emphasizes that the domain describes concepts such as what an incident is, what critical severity means, and what constitutes a valid root cause.
+Domain knows:
+Incident
+Severity
+Status
+Root Cause
+Remediation
+Business Rules
+
+Domain does NOT know:
+ServiceNow
+OpenAI
+Gemini
+AWS
+GCP
+FastAPI
+MCP
+LangGraph
+Google ADK
+PostgreSQL
+
+
+
+8. Domain vs Policy — Critical Distinction:
+Domain Rule:
+A business rule describes what the business means.
+
+Example:
+CRITICAL incident
+        ↓
+remediation requires approval
+
+Policy:
+
+A governance rule controls whether an action is permitted.
+
+Example:
+Agent requests:
+restart_production_service
+
+        ↓
+
+Tool Policy
+
+        ↓
+
+Is this action allowed?
+
+        ↓
+
+Authorization
+        ↓
+Risk
+        ↓
+Human Approval
+
+So:
+
+Domain = business truth
+
+Policy = governance constraint
+
+Do not treat these as the same thing.
+
+
+9. Application Layer:
+The Application Layer answers:
+How is a business use case executed?
+
+Examples:
+InvestigateIncident
+AnalyzeRootCause
+GenerateRemediation
+CreateIncident
+UpdateIncident
+SummarizeIncident
+
+For example:
+InvestigateIncident
+       │
+       ├── Get Incident
+       ├── Get Logs
+       ├── Retrieve Knowledge
+       ├── Analyze Evidence
+       ├── Determine Root Cause
+       ├── Calculate Confidence
+       └── Recommend Action
+       
+The Application layer orchestrates.
+It should not become a dumping ground for infrastructure code.  
+
+
+10. Agent Orchestration:
+
+For GenAI systems, the agent framework belongs around the application/orchestration boundary.
+
+For example:     
+Application
+     │
+     ▼
+Agent Orchestrator
+     │
+     ├── Google ADK
+     ├── LangGraph
+     └── OpenAI Agents SDK
+     
+The important rule is:
+The architecture must not become dependent on the agent framework. 
+Therefore:
+Google ADK
+LangGraph
+OpenAI Agents SDK
+CrewAI
+are implementation technologies.
+They are not the business architecture.    
+
+
+11. Ports:
+
+Ports are contracts.
+There are two categories.
+
+Inbound Port
+Question:
+How can somebody invoke my application?
+Examples:
+REST
+MCP
+CLI
+Kafka
+Events
+Another Agent
+
+Flow:
+REST
+ ↓
+Inbound Adapter
+ ↓
+Inbound Port
+ ↓
+Application Use Case
+
+
+12. Outbound Ports
+
+Question:
+What does my application need from the outside world?
+
+Examples:
+LLM
+ServiceNow
+Vector DB
+Database
+Notification
+MCP
+
+For example:
+LLMPort
+IncidentRepository
+KnowledgeRepository
+NotificationPort
+
+The port says:
+I need an LLM capability.
+The adapter decides:
+Ollama
+OpenAI
+Gemini
+Vertex AI
+
+
+13. Adapters
+Adapters are technology implementations.
+adapters/
+├── inbound/
+└── outbound/
+
+
+Inbound:
+Examples:
+FastAPI
+MCP
+Kafka
+CLI
+A2A
+
+Their responsibility:
+Translate external requests into application calls.
+
+
+Outbound
+Examples:
+OllamaAdapter
+VertexAIAdapter
+OpenAIAdapter
+ServiceNowAdapter
+VectorDBAdapter
+PostgresAdapter
+CloudWatchAdapter
+
+Their responsibility:
+Translate application requests into technology-specific calls.
+
+
+14. Policy Layer:
+For enterprise architecture, treat Policy as a first-class top-level architectural capability outside the Core.
+agent-incident/
+│
+├── core/
+│
+├── policies/
+│
+├── security/
+│
+├── adapters/
+│
+├── observability/
+│
+└── configuration/
+
+Do not make:
+core/domain/policies/
+the enterprise policy implementation.
+Why?
+Because domain rules and enterprise governance have different responsibilities.
+
+
+15. Policy Categories:
+Our canonical policy structure:
+policies/
+│
+├── input/
+├── security/
+├── data/
+├── model/
+├── tool/
+├── approval/
+├── confidence/
+├── cost/
+└── governance/
+
+
+Input Policy:
+Controls what enters the system.
+Prompt validation
+Input restrictions
+Prompt injection controls
+
+Security Policy:
+Controls security-related decisions.
+Identity
+Access
+Authorization
+Risk
+
+Data Policy:
+Controls data handling.
+PII
+Sensitive data
+Data residency
+Masking
+DLP
+
+Model Policy:
+Controls model selection.
+Which model?
+Which provider?
+Which data can reach the model?
+
+Tool Policy:
+Controls agent capabilities.
+Can agent read?
+Can agent create?
+Can agent update?
+Can agent delete?
+Can agent execute?
+
+Approval Policy:
+Controls human intervention.
+Production action → approval
+High-risk action → approval
+
+Confidence Policy:
+Controls autonomous decisions.
+
+Cost Policy:
+Controls model/tool cost.
+Cheap model
+    ↓
+evaluate
+    ↓
+expensive model only when necessary
+
+Governance Policy:
+Controls enterprise-level constraints.
+Compliance
+Audit
+Responsible AI
+Organizational controls
+
+
+16. Policy vs Security:
+Another important clarification:
+Policy and Security are related, but they are NOT the same thing.
+Security
+Answers:
+Who are you?
+and:
+Are you authenticated/authorized?
+Authentication
+Authorization
+Identity
+S2S
+Secrets
+
+Policy:
+Answers:
+Even if you are authorized, is this particular action allowed?
+Example:
+User = SRE
+       ↓
+Authorized
+       ↓
+Tool Policy
+       ↓
+Production restart?
+       ↓
+Human Approval Required
+
+Therefore:
+
+Security ≠ Policy
+
+Security establishes identity/access.
+
+Policy governs behavior and action constraints.
+
+
+17. Policy vs Configuration:
+This distinction must remain permanent.
+Configuration
+model = gemini
+timeout = 30
+top_k = 5
+confidence_threshold = 0.90
+Configuration provides:
+VALUES / SETTINGS
+
+Policy
+Production remediation requires approval.
+Policy provides:
+RULES / CONSTRAINTS
+Therefore:
+Configuration ≠ Policy
+
+
+Configuration may parameterize a policy.
+For example:
+confidence_threshold = 0.90
+can be configuration.
+But:
+confidence below threshold
+→ human review
+is policy.
+
+
+18. Security Layer:
+Canonical structure:
+security/
+├── authentication/
+├── authorization/
+├── identity/
+├── s2s/
+└── secrets/
+
+Depending on the service, not every subfolder is mandatory.
+Security handles:
+Who is calling?
+How do we authenticate?
+What identity is being used?
+Is the caller authorized?
+How are service-to-service calls protected?
+Where are credentials/secrets managed?
+Security is a cross-cutting enterprise capability.
+
+
+19. Observability:
+Observability answers:
+What happened?
+It should observe the entire system.
+observability/
+├── logging/
+├── metrics/
+├── tracing/
+└── audit/
+
+Typical information:
+trace_id
+span_id
+correlation_id
+request_id
+service
+operation
+tool
+model
+latency
+tokens
+cost
+policy decision
+outcome
+error
+
+20. Configuration:
+Canonical responsibility:
+Runtime settings only.
+configuration/
+└── config.toml
+
+Potential configuration:
+[llm]
+provider = "ollama"
+model = "..."
+
+[service]
+timeout = 30
+
+[policy]
+confidence_threshold = 0.90
+
+Secrets should not be hardcoded into configuration.
+
+For your implementation:
+Local:
+.env
+
+Non-secret:
+config.toml
+
+Production:
+Secret Manager / secret injection
+
+
+21. Bootstrap:
+bootstrap.py is responsible for startup.
+Think:
+Prepare the runtime.
+__main__
+   ↓
+bootstrap
+   ├── configuration
+   ├── logging
+   ├── telemetry
+   ├── security initialization
+   └── startup
+   
+   
+   
+22. App Factory:
+app_factory.py is the composition root.
+It wires implementations together.   
+Configuration
+      ↓
+Security
+      ↓
+Policies
+      ↓
+Adapters
+      ↓
+Ports
+      ↓
+Application
+      ↓
+API
+
+The source explicitly distinguishes app_factory.py as the place for dependency injection, component construction, port-adapter wiring and application creation, while bootstrap.py handles startup concerns.
+
+
+23. __main__.py
+
+Very simple:
+python -m agent_incident
+          │
+          ▼
+      __main__.py
+          │
+          ▼
+      bootstrap.py
+          │
+          ▼
+      app_factory.py
+          │
+          ▼
+      Application
+      
+It is the runtime entry point.
+
+
+24. Canonical Enterprise Folder Structure:
+This is the structure I recommend using as the SSOT baseline      
+agent-incident/
+│
+├── core/           # WHAT are we trying to achieve? (Business logic)  # THE HEART (Tech-agnostic)
+│   ├── domain/     # Business entities & rules (Incident, RootCause)
+│   │   ├── entities/
+│   │   ├── value_objects/
+│   │   ├── events/
+│   │   └── exceptions.py
+│   │
+│   ├── application/     # Use cases & orchestration (InvestigateIncident)
+│   │   ├── use_cases/
+│   │   ├── services/
+│   │   └── workflows/
+│   │
+│   └── ports/          #   HOW do we communicate with the outside? (Contracts)
+│       ├── inbound.py  #How the outside world asks our system to do something (e.g., InvestigateIncidentUseCase).
+│       └── outbound.py #What our core needs from the outside world to function (e.g., LLMPort, IncidentRepositoryPort). The core asks for "an LLM", not "OpenAI".
+│
+├── policies/       # WHETHER is this action allowed? (Governance & Guardrails)
+│   ├── input/
+│   ├── security/   # Deny access to PII or restricted databases.
+│   ├── data/       # Mask emails/credit cards before sending to an LLM.
+│   ├── model/      # Route simple tasks to cheap models, complex reasoning to premium models.
+│   ├── tool/       #  Agent can read tickets, but cannot close them.
+│   ├── approval/   # Production restarts require human-in-the-loop sign-off.
+│   ├── confidence/ #If LLM confidence < 90%, require human review.
+│   ├── cost/
+│   └── governance/
+│
+├── security/
+│   ├── authentication/
+│   ├── authorization/
+│   └── identity/
+│
+├── adapters/            # Adapters implement the ports and connect to the external world. # THE EDGES (Technology specific)
+│   ├── inbound/        # REST APIs, MCP servers, CLI, Kafka consumers. They translate external requests into core use cases.
+│   │   └── api/
+│   │
+│   └── outbound/       # OpenAI SDK, ServiceNow SDK, Pinecone, AWS SDK. They translate core requests into specific technology calls.
+│       ├── llm/
+│       │   └── ollama/
+│       ├── tools/
+│       │   └── servicenow/
+│       └── ...
+│
+├── observability/      # WHAT HAPPENED during execution? (Telemetry)
+│   ├── logging/
+│   ├── metrics/
+│   ├── tracing/
+│   └── audit/
+│
+├── configuration/          # WITH WHAT SETTINGS should it run? (Parameters) # SETTINGS (YAML/ENV vars, feature flags)
+│   └── config.toml
+│
+├── bootstrap.py            # STARTUP (Loads config, init logging/tracing)
+├── app_factory.py          # WIRING (Dependency Injection, connects Ports to Adapters)
+└── __main__.py              # ENTRY POINT (Starts the application)
+
+Wiring the System: bootstrap.py vs app_factory.py
+bootstrap.py is the Startup phase. It loads environment variables, initializes logging, sets up telemetry, and prepares the environment.
+app_factory.py is the Composition Root. It instantiates the Adapters, injects them into the Ports, builds the Policy Engine, and returns the fully wired Application.
+
+| Area                | Responsibility                      | Key question                                               |
+| ------------------- | ----------------------------------- | ---------------------------------------------------------- |
+| core/domain         | Business concepts and rules         | What does the business mean?                               |
+| core/application    | Use cases and orchestration         | What does the application do?                              |
+| core/policies       | Governance and control decisions    | Is this allowed?                                           |
+| core/ports/inbound  | Application entry contracts         | How can the application be invoked?                        |
+| core/ports/outbound | Required external capabilities      | What does the core need from outside?                      |
+| adapters/inbound    | REST, CLI, MCP, events              | How is an external request translated into the core model? |
+| adapters/outbound   | LLM, database, RAG, ITSM, cloud     | How is a core request translated into technology calls?    |
+| configuration       | Runtime settings                    | Which values should be used?                               |
+| observability       | Logs, metrics, traces, audit events | What happened?                                             |
+| bootstrap.py        | Startup preparation                 | How is the runtime initialized?                            |
+| app_factory.py      | Dependency construction and wiring  | How are components connected?                              |
+| __main__.py         | Process entry point                 | How does the application start?                            |
+
+
+26. Complete GenAI Request:
+Let's trace a user request: "Investigate INC12345 and restart the service if necessary."
+Inbound Adapter: REST API receives the HTTP POST request.
+Inbound Port: Translates HTTP payload into an InvestigateIncident command.
+Application Core: Orchestrates the use case. Calls Outbound Ports to fetch the Incident, get Logs, and search the Knowledge Base.
+Policy Engine (Pre-Execution): Evaluates Identity and Data policies. (e.g., Are logs sanitized? Is the user authorized?)
+Outbound Adapters: Fetches data from ServiceNow, CloudWatch, and Vector DB.
+Application Core: Passes data to the LLM Port to find the Root Cause.
+Policy Engine (Model/Data): Masks PII from logs before sending to the LLM. Selects the approved enterprise model based on Model Policy.
+LLM Adapter: Calls Vertex AI / OpenAI. Returns: Root Cause = DB Pool Exhausted, Confidence = 94%.
+Policy Engine (Confidence & Tool):
+Confidence Check: 94% > 90% threshold. (Pass)
+Tool Check: Action is "Restart Production Service". Policy dictates this is HIGH RISK.
+Human-in-the-Loop: System pauses, routes to Human Approval queue.
+Outbound Adapter: Upon human approval, executes the restart via Cloud/ServiceNow adapter.
+Observability: Emits a distributed trace showing latency, token usage, and policy decisions for every step.
+
+
+27. The Most Important Separation:
+Keep these six concepts separate:
+| Concept           | Question                                 |
+| ----------------- | ---------------------------------------- |
+| **Domain**        | What does the business mean?             |
+| **Application**   | What business use case are we executing? |
+| **Port**          | What capability/contract do we need?     |
+| **Adapter**       | How is that capability implemented?      |
+| **Policy**        | Is this action allowed?                  |
+| **Security**      | Who is allowed to access it?             |
+| **Configuration** | What settings should we use?             |
+| **Observability** | What happened?                           |
+
+
+
+28. Policy-Driven vs Traditional Hexagonal:
+Traditional:
+Adapter
+   ↓
+Port
+   ↓
+Application/Domain
+
+
+Policy-Driven:
+Adapter
+   ↓
+Port
+   ↓
+Policy
+   ↓
+Application/Domain
+   ↓
+Policy
+   ↓
+Port
+   ↓
+Adapter
+
+
+The important conceptual addition is:
+Governance becomes an explicit architectural concern rather than scattered conditional logic.
+The source makes this transition explicitly.
+
+
+
+31. Principal Architect Mental Model:
+If you remember only one diagram, remember this:
+                 ┌───────────────────┐
+                 │  EXTERNAL WORLD   │
+                 │ REST | MCP | A2A  │
+                 └─────────┬─────────┘
+                           │
+                           ▼
+                    INBOUND ADAPTER
+                           │
+                           ▼
+                     INBOUND PORT
+                           │
+                           ▼
+                 ┌────────────────────┐
+                 │    APPLICATION     │
+                 │                    │
+                 │ Use Cases           │
+                 │ Agent Orchestration │
+                 └─────────┬──────────┘
+                           │
+                           ▼
+                     ┌───────────┐
+                     │  POLICY   │
+                     │   LAYER   │
+                     └─────┬─────┘
+                           │
+                           ▼
+                     ┌───────────┐
+                     │  DOMAIN   │
+                     │   CORE    │
+                     └─────┬─────┘
+                           │
+                           ▼
+                    OUTBOUND PORT
+                           │
+                           ▼
+                   OUTBOUND ADAPTER
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+             LLM       ServiceNow      RAG
+
+
+       SECURITY + OBSERVABILITY
+       ─────────────────────────
+             CROSS-CUTTING
+             
+             

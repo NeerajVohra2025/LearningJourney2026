@@ -1,0 +1,20 @@
+# GenAI Architect — “Tell Me About Yourself”
+
+## 90-Second Interview Version
+
+Hi, I’m **Neeraj Vohra**.
+
+I have **20+ years of experience in software architecture and technology**. My career started with **Java and distributed systems** and evolved through **solution architecture, cloud modernization, cloud-native platforms, Kubernetes, DevOps, and infrastructure automation**. Over the last three years, I have been deeply focused on **Generative AI and Agentic AI**.
+
+Currently, I work as a **Solutions Architect at HCL Technologies**, where I design and build **secure, governed, scalable GenAI platforms and multi-agent solutions**, primarily on **Google Vertex AI**.
+
+I consider myself a **hands-on architect**. I believe architecture should not stop at diagrams and design documents. I stay close to the code, build and validate critical components, and work with engineering teams to make sure the architecture is practical and production-ready.
+
+My recent focus has been on **Agentic AI, Multi-Agent Systems, RAG, MCP, Responsible AI, AI Governance, DLP, Model Armor, Guardrails, Evaluation, Observability, Context Caching, and AI Cost Optimization**.
+
+One principle that strongly influences my GenAI architecture approach is **determinism**. Traditional software is generally designed around predictable and deterministic behavior, whereas GenAI systems are **probabilistic**. Therefore, a GenAI architect has to design not only for scalability and performance, but also for **safety, hallucination control, data protection, governance, observability, and cost**.
+
+I address these challenges through a **modular, policy-driven architecture**, where AI capabilities are exposed through reusable interfaces and policies control how those capabilities can be used. This allows the core business logic to remain stable while models, guardrails, and AI services can evolve independently.
+
+Ultimately, my focus is not just on building intelligent agents. My focus is on building **production-ready AI platforms that are secure, responsible, observable, scalable, and cost-optimized**.
+---

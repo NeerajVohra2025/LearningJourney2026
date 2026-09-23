@@ -1,0 +1,348 @@
+ServiceNow
+     │
+     │ 1. Authenticate with Enterprise IdP
+     ▼
+Enterprise IdP
+     │
+     │ Returns OIDC JWT
+     ▼
+ServiceNow
+     │
+     │ 2. Call Google Security Token Service (STS)
+     ▼
+Google STS
+     │
+     │ Validates JWT against
+     │ Workload Identity Pool + OIDC Provider
+     ▼
+Returns Federated Token
+     │
+     │ 3. (Optional but common)
+     │ Call IAM Credentials API
+     ▼
+IAM Service Account Credentials
+     │
+     │ generateAccessToken()
+     ▼
+Google OAuth Access Token
+     │
+     │ 4. Call Google API Gateway
+     ▼
+Google API Gateway
+     │
+     ▼
+Orchestrator Agent
+
+This matches Google's OAuth 2.0 Token Exchange flow. An external OIDC token is exchanged with the Security Token Service (STS), which can then be used directly for supported resources or, more commonly, to impersonate a service account and obtain a short-lived Google OAuth access token via the IAM Credentials API.
+
+Enterprise Zero Trust End-to-End Implementation:
+Phase 1 — GCP Administrator (One-Time Setup):
+Step 1 — Enable Required APIs:
+
+Why
+
+Enable the services required for Workload Identity Federation.
+
+Commands
+gcloud services enable \
+    iam.googleapis.com \
+    sts.googleapis.com \
+    iamcredentials.googleapis.com \
+    apigateway.googleapis.com \
+    servicecontrol.googleapis.com \
+    servicemanagement.googleapis.com
+   
+   
+   
+ Output:
+
+Required Google Cloud APIs are enabled.  
+
+Step 2 — Create Workload Identity Pool:
+
+Why
+
+Create a trust boundary for external workloads.
+gcloud iam workload-identity-pools create servicenow-pool \
+    --location=global \
+    --display-name="ServiceNow Workload Pool"
+   
+Output:
+
+Workload Identity Pool  
+
+
+Step 3 — Create OIDC Provider:
+
+Why
+
+Tell Google Cloud which Identity Provider it should trust.
+gcloud iam workload-identity-pools providers create-oidc servicenow-provider \
+    --location=global \
+    --workload-identity-pool=servicenow-pool \
+    --issuer-uri=https://<YOUR_IDP> \
+    --allowed-audiences=<CLIENT_ID> \
+    --attribute-mapping="google.subject=assertion.sub"
+   
+   
+Output:
+OIDC Provider created
+
+
+
+
+Step 4 — Create Service Account:
+
+Why    
+Represent the Google Cloud identity that the external workload will impersonate.
+gcloud iam service-accounts create orchestrator-sa \
+    --display-name="Orchestrator Service Account"
+   
+Output:
+orchestrator-sa@PROJECT.iam.gserviceaccount.com
+
+
+Step 5 — Allow Federated Identity to Impersonate the Service Account:
+
+Why
+
+Authorize identities from the Workload Identity Pool to impersonate the service account.
+
+gcloud iam service-accounts add-iam-policy-binding \
+    orchestrator-sa@PROJECT_ID.iam.gserviceaccount.com \
+    --role=roles/iam.workloadIdentityUser \
+    --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/servicenow-pool/*"
+
+
+Output:
+
+Federated identity is authorized to impersonate the service account    
+
+
+Step 6 — Grant Runtime Permissions:
+
+Why
+
+Give the service account only the permissions it needs.
+
+Example:
+gcloud projects add-iam-policy-binding PROJECT_ID \
+    --member="serviceAccount:orchestrator-sa@PROJECT_ID.iam.gserviceaccount.com" \
+    --role="roles/run.invoker"
+   
+   
+Output:
+
+Least-privilege IAM configured.  
+
+
+Step 7 — Configure API Gateway:
+
+Why
+
+Expose only the API Gateway publicly.
+
+Output
+https://api.company.com
+
+######
+Phase 2 — ServiceNow Administrator:
+Step 1:
+
+Configure OAuth/OIDC with the enterprise Identity Provider.
+
+Output
+
+ServiceNow can request JWT tokens.
+
+
+Step 2:
+
+Configure outbound REST integration.
+
+Output
+
+Google API Gateway endpoint configured.
+
+
+
+Step 3:
+
+Configure Workload Identity Federation exchange.
+
+When ServiceNow needs Google Cloud access:
+
+Enterprise IdP
+
+↓
+
+JWT
+
+↓
+
+ServiceNow
+
+↓
+
+Google STS
+
+Output
+
+Federated Google token.
+
+Runtime Flow:
+Step 1:
+
+User creates an Incident.
+
+Output
+
+Business event.
+
+
+Step 2:
+
+ServiceNow authenticates with the enterprise IdP.
+
+Output
+
+OIDC JWT.
+
+
+Step 3:
+
+ServiceNow calls Google Security Token Service.
+
+POST https://sts.googleapis.com/v1/token
+
+Why
+
+Exchange the external OIDC token for a Google-recognized federated token.
+
+Output
+
+Google STS federated access token.
+
+
+Step 4:
+
+ServiceNow calls the IAM Credentials API (generateAccessToken) using the federated token.
+
+Why
+
+Obtain a short-lived Google OAuth access token representing the service account.
+
+Output
+Google OAuth Access Token
+
+This is the token normally used to call Google Cloud APIs
+
+Step 5:
+
+ServiceNow calls Google API Gateway.
+
+Authorization:
+Bearer GoogleAccessToken
+
+Output:
+
+Authenticated request reaches API Gateway.
+
+
+Step 6:
+
+API Gateway validates the token.
+
+Checks include:
+
+token validity
+expiration
+audience
+IAM authorization
+
+Output
+
+Authenticated request.
+
+
+Step 7:
+
+API Gateway invokes the Orchestrator Agent.
+
+Output
+
+Secure request reaches the application.
+
+
+Step 8:
+
+The Orchestrator performs application-level processing:
+
+Schema validation
+Business rule validation
+DLP inspection
+Model Armor
+Prompt injection protection
+Observability
+Agent routing
+
+Output
+
+Validated business request.
+
+Final Zero Trust Architecture:
+                     GCP Administrator (One-Time Setup)
+──────────────────────────────────────────────────────────────────────
+Enable IAM APIs
+        │
+Create Workload Identity Pool
+        │
+Create OIDC Provider
+        │
+Create Service Account
+        │
+Grant roles/iam.workloadIdentityUser
+        │
+Grant Runtime IAM Roles
+        │
+Deploy API Gateway
+──────────────────────────────────────────────────────────────────────
+
+                     Runtime Authentication Flow
+──────────────────────────────────────────────────────────────────────
+User
+ │
+ ▼
+ServiceNow
+ │
+ │ Authenticate
+ ▼
+Enterprise Identity Provider
+ │
+ │ Returns OIDC JWT
+ ▼
+ServiceNow
+ │
+ │ Exchange JWT
+ ▼
+Google Security Token Service (STS)
+ │
+ │ Returns Federated Token
+ ▼
+IAM Credentials API
+(generateAccessToken)
+ │
+ │ Returns Google OAuth Access Token
+ ▼
+Google API Gateway
+ │
+ │ Authentication & Authorization
+ ▼
+Orchestrator Agent
+ │
+ ├────────── Immediate Processing
+ │
+ └────────── Cloud Tasks (Optional)
+                 │
+                 ▼
+            Worker Agent

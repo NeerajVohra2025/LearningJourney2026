@@ -1,0 +1,1355 @@
+1. First: The Architecture I Would Build
+I would use:
+
+ServiceNow
+    │
+    │ Incident Webhook
+    ▼
+API Gateway / Apigee
+    │
+    ▼
+Cloud Run
+GENAI Gateway
+    │
+    ├── Authentication / Authorization
+    ├── DLP
+    ├── Model Armor
+    ├── Token Governance
+    └── Request / Incident Cache
+    │
+    ▼
+Cloud Run
+GENAI Orchestrator
+    │
+    │ Google ADK
+    │
+    ├── Routing / Workflow
+    ├── Session State
+    ├── Incident State
+    └── Cache Manager
+    │
+    ▼
+Log Analysis Agent
+    │
+    ├───────────────┐
+    │               │
+    ▼               ▼
+Evidence Tools    Knowledge Retrieval
+    │               │
+    ▼               ▼
+Cloud Logging    Knowledge Bank
+Cloud Monitoring Vertex AI Search/RAG
+Cloud Trace      Runbooks
+ServiceNow       Architecture Docs
+Deployment       Historical RCA
+History          CMDB
+    │               │
+    └───────┬───────┘
+            ▼
+      Evidence + Knowledge
+            │
+            ▼
+     Evidence Normalizer
+            │
+            ▼
+      Evidence Package
+            │
+            ▼
+    Grounding Context Builder
+            │
+            ├── Incident Context
+            ├── Runtime Evidence
+            ├── Knowledge
+            ├── Historical Evidence
+            └── Policy Instructions
+            │
+            ▼
+        RCA Agent
+            │
+            ▼
+      Vertex AI Gemini
+            │
+            ▼
+      RCA + Claims + Evidence IDs
+            │
+            ▼
+    Grounding / Fact Validation
+            │
+            ▼
+        Citation Resolver
+            │
+            ▼
+      DLP / Model Armor
+            │
+            ▼
+      Policy / Risk Decision
+       │             │
+       │             ▼
+       │       Human Approval
+       │             │
+       └──────┬──────┘
+              ▼
+         ServiceNow
+         / Remediation
+              │
+              ▼
+      Observability / Audit
+      
+And I would make Cache a cross-cutting capability rather than a box at the bottom:
+                 ┌─────────────────────┐
+                 │     CACHE LAYER     │
+                 │                     │
+                 │ Incident Cache      │
+                 │ Evidence Cache      │
+                 │ Retrieval Cache     │
+                 │ Semantic Cache      │
+                 │ Context Cache       │
+                 └─────────────────────┘      
+This is a much clearer Principal Architect story.
+---
+
+
+2. The Most Important Conceptual Change:
+There are three different information domains.                 
+
+Domain A — Incident / Runtime Evidence:
+This answers:
+What is happening right now?
+Examples:
+Cloud Logging
+Cloud Monitoring
+Cloud Trace
+ServiceNow
+Deployment History
+Runtime Metrics
+Application Errors
+
+Example:
+E001
+Cloud Logging
+10:03:21 UTC
+HTTP 500 increased from 2% to 43%
+---
+
+
+3. Knowledge Bank:
+This answers:
+What do we already know about the system?
+
+This is different from runtime evidence.
+
+Examples:
+Architecture documents
+Runbooks
+SOPs
+Troubleshooting guides
+Known errors
+Application documentation
+CMDB information
+Historical RCA
+Past incidents
+Deployment procedures
+Operational standards
+The knowledge is relatively stable and is prepared/indexed ahead of time.
+
+Conceptually:
+                 KNOWLEDGE BANK
+
+Documents
+Runbooks
+SOPs
+Architecture
+CMDB
+Historical RCA
+Known Issues
+      │
+      ▼
+Chunking
+      │
+      ▼
+Embeddings / Index
+      │
+      ▼
+Vertex AI Search / RAG
+
+Google's RAG documentation describes a similar ingestion/retrieval pattern: documents are processed into chunks, embeddings are created, relevant chunks are retrieved and then supplied for grounded generation.
+---
+
+4. Evidence vs Knowledge:
+This distinction is extremely important for your architecture interview.
+|                           | Evidence         | Knowledge                            |
+| ------------------------- | ---------------- | ------------------------------------ |
+| Meaning                   | What happened    | What we know                         |
+| Nature                    | Runtime/current  | Curated/reference                    |
+| Example                   | Error at 10:03   | Runbook says error X usually means Y |
+| Source                    | Cloud Logging    | Runbook                              |
+| Source                    | Cloud Monitoring | Architecture document                |
+| Source                    | ServiceNow       | Historical RCA                       |
+| Time sensitivity          | High             | Usually lower                        |
+| Retrieved during incident | Yes              | Yes                                  |
+| Stored/indexed beforehand | Sometimes        | Yes                                  |
+
+Example:
+Suppose the incident is:
+INC0012345
+Payment API returning HTTP 500
+
+Runtime evidence:
+E001:
+HTTP 500 increased to 43%
+
+E002:
+Database connection errors increased
+
+E003:
+Deployment v2.8.3 occurred 2 minutes earlier
+
+Knowledge:
+K001:
+Payment API architecture document
+
+K002:
+Database connection exhaustion runbook
+
+K003:
+Previous RCA for similar incident
+
+Now we have:
+Evidence = What happened
+Knowledge = What we know about interpreting/responding to it
+---
+
+5. Your Question: Is Grounding the Same as Augmentation in RAG?
+Very close, but I would not use them as synonyms.
+This is the terminology I recommend for your architecture.
+
+RAG:
+Retrieve
+   +
+Augment
+   +
+Generate
+
+Augmentation:
+Means:
+Take the retrieved information and add it to the model's context/prompt.
+
+Grounding:
+Means:
+Make the model's generated answer rely on verifiable, trusted information.
+Google explicitly describes RAG as a common grounding technique and describes grounding as anchoring responses to verifiable sources.
+
+So:
+RAG
+  ↓
+Retrieve relevant information
+  ↓
+Augment model context
+  ↓
+Generate
+  ↓
+Grounded response
+
+Therefore:
+Augmentation is a mechanism in the RAG flow; grounding is the reliability objective/control that we want to achieve.
+This distinction will make your architecture much stronger.
+---
+
+6. Chapter Structure I Recommend:
+I would now rewrite the entire SSOT into these chapters:
+Chapter 1
+Architecture Vision & Design Principles
+
+Chapter 2
+ServiceNow Incident Ingestion
+
+Chapter 3
+Secure GCP Entry & Zero Trust
+
+Chapter 4
+Responsible AI Input Pipeline
+
+Chapter 5
+Orchestrator & Google ADK
+
+Chapter 6
+Orchestrator Request Contract
+
+Chapter 7
+Log Analysis Agent
+
+Chapter 8
+Evidence Collection & Evidence Contract
+
+Chapter 9
+Knowledge Bank & RAG
+
+Chapter 10
+Evidence + Knowledge Correlation
+
+Chapter 11
+Grounding Context Builder
+
+Chapter 12
+RCA Agent + Vertex AI Gemini
+
+Chapter 13
+Grounding Validation & Fact Validation
+
+Chapter 14
+Citation / Attribution
+
+Chapter 15
+Caching Architecture
+
+Chapter 16
+Output Responsible AI Controls
+
+Chapter 17
+Policy / Decision / HITL
+
+Chapter 18
+ServiceNow Action / Remediation
+
+Chapter 19
+Observability / Audit
+
+Chapter 20
+Evaluation / Continuous Improvement
+
+Chapter 21
+Failure / Resilience
+
+Chapter 22
+Complete End-to-End Sequence
+This is better than mixing Evidence, Grounding, RAG and RCA into one chapter.
+---
+
+7. Chapter 5 — Google ADK Orchestrator:
+Let's now start the actual detailed flow.
+What is the Orchestrator?
+The orchestrator is responsible for:
+WHAT happens next
+WHEN it happens
+WHICH agent is invoked
+WHAT context is passed
+WHAT result comes back
+
+It should not perform the RCA itself.
+
+Your reference correctly separates Orchestrator and Routing Engine responsibilities.
+
+Google ADK is appropriate here because Google describes ADK as a framework for building agents, tools and multi-agent systems, with workflow agents supporting predictable pipelines and dynamic routing also supported. ADK agents can be deployed to Cloud Run
+---
+
+8. Recommended Deployment:
+I would use:
+                 GCP
+                  │
+        ┌─────────┴─────────┐
+        │                   │
+     Cloud Run          Vertex AI
+        │                   │
+        │                   └── Gemini
+        │
+        ├── genai-gateway
+        │
+        ├── genai-orchestrator
+        │
+        ├── log-analysis-agent
+        │
+        ├── rca-agent
+        │
+        └── tool services
+---
+
+        
+9. Chapter 6 — Orchestrator Request Payload:
+This is where I would improve the existing design significantly.
+The orchestrator should not receive only the ServiceNow description.
+It should receive a structured IncidentInvestigationRequest.    
+
+Example:
+{
+  "request_id": "REQ-10001",
+  "correlation_id": "CORR-78901",
+  "trace_id": "TRACE-45678",
+
+  "incident": {
+    "incident_id": "INC0012345",
+    "number": "INC0012345",
+    "priority": "P2",
+    "short_description": "Payment API returning HTTP 500",
+    "description": "Payment API failures increased significantly",
+    "service": "payment-api",
+    "environment": "production",
+    "configuration_item": "payment-api-prod",
+    "assignment_group": "SRE",
+    "created_at": "2026-09-23T10:03:00Z"
+  },
+
+  "investigation": {
+    "objective": "Perform root cause analysis",
+    "time_window": {
+      "start": "2026-09-23T09:55:00Z",
+      "end": "2026-09-23T10:10:00Z"
+    }
+  },
+
+  "requested_evidence": [
+    "logs",
+    "metrics",
+    "traces",
+    "deployments"
+  ],
+
+  "knowledge_scope": [
+    "runbooks",
+    "architecture",
+    "historical_rca"
+  ],
+
+  "policy_context": {
+    "risk_level": "P2",
+    "allow_read_tools": true,
+    "allow_write_tools": false,
+    "human_approval_required": true
+  }
+}
+---
+
+
+10. Why This Payload Is Important:
+It gives every downstream component a common context.
+Instead of:    
+Agent → "Go figure it out."
+
+we have:
+Agent
+ ↓
+IncidentContext
+ ↓
+InvestigationContext
+ ↓
+EvidenceRequirements
+ ↓
+KnowledgeScope
+ ↓
+PolicyContext
+
+This is much more deterministic.
+---
+
+11. Chapter 7 — Orchestrator Invokes Log Analysis Agent:
+The orchestrator receives the request.
+
+First:
+Orchestrator
+    ↓
+Check Incident Cache
+
+Cache HIT:
+If the same investigation is already running:
+Return existing investigation state
+
+Cache MISS:
+Continue.
+Orchestrator
+     ↓
+RoutingEngine
+     ↓
+LogAnalysisAgent
+---
+
+12. What Does Log Analysis Agent Receive?:
+Not the entire world.
+It receives:
+{
+  "incident_id": "INC0012345",
+
+  "service": "payment-api",
+
+  "environment": "production",
+
+  "time_window": {
+    "start": "2026-09-23T09:55:00Z",
+    "end": "2026-09-23T10:10:00Z"
+  },
+
+  "symptoms": [
+    "HTTP 500 increase",
+    "Payment API failure"
+  ],
+
+  "evidence_requirements": [
+    "application_logs",
+    "error_logs",
+    "deployment_events"
+  ],
+
+  "knowledge_scope": [
+    "payment-api-runbook",
+    "payment-api-architecture",
+    "historical-rca"
+  ]
+}
+
+---
+
+13. Chapter 8 — Log Analysis Agent: Evidence Collection
+Now the Log Analysis Agent starts investigation.
+
+Step 1 — Query Cloud Logging:
+LogAnalysisAgent
+       ↓
+Cloud Logging Tool
+       ↓
+Cloud Logging API
+
+Example query conceptually:
+service = payment-api
+environment = production
+time = 09:55–10:10
+severity >= ERROR
+
+Output:
+E001
+HTTP 500 increased
+
+E002
+Database connection timeout
+
+E003
+Connection pool exhausted
+
+These are evidence records, not an RCA.
+---
+
+
+14. Evidence Object:
+I recommend a standard enterprise contract.
+{
+  "evidence_id": "E001",
+  "type": "RUNTIME_LOG",
+  "source": "CLOUD_LOGGING",
+  "source_reference": "log-entry-123",
+  "timestamp": "2026-09-23T10:03:21Z",
+
+  "observation": "HTTP 500 error rate increased to 43%",
+
+  "query": "service=payment-api severity>=ERROR",
+
+  "relevance": 0.94,
+
+  "provenance": {
+    "system": "Cloud Logging",
+    "project": "prod-project"
+  }
+}
+---
+
+
+15. Why Evidence IDs Are Critical:
+Suppose Gemini later says:
+Database connection exhaustion is the likely root cause.
+We want:
+Claim C001
+
+Supported by:
+
+E002
+E003
+
+Now the statement is traceable.
+This is the foundation of citation.
+---
+
+
+16. Chapter 9 — Knowledge Bank Retrieval:
+
+Now comes the second important branch.
+The Log Analysis Agent should ask:
+"What enterprise knowledge is relevant to these observed symptoms?"
+It calls the Knowledge Retrieval Tool.
+
+Log Analysis Agent
+        │
+        ▼
+Knowledge Retrieval
+        │
+        ▼
+Vertex AI Search / RAG
+        │
+        ▼
+Knowledge Bank
+---
+
+17. What Is the Knowledge Bank?:
+Think of it as:
+The organization's operational memory.
+
+Example:
+Knowledge Bank
+│
+├── Architecture
+│
+├── Runbooks
+│
+├── SOP
+│
+├── Known Errors
+│
+├── Historical RCA
+│
+├── Service Documentation
+│
+├── CMDB Information
+│
+├── Deployment Procedures
+│
+└── Operational Standards
+---
+
+18. Knowledge Bank Ingestion:
+This happens before production incidents.
+Documents
+    ↓
+Document Processing
+    ↓
+Chunking
+    ↓
+Metadata
+    ↓
+Embeddings / Index
+    ↓
+Vertex AI Search / RAG
+
+Metadata should include:
+document_id
+service
+environment
+owner
+version
+effective_date
+document_type
+security_classification
+
+Google's current RAG architecture documentation describes document ingestion, chunking, embeddings, retrieval and ranking before grounded generation.
+---
+
+19. Example Knowledge Retrieval:
+The agent observes:
+E003:
+Connection pool exhausted
+
+It searches:
+"payment-api connection pool exhausted"
+
+Knowledge Bank returns:
+K001
+Payment API Runbook
+Section 4.2
+Database connection pool exhaustion
+
+K002
+Payment API Architecture
+Database connection architecture
+
+K003
+Historical RCA
+INC0098765
+Similar connection exhaustion incident
+---
+
+20. Evidence + Knowledge:
+Now the Log Analysis Agent has:
+Evidence:
+E001
+E002
+E003
+
+Knowledge:
+K001
+K002
+K003
+
+This is the point where many architectures make a mistake.
+Do not immediately send all of this to Gemini.
+First normalize and correlate it
+---
+
+21. Chapter 10 — Evidence + Knowledge Correlation:
+
+The agent returns:
+{
+  "investigation_id": "INV-10001",
+
+  "evidence": [
+    "E001",
+    "E002",
+    "E003"
+  ],
+
+  "knowledge": [
+    "K001",
+    "K002",
+    "K003"
+  ],
+
+  "observations": [
+    "HTTP 500 increased",
+    "Database connection timeout increased",
+    "Connection pool exhaustion detected"
+  ],
+
+  "possible_hypotheses": [
+    "Database connection exhaustion"
+  ],
+
+  "evidence_gaps": [
+    "Database pool utilization metrics"
+  ]
+}
+This is the LogAnalysisResult.
+---
+
+22. What Goes Back to the Orchestrator?:
+This is important.
+The Log Analysis Agent should not return a giant text paragraph.
+Return structured data:
+
+LogAnalysisResult
+│
+├── observations
+├── evidence references
+├── knowledge references
+├── hypotheses
+├── evidence gaps
+├── confidence
+└── investigation metadata
+
+The orchestrator stores this in the investigation state/cache.
+---
+
+23. Cache Point #1 — Log Evidence Cache
+Suppose the agent already queried:
+payment-api
+09:55–10:10
+production
+and another agent asks the same question.
+
+Use:
+Evidence Cache
+
+Key:
+hash(
+ service +
+ environment +
+ query +
+ time_window
+)
+
+Result:
+CACHE HIT
+    ↓
+Return E001-E003
+
+This reduces:
+API calls
+latency
+cost
+---
+
+24. Chapter 11 — Grounding Context Builder:
+Now the Orchestrator has:
+IncidentContext
+       +
+LogAnalysisResult
+       +
+Evidence
+       +
+Knowledge
+
+It calls:
+GroundingContextBuilder
+
+This is a domain/application component, not the LLM.
+---
+
+
+25. What Does Grounding Context Builder Do?:
+It determines:
+1. Which evidence is relevant?:
+E001
+E002
+E003
+
+2. Which knowledge is relevant?:
+K001
+K002
+K003
+
+
+3. What should be excluded?:
+For example:
+Unrelated logs
+Old runbook
+Irrelevant architecture
+Low-relevance historical incident
+
+4. What should be passed to Gemini?:
+Only the controlled context.
+---
+
+
+26. Grounding Context:
+The resulting object might look like:
+{
+  "grounding_id": "GR-10001",
+
+  "incident": {
+    "id": "INC0012345",
+    "service": "payment-api",
+    "environment": "production"
+  },
+
+  "facts": [
+    {
+      "evidence_id": "E001",
+      "fact": "HTTP 500 increased to 43%"
+    },
+    {
+      "evidence_id": "E002",
+      "fact": "Database connection timeouts increased"
+    },
+    {
+      "evidence_id": "E003",
+      "fact": "Connection pool exhaustion detected"
+    }
+  ],
+
+  "knowledge": [
+    {
+      "knowledge_id": "K001",
+      "title": "Payment API Runbook",
+      "relevant_section": "Database connection exhaustion"
+    }
+  ],
+
+  "gaps": [
+    "Database pool utilization unavailable"
+  ]
+}
+---
+
+
+27. This Is Grounding:
+Now we can explain grounding very simply:
+Raw Data
+   ↓
+Evidence
+   ↓
+Relevant Knowledge
+   ↓
+Filter / Validate
+   ↓
+Grounding Context
+   ↓
+Gemini
+
+Grounding is therefore not just "put retrieved text into the prompt."
+
+Enterprise grounding should include:
+Source
+Provenance
+Relevance
+Timestamp
+Security classification
+Evidence ID
+Knowledge ID
+---
+
+
+28. Chapter 12 — How Grounding Reaches RCA Agent:
+Now the sequence becomes very clean.
+Orchestrator
+      │
+      ▼
+GroundingContextBuilder
+      │
+      ▼
+GroundingPackage
+      │
+      ▼
+RCA Agent
+
+The RCA Agent receives:
+
+{
+  "grounding_id": "GR-10001",
+
+  "incident_context": {...},
+
+  "evidence": [
+    {
+      "id": "E001",
+      "fact": "HTTP 500 increased to 43%"
+    },
+    {
+      "id": "E002",
+      "fact": "Database timeout increased"
+    },
+    {
+      "id": "E003",
+      "fact": "Connection pool exhausted"
+    }
+  ],
+
+  "knowledge": [
+    {
+      "id": "K001",
+      "content": "Runbook guidance..."
+    }
+  ],
+
+  "constraints": {
+    "use_only_provided_context": true,
+    "cite_evidence": true,
+    "identify_unknowns": true
+  }
+}
+---
+
+29. RCA Agent Builds the Prompt:
+The RCA Agent converts the structured grounding package into model context.
+Conceptually:
+SYSTEM INSTRUCTIONS
+
+You are an RCA Agent.
+
+Rules:
+1. Use provided evidence.
+2. Use knowledge only as supporting context.
+3. Do not invent facts.
+4. Identify unsupported assumptions.
+5. Return evidence IDs.
+6. Return confidence.
+7. Return unknowns.
+
+Then:
+INCIDENT
+Payment API returning HTTP 500.
+
+Then:
+EVIDENCE
+
+[E001] HTTP 500 increased to 43%
+[E002] Database timeout increased
+[E003] Connection pool exhausted
+
+Then:
+KNOWLEDGE
+
+[K001] Payment API Runbook:
+Connection pool exhaustion can cause request failures.
+
+Then:
+TASK
+
+Determine the most likely root cause.
+Explain the reasoning.
+Reference supporting evidence.
+Identify missing evidence.
+---
+
+30. Vertex AI Gemini:
+The RCA Agent invokes Gemini through Vertex AI.
+RCA Agent
+    ↓
+Vertex AI Adapter
+    ↓
+Vertex AI
+    ↓
+Gemini
+
+Google documents Vertex AI as the model layer for AI applications and supports grounding/RAG patterns around Gemini.
+---
+
+
+31. Gemini Should Return Structured RCA:
+Do not allow:
+"Looks like database problem..."
+Instead:
+{
+  "root_cause": {
+    "statement": "Database connection pool exhaustion is the most likely cause.",
+    "evidence_ids": [
+      "E002",
+      "E003"
+    ]
+  },
+
+  "contributing_factors": [
+    {
+      "statement": "Recent deployment may have increased database connection demand.",
+      "evidence_ids": [
+        "E004"
+      ]
+    }
+  ],
+
+  "knowledge_references": [
+    "K001"
+  ],
+
+  "confidence": "HIGH",
+
+  "unknowns": [
+    "Database pool utilization during 10:02-10:04 was unavailable."
+  ]
+}
+
+This is much more enterprise-ready.
+---
+
+
+32. Citation Happens Here:
+Notice something important.
+We don't ask Gemini to invent citations like:
+https://some-url
+
+Instead:
+Gemini
+ ↓
+Evidence IDs
+ ↓
+Citation Resolver
+ ↓
+Authoritative Source Metadata
+
+Example:
+E003
+ ↓
+Cloud Logging
+ ↓
+Log Entry ID
+ ↓
+Timestamp
+ ↓
+Query
+
+Therefore the application generates:
+[E003] Cloud Logging —
+Connection pool exhaustion detected at 10:03:21 UTC.
+This is much safer.
+---
+
+33. Grounding Validation:
+After Gemini returns the RCA:
+
+RCA
+ ↓
+Grounding Validator
+ ↓
+Are claims supported?
+
+Google provides a grounding check capability that evaluates an answer against supplied facts and can return a support score plus claim-to-citation relationships.
+
+
+Conceptually
+Claim:
+"Connection pool exhaustion caused the failure."
+
+Facts:
+E002
+E003
+
+Validator asks:
+Is this claim supported?
+If yes:
+SUPPORTED
+
+If not:
+UNSUPPORTED
+---
+
+
+34. Very Important: Don't Overclaim Causation
+Suppose evidence says:
+Deployment at 10:01
+Errors at 10:03
+
+That supports:
+Deployment preceded the error increase.
+
+It does not automatically prove:
+
+Deployment caused the error.
+
+Therefore the RCA should say:
+"Deployment v2.8.3 is temporally correlated
+with the incident."
+
+unless stronger evidence establishes causation.
+This is exactly the type of discipline I would expect in a Principal GenAI architecture.
+---
+
+35. Cache Architecture — The Improvement You Identified:
+I would now explicitly show five cache types.
+
+Cache 1 — Incident State Cache:
+INC0012345
+     ↓
+Investigation State
+Contains:
+current stage
+agent results
+evidence IDs
+grounding ID
+RCA status
+approval status
+
+Use:
+Redis / Memorystore
+
+Cache 2 — Evidence Cache:
+Cloud Logging Query
+       ↓
+Evidence Cache
+Avoid repeated retrieval.
+
+Cache 3 — Retrieval Cache:
+Query
+ ↓
+Vertex Search/RAG
+ ↓
+Retrieved Chunks
+
+If the same query is repeated within an appropriate validity period:
+Cache Hit
+
+Cache 4 — Semantic Cache:
+Example
+"What caused payment API failures?"
+
+≈
+
+"Why is payment service returning 500?"
+
+If they are semantically equivalent and the cached answer is still valid:
+Semantic Cache Hit
+But this requires careful invalidation because incident state changes quickly.
+
+
+Cache 5 — Vertex AI Context Cache:
+This is different from Redis.
+Vertex AI context caching allows repeated content to be reused rather than reprocessed. Google documents both implicit and explicit context caching.
+
+Use it for relatively stable/repeated context such as:
+Large runbook
+System instructions
+Large architecture documentation
+Repeated enterprise context
+Don't blindly cache rapidly changing incident evidence.
+---
+
+36. The Cache Strategy I Recommend:
+                         CACHE
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ▼                ▼                ▼
+   Incident State     Evidence Cache   Retrieval Cache
+      Redis              Redis             Redis
+          │                │                │
+          └────────────────┼────────────────┘
+                           │
+                           ▼
+                    Semantic Cache
+                           │
+                           ▼
+                 Vertex AI Context Cache
+                 
+The distinction is:
+Redis
+→ Application/workflow caching
+
+Vertex Context Cache
+→ Reuse model input context
+
+Vertex AI context caching is specifically designed to reuse repeated input tokens and reduce processing cost/latency.
+---
+
+37. Final End-to-End Sequence:
+This is the sequence I recommend you use as the master SSOT flow:     
+1. ServiceNow Incident
+        ↓
+2. Webhook
+        ↓
+3. API Gateway / Apigee
+        ↓
+4. Cloud Run Gateway
+        ↓
+5. Authentication / Authorization
+        ↓
+6. DLP
+        ↓
+7. Model Armor
+        ↓
+8. Token Governance
+        ↓
+9. Incident Cache Check
+        ↓
+10. Google ADK Orchestrator
+        ↓
+11. Routing Engine
+        ↓
+12. Log Analysis Agent
+        ↓
+13. Evidence Cache Check
+        ↓
+14. Cloud Logging / Monitoring / Trace
+        ↓
+15. Runtime Evidence
+        ↓
+16. Knowledge Retrieval
+        ↓
+17. Vertex AI Search / RAG
+        ↓
+18. Knowledge Bank
+        ↓
+19. Evidence + Knowledge Correlation
+        ↓
+20. Evidence Package
+        ↓
+21. Grounding Context Builder
+        ↓
+22. Grounding Package
+        ↓
+23. RCA Agent
+        ↓
+24. Vertex AI Gemini
+        ↓
+25. Structured RCA
+        ↓
+26. Grounding Validation
+        ↓
+27. Fact Validation
+        ↓
+28. Citation Resolver
+        ↓
+29. Output DLP / Model Armor
+        ↓
+30. Policy / Risk Decision
+        ↓
+31. Human Approval if required
+        ↓
+32. ServiceNow Update / Remediation
+        ↓
+33. Audit
+        ↓
+34. Observability
+        ↓
+35. Evaluation            
+---
+
+
+38. The Most Important Architecture Boundary:
+I would put this directly on the architecture diagram:
+                DATA PLANE
+────────────────────────────────────────────
+
+ServiceNow
+Cloud Logging
+Cloud Monitoring
+Cloud Trace
+Knowledge Bank
+Historical RCA
+        │
+        ▼
+     Evidence
+        │
+        ▼
+     Grounding
+        │
+        ▼
+       Gemini
+
+
+                CONTROL PLANE
+────────────────────────────────────────────
+
+IAM
+DLP
+Model Armor
+Policy
+Risk
+Cache
+Audit
+Observability
+Human Approval
+That separation makes the architecture much easier to explain.
+---
+
+39. Principal Architect Mental Model:
+The entire system can then be remembered as:
+SERVICE NOW
+"What happened?"
+
+       ↓
+
+EVIDENCE
+"What facts do we have?"
+
+       ↓
+
+KNOWLEDGE BANK
+"What do we already know?"
+
+       ↓
+
+RAG / RETRIEVAL
+"What knowledge is relevant?"
+
+       ↓
+
+GROUNDING
+"What trusted context should Gemini use?"
+
+       ↓
+
+RCA AGENT
+"What does the evidence indicate?"
+
+       ↓
+
+GEMINI
+"Reason over the provided context."
+
+       ↓
+
+VALIDATION
+"Is the answer actually supported?"
+
+       ↓
+
+CITATION
+"Show me where that came from."
+
+       ↓
+
+POLICY
+"Are we allowed to act?"
+
+       ↓
+
+HUMAN / AUTOMATION
+"Execute only if permitted."
+
+       ↓
+
+AUDIT
+"Can we prove what happened?"
+
+
+

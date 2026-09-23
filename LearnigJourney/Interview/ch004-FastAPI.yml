@@ -1,0 +1,234 @@
+Chapter 8:
+Runtime Request Processing Pipeline
+Step 8.1 – Build the FastAPI Application
+
+Architecture Principle:
+FastAPI is the HTTP Adapter of the Enterprise AI Gateway.
+FastAPI is not the application.
+FastAPI is not the business layer.
+FastAPI is not the AI Orchestrator.
+
+FastAPI has only one responsibility:
+Receive HTTP requests and hand them to the Enterprise AI Gateway Core.
+Everything after that belongs to the Core.
+
+FastAPI Responsibilities:
+The FastAPI layer is intentionally very thin.
+Its responsibilities are limited to:
+| Responsibility       | Description                                      |
+| -------------------- | ------------------------------------------------ |
+| Receive HTTP Request | Accept REST API requests                         |
+| Route Resolution     | Select the appropriate endpoint                  |
+| Deserialize Request  | Convert JSON into request models                 |
+| Invoke Gateway       | Forward the request to the Enterprise AI Gateway |
+| Serialize Response   | Convert the response model into JSON             |
+| Return HTTP Response | Send the response back to the client             |
+
+Runtime Flow:
+HTTP Client
+      │
+      ▼
+FastAPI Router
+      │
+      ▼
+Request Handler
+      │
+      ▼
+Enterprise AI Gateway
+
+Package Structure:
+
+
+Middleware Responsibilities:
+
+The middleware performs the following responsibilities in sequence:
+| Step | Responsibility                                      |
+| ---- | --------------------------------------------------- |
+| 1    | Receive HTTP Request                                |
+| 2    | Extract HTTP Headers                                |
+| 3    | Continue Parent Trace                               |
+| 4    | Create Root Application Span                        |
+| 5    | Initialize Structured Logger                        |
+| 6    | Create ObservabilityContext                         |
+| 7    | Create ExecutionContext                             |
+| 8    | Create SecurityContext                              |
+| 9    | Create PolicyContext                                |
+| 10   | Create BusinessContext                              |
+| 11   | Assemble Immutable RequestContext                   |
+| 12   | Forward RequestContext to the Enterprise AI Gateway |
+Runtime Flow:
+HTTP Request
+      │
+      ▼
+Extract Headers
+      │
+      ▼
+Continue Parent Trace
+      │
+      ▼
+Create Root Span
+      │
+      ▼
+Initialize Logger
+      │
+      ▼
+ObservabilityContext
+      │
+      ▼
+ExecutionContext
+      │
+      ▼
+SecurityContext
+      │
+      ▼
+PolicyContext
+      │
+      ▼
+BusinessContext
+      │
+      ▼
+Immutable RequestContext
+      │
+      ▼
+Enterprise AI Gateway
+
+
+This sequence matches the runtime architecture you've established for the platform.:
+| Chapter | Runtime Step                     | Deliverable                                                        |
+| ------- | -------------------------------- | ------------------------------------------------------------------ |
+| 8.2.1   | Extract HTTP Headers             | Complete middleware, header model, validation code                 |
+| 8.2.2   | Continue Parent Trace            | OpenTelemetry propagation, parent span extraction, production code |
+| 8.2.3   | Create Root Application Span     | Tracer implementation and lifecycle                                |
+| 8.2.4   | Initialize Structured Logger     | Google Cloud Logging integration with trace correlation            |
+| 8.2.5   | Build `ObservabilityContext`     | Immutable context model and factory                                |
+| 8.2.6   | Build `ExecutionContext`         | Request-scoped execution metadata                                  |
+| 8.2.7   | Build `SecurityContext`          | Authentication and identity context                                |
+| 8.2.8   | Build `PolicyContext`            | Policy resolution and governance context                           |
+| 8.2.9   | Build `BusinessContext`          | Tenant, domain, and business metadata                              |
+| 8.2.10  | Assemble `RequestContext`        | Immutable aggregate object                                         |
+| 8.2.11  | Validate `RequestContext`        | Validation pipeline and error handling                             |
+| 8.2.12  | Invoke the Enterprise AI Gateway | Transition from middleware into the Core                           |
+Chapter 1:
+Install Python and uv (Windows)
+Principal Architect Card:
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    Runtime Card 8.2.1 – Extract HTTP Headers                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Architecture Layer   │ Inbound Adapter                                       │
+├──────────────────────┼────────────────────────────────────────────────────-──┤
+│ PD-HECA Component    │ HTTP Middleware                                       │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Responsibility       │ Convert HTTP headers into immutable HeaderMetadata    │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Python Module        │ adapters/inbound/http/middleware/                     │
+│                      │ request_context_middleware.py                         │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Port                 │ RequestContextPort                                    │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Adapter              │ FastAPI Middleware Adapter                            │
+├──────────────────────┼───────────────────────────────────────────────────── ─┤
+│ Google Cloud         │ API Gateway / Cloud Load Balancer                     │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Vertex AI            │ Not Used                                              │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Python Packages      │ fastapi                                               │
+│                      │ pydantic                                              │
+│                      │ dependency-injector                                   │
+├──────────────────────┼───────────────────────────────────────────────────── ─┤
+│ Principal Classes    │ Request                                               │
+│                      │ HeaderExtractor                                       │
+│                      │ HeaderMetadata                                        │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Important Methods    │ request.headers.get()                                 │
+│                      │ request.method                                        │
+│                      │ request.url                                           │
+│                      │ request.client                                        │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Input                │ HTTP Request                                          │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Output               │ HeaderMetadata                                        │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Design Pattern       │ Adapter + Factory                                     │
+├──────────────────────┼───────────────────────────────────────────────────── ─┤
+│ SOLID Principle      │ Single Responsibility Principle                       │
+├──────────────────────┼───────────────────────────────────────────────────── ─┤
+│ Lifecycle            │ Request Scoped                                        │
+├──────────────────────┼───────────────────────────────────────────────────── ─┤
+│ Observability        │ Correlation ID                                        │
+│                      │ Request ID                                            │
+├──────────────────────┼────────────────────────────────────────────────────── ┤
+│ Security             │ Validate Required Headers                             │
+├──────────────────────┼───────────────────────────────────────────────────── ─┤
+│ Performance          │ O(n) over request headers                             │
+├──────────────────────┼──────────────────────────────────────────────────── ──┤
+│ Unit Tests           │ test_header_extractor.py                              │
+├──────────────────────┼───────────────────────────────────────────────────── ─┤
+│ Integration Tests    │ test_request_context_middleware.py                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+Step 1.1 — Create the Enterprise AI Gateway Project:
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                  Foundation Card 1.1 – Create Enterprise AI Gateway                        │
+├────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Architecture Layer   │ Foundation                                                          │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Architecture Style   │ Policy-Driven Hexagonal Enterprise Clean Architecture               │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Operating System     │ Windows 11                                                          │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Python Version       │ Python 3.13+                                                        │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Package Manager      │ uv                                                                  │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ IDE                  │ Visual Studio Code                                                  │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Cloud Platform       │ Google Cloud Platform                                               │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ AI Platform          │ Vertex AI                                                           │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Web Framework        │ FastAPI                                                             │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Dependency Injection │ dependency-injector                                                 │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Observability        │ OpenTelemetry + Cloud Logging                                       │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Container Platform   │ Docker + Kubernetes (GKE)                                           │
+├──────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Output               │ Enterprise AI Gateway Project                                       │
+└────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Step 1.2 — Install Enterprise Dependencies:
+Architecture:
+                                 Enterprise AI Gateway
+
+                                           │
+
+                   ┌───────────────────────┼────────────────────────┐
+                   │                       │                        │
+             Application              Infrastructure          Development
+                   │                       │                        │
+          FastAPI / Pydantic     Vertex AI / GCP / OTel      Pytest / Ruff
+          
+Principal Architect Card:
+┌────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                 Foundation Card 1.2 – Enterprise Python Dependencies                               │
+├────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Layer                │ Foundation                                                                   │
+├──────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ Python               │ 3.13+                                                                        │
+├──────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ Package Manager      │ uv                                                                           │
+├──────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ Package Repository   │ PyPI                                                                         │
+├──────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ Dependency Groups    │ Runtime / Development / Testing                                              │
+├──────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ Architecture         │ Policy-Driven Hexagonal Enterprise Clean                                     │
+├──────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ Cloud                │ Google Cloud Platform                                                        │
+├──────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ AI Platform          │ Vertex AI                                                                    │
+├──────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ Output               │ Production-ready Python Environment                                          │
+└────────────────────────────────────────────────────────────────────────────────────────────────────┘          
