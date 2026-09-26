@@ -10633,3 +10633,77 @@ The important point is:
 MCP is not Agentic RAG itself.
 MCP is a protocol/interface mechanism.
 Agentic RAG is the architecture/workflow pattern involving agent reasoning, retrieval, tools, evidence and potentially execution.
+---
+
+23.28. Final Mental Model:
+If you remember only this diagram, remember this one:
+                 TRADITIONAL RAG
+                       │
+                       ▼
+                    Question
+                       │
+                       ▼
+                  Retrieve
+                       │
+                       ▼
+                    Rerank
+                       │
+                       ▼
+                   Augment
+                       │
+                       ▼
+                     LLM
+                       │
+                       ▼
+                    Answer
+
+Versus:
+
+
+                  AGENTIC RAG
+                       │
+                       ▼
+                     User
+                       │
+                       ▼
+                     Agent
+                       │
+                       ▼
+                 Understand
+                       │
+                       ▼
+                    PLAN
+                       │
+              ┌────────┼────────┐
+              ▼        ▼        ▼
+             RAG     Tools    Memory
+              │        │        │
+              ▼        ▼        ▼
+          Knowledge  Runtime  Context
+          Evidence   Evidence
+              │        │
+              └────┬───┘
+                   ▼
+             Evaluate Evidence
+                   │
+                   ▼
+             Need More Data?
+              │          │
+             YES         NO
+              │           │
+              └───→ Agent │
+                          ▼
+                    Context Builder
+                          │
+                          ▼
+                         LLM
+                          │
+                          ▼
+                  Grounding Validation
+                          │
+                          ▼
+                  Answer / Action
+                  
+---
+The one-line Principal Architect answer
+Traditional RAG is a mostly predefined retrieval-and-generation pipeline for answering questions from enterprise knowledge. Agentic RAG adds an intelligent orchestration layer that can decide what information or tools are required, retrieve both indexed knowledge and live runtime evidence, reason over the results, iterate when necessary, maintain context or memory, and execute governed multi-step workflows                  
