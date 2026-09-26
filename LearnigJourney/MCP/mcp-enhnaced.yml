@@ -1,0 +1,735 @@
+1. Executive Summary:
+Model Context Protocol (MCP) is not an AI model, a framework, or a database. It is an open communication standard that lets AI applications securely discover, access, and interact with enterprise systems in a consistent, interoperable way.
+
+Mental model: If an agent framework (LangGraph, OpenAI Agent SDK) is the brain that plans and reasons, MCP is the standardized nervous system that connects that brain to the enterprise body — SAP, Salesforce, Oracle, SharePoint, Jira, internal APIs, file servers.
+
+Chapter 1:
+The Enterprise Integration Problem
+1.1 The N×M Integration Problem:
+Imagine your organization has multiple enterprise systems:
+
+SAP · Salesforce · Oracle DB · SharePoint · ServiceNow · Jira · Internal REST APIs · File Servers
+
+And your organization wants to use multiple AI models:
+
+GPT · Gemini · Claude · Llama · Mistral
+
+Without a standard, every model needs a separate integration with every system:
+
+GPT     → SAP, Salesforce, Oracle, ...
+Gemini  → SAP, Salesforce, Oracle, ...
+Claude  → SAP, Salesforce, Oracle, ...
+
+With 5 AI models and 20 enterprise systems, that's 5 × 20 = 100 separate integrations,
+
+Problem:
+Authentication
+APIs
+Security
+Maintenance
+Governance
+
+become expensive.
+
+1.2 The USB-C Analogy:
+
+Before:
+Different Device
+Different Cable
+After:
+USB-C 
+One Standard
+MCP follows the same philosophy.
+---
+
+Chapter 2:
+2.1 What is MCP?:
+Definition:
+MCP is an open communication protocol that standardizes how AI applications discover, access, and interact with external systems.
+Think of MCP as a translator sitting between AI and enterprise systems. Instead of teaching every AI model how SAP, Oracle, or Jira works internally, we teach those systems to speak MCP once — and every AI model that understands MCP can now use them.
+
+Think:
+HTTP = Web Communication 
+MCP = AI Communication
+
+
+2.2 Understanding Context:
+
+What AI Does Not Know
+Internal policies
+Live sales data
+Customer information
+Inventory
+ERP data
+All of this is context. Without context, an AI model can only guess. With context, it can give grounded, accurate, current answers. MCP's job is to deliver this context to the AI at the right time, securely.
+
+2.3 Problems MCP Solves:
+Problem	                                                            How MCP Helps
+Fragmented integrations	                                            Standardized integration across tools and AI models
+Static, hardcoded connections	                                    Dynamic discovery of available capabilities at runtime
+Uncontrolled data access	                                        Secure, permissioned access to enterprise data
+Inconsistent message formats	                                    One common protocol (JSON-RPC 2.0)
+Hard to audit AI usage	                                            Easier governance and auditing
+High engineering cost	                                            Reduced development and maintenance effort
+Vendor lock-in	                                                    Adopt new AI models without rewriting integrations
+
+2.4 Enterprise Benefits (Business View):
+Faster integration — new AI models and systems connect with minimal custom development.
+Lower cost — standardization removes duplicate engineering effort.
+Improved governance — security, auth, permissions, and auditing are managed consistently, in one place.
+Vendor flexibility — organizations are not locked into one AI provider.
+Scalability — new systems only need to expose MCP-compatible capabilities to join the ecosystem.
+---
+
+Chapter 3: Core Architecture: Host, Client, Server
+MCP follows a client–server architecture with three components. Understand these three roles first — everything else in this document is built on top of them.
+        User
+          │
+          ▼
+   ┌─────────────┐
+   │  MCP HOST   │   Claude Desktop / Cursor / VS Code / LangGraph app
+   └──────┬──────┘
+          │ embeds
+          ▼
+   ┌─────────────┐
+   │  MCP CLIENT │   Manages the connection, speaks the protocol
+   └──────┬──────┘
+          │ (Transport: STDIO / HTTP / Streamable HTTP)
+          ▼
+   ┌─────────────┐
+   │  MCP SERVER │   Exposes tools/resources: DB, CRM, SAP, files, APIs
+   └─────────────┘
+
+3.1 MCP Host:
+The Host is the AI application or environment where the user interacts — e.g., Claude Desktop, Cursor, VS Code, a custom agent app, or a framework like LangGraph. The Host manages user interaction and initiates communication with external systems.
+Responsibilities:
+User interaction
+AI execution
+Agent reasoning
+
+3.2 MCP Client:
+The Client is embedded inside the Host. It is the communication manager, responsible for:
+Responsibilities:
+Tool Discovery
+Requesting resources
+Tool Invocation
+Session Management
+Receiving responses
+JSON-RPC2 Communication
+Passing information back to the AI model
+
+3.3 MCP Server:
+The Server is the provider of context and capabilities. It can represent a SQL database, a CRM, a document repository, a cloud service, a REST API, a Kubernetes cluster, or a vector database. Rather than exposing raw APIs directly to AI models, the server presents well-defined, discoverable capabilities through MCP.
+Responsibilities:
+Expose tools
+Expose resources
+Execute business logic
+
+3.4 Where Agent Frameworks Fit:
+A common misconception is that MCP replaces agent frameworks (LangGraph, OpenAI Agent SDK). It does not — they solve different problems:
+Agent Framework (LangGraph, OpenAI Agent SDK)	                                                MCP
+Planning	                                                                                    Discovering enterprise capabilities
+Reasoning	                                                                                    Accessing data
+Multi-agent orchestration	                                                                    Executing tools
+Memory	                                                                                        Standardizing communication
+Guardrails, workflow execution	                                                                —
+The agent framework decides what should happen. MCP provides the standardized way to make it happen.
+
+
+
+3.4  Capabilities: Resources, Tools, Prompts:
+An MCP Server exposes three primary types of capability:
+
+Capability	             Purpose         	            Examples	                                                               Mutates Data?
+Resources	            Provide information	            PDF documents, SQL tables, config files, KB articles	                    No (read-only)
+Tools	                Perform actions	                Execute SQL, send email, create Jira ticket, deploy to K8s, search docs	    Yes
+Prompts	                Reusable templates that         Standardized prompt for "summarize a legal contract"	                    N/A 
+                        guide AI behavior	
+Prompts let an organization publish standardized, vetted prompt templates through MCP instead of every team reinventing them.
+---
+Chapter 4: The Protocol: JSON-RPC 2.0
+Every MCP message — regardless of transport — is a JSON-RPC 2.0 message. Think of it like calling customer care: instead of a vague "do something," you say "reset my password" — a precise operation with parameters. JSON-RPC gives every message:
+
+Who am I?
+What operation?
+What parameters?
+Which request (so I can match the reply)?
+Where should the result go?
+
+4.1 Anatomy of a Request:
+{
+  "jsonrpc": "2.0",
+  "id": 101,
+  "method": "tools/call",
+  "params": { "...": "..." }
+}
+jsonrpc — always "2.0".
+id — generated by the client, unique per request. The server never changes it; the client uses it to match the eventual response.
+method — the operation, e.g. initialize, tools/list, tools/call.
+params — the operation's arguments (can be nested objects, arrays, optional fields).
+
+4.2 Notifications (Fire-and-Forget):
+A notification is a request with no id and no expected response. Example:
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/initialized"
+}
+The server never replies to a notification — this reduces unnecessary traffic. Notifications should never be used where the caller needs confirmation that the operation succeeded.
+
+4.3 Response Object:
+{
+  "id": 101,
+  "result": { "...": "..." }
+}
+
+The response always carries back the same id the request used, so the client can match responses even if they arrive out of order (important for concurrent requests and streaming).
+
+4.4 Error Object:
+{
+  "id": 101,
+  "error": {
+    "code": -32000,
+    "message": "Tool execution failed",
+    "data": { "...": "..." }
+  }
+}
+Distinguish between: Tool Error (the business operation failed), Transport Error (network/connection issue), Protocol Error (malformed JSON-RPC), and Application Error (upstream system failure, e.g. SAP unreachable).
+
+4.5 Batch Requests:
+Instead of sending requests one at a time, a client can send an array:
+
+[ { "id": 101, "...": "..." }, { "id": 102, "...": "..." }, { "id": 103, "...": "..." } ]
+
+The server processes them independently and responses may return out of order (e.g., 103, then 101, then 102) — this is fine because the id field lets the client match each response to its request.
+
+4.6 Real Payload Examples (Reference):
+Initialize:
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": { "sampling": {}, "tools": {}, "resources": {} },
+    "clientInfo": { "name": "OpenAI Agent SDK", "version": "1.0" }
+  }
+}
+
+Tool call:
+
+{
+  "jsonrpc": "2.0",
+  "id": 101,
+  "method": "tools/call",
+  "params": {
+    "name": "execute_sql",
+    "arguments": { "query": "SELECT * FROM SALES" }
+  }
+}
+
+Progress notification (server → client):
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/progress",
+  "params": { "progress": 40, "message": "Reading Database" }
+}
+
+Final tool response:
+{
+  "jsonrpc": "2.0",
+  "id": 101,
+  "result": { "summary": "Revenue increased by 12%." }
+}
+
+---
+
+
+Chapter 5: Transport Layer: STDIO, HTTP, Streamable HTTP
+Key separation: JSON-RPC 2.0 is the language. Transport is the road the message travels on. The message format never changes — only the delivery mechanism does. This is why MCP is transport-independent.
+
+Transport defines:
+How Messages Travel
+Not:
+What Messages 
+
+5.1 STDIO Transport (Local):
+Used when the client and server run on the same machine — e.g., launching python weather_server.py. The MCP Client starts the server as a child process, and both sides communicate over OS pipes (stdin / stdout). No TCP, no HTTP, no REST — everything is local.
+MCP Client → stdin → Weather Server → stdout → Client
+How it works:
+Client starts the server process.
+OS creates stdin/stdout channels.
+Client writes a JSON-RPC initialize request to stdin.
+Server reads and processes it.
+Server writes the response to stdout.
+Client reads the response; communication continues.
+Best for: Claude Desktop, Cursor, VS Code, local development, testing.
+
+5.2 HTTP Transport (Remote, Request–Response):
+Used when the server runs remotely (e.g., in the cloud). Flow: Client → HTTP POST → Internet → Load Balancer → API Gateway → MCP Server → JSON response → connection closes.
+
+Characteristics: stateless, one request/one response, connection usually closes after completion — very similar to a REST API.
+
+Limitation: if an operation takes 30 seconds to 5 minutes (e.g., "analyze one million sales records"), plain HTTP forces the client to simply wait with no visibility into progress. This is a poor experience and doesn't scale for long-running enterprise workflows.
+
+5.3 Streamable HTTP (Remote, Long-Running, Progressive):
+Streamable HTTP extends normal HTTP so the server can send multiple messages during a single logical interaction — think of downloading a large file and watching the progress bar move (10% → 25% → 60% → 90% → Completed) instead of staring at a blank screen.
+
+Initialization sequence:
+
+Client sends initialize (HTTP POST) with protocol version, client name/version, and capabilities.
+Server responds with its own protocol version/capabilities, and — critically — returns a unique MCP Session ID in the HTTP response headers (not the JSON body).
+Client confirms by sending the notification notifications/initialized. The session is now fully established.
+A business request, end to end (e.g., "generate a quarterly sales report"):
+    Client                         Server
+      |──── tools/call ───────────>|
+      |<─── 202 Accepted ──────────|   "I've received this and started processing"
+      |<─── 10% Reading Database ──|
+      |<─── 20% Executing Query ───|
+      |<─── 45% Processing Results─|
+      |<─── 70% Generating Summary-|
+      |<─── 95% Formatting Output──|
+      |<─── Completed + Result ────|
+The client receives the full result without polling. Notice: one request, multiple responses.
+
+
+5.4 Stateless vs Stateful Communication:
+Stateless HTTP: every request is independent — Request → Complete → Connection Ends, repeated. The server remembers nothing unless the client resends context every time.
+
+Stateful Streamable HTTP: a session is created once, and every subsequent request reuses it — Initialize → Session Created → Session ID → Request 1 → Request 2 → Request 3 → Same Session.
+
+
+5.5 Transport Comparison:
+
+Feature	                    STDIO	                    HTTP	                    Streamable HTTP
+Communication	            Local process	            Network	                    Network
+Same machine required	    Yes                     	No	                        No
+Internet required	        No	                        Yes                     	Yes
+Long-running tasks	        Limited	                    Basic	                    Excellent
+Progress updates	        No                      	Limited	                    Yes
+Streaming responses	        No	                        Limited	                    Yes
+Best use case	            Local development	        Simple cloud APIs	        Enterprise AI agents
+Analogy: STDIO is walking down a hallway in the same building — fast and local. HTTP is sending a courier package — one request, one response. Streamable HTTP is tracking a live delivery — continuous updates until the work finishes.
+---
+
+Chapter 6: Sessions: Making MCP Stateful
+6.1 Why Sessions Exist:
+Without a session, every request would need to re-authenticate and re-negotiate capabilities from scratch: Request → Authenticate → Negotiate → Execute → Forget Everything. With a session: Initialize Once → Session Created → Request 1 → Request 2 → Request 3 → Session Ends. The server remembers the client's identity, permissions, and negotiated capabilities for the life of the session.
+
+6.2 Session Establishment, Step by Step:
+Client sends initialize — includes MCP protocol version, client name/version, and capabilities (Tools ✓, Resources ✓, Prompts ✓, Sampling ✓).
+Server validates — checks protocol compatibility and whether the requested capabilities are supported.
+Server creates a session and stores it in server memory (e.g., Session: XYZ-987654, linked to the client's capabilities, authentication, and permissions).
+Server returns the Session ID in the HTTP response header MCP-Session-ID: XYZ-987654.
+Client stores the session and never needs to re-initialize until it expires.
+Client sends notifications/initialized — a fire-and-forget confirmation. The server does not reply. Both sides are now ready for business traffic.
+
+6.3 Every Subsequent Request Carries the Session ID:
+POST /mcp
+Headers:
+  MCP-Session-ID: XYZ987654
+Body:
+  { "method": "tools/call", "params": { "name": "ExecuteSQL", ... } }
+The server looks up the Session ID, finds it, and immediately loads the associated user, permissions, capabilities, and authentication — no re-initialization required for every new business request.
+
+
+6.4 When Does a Session End?:
+A session typically ends when:
+
+The client explicitly disconnects.
+The server times out due to inactivity.
+The server restarts.
+The session expires per policy.
+Authentication is revoked.
+After that, the client must repeat the initialization handshake to establish a new session.
+
+
+6.5 Important Clarification: Session ≠ Conversation Memory
+This is a common point of confusion. The Session ID does not store AI conversation history or agent memory — it only identifies the communication session between client and server.
+
+Concept	                                                                        Answers
+Session ID	                                                                    "Who is this client connection?"
+Agent Memory (owned by the Host/framework, e.g. LangGraph)	                    "What has this user been discussing?"
+MCP Server	                                                                    "What tools and resources can this client access?"
+Keeping these responsibilities separate is a key reason MCP stays simple, scalable, and interoperable across different AI frameworks.
+
+
+6.6 Three Related but Different Concepts:
+Concept	                                        Lifetime                                    	Purpose
+TCP Connection	                                Managed by HTTP/OS	                            Physical network connection
+HTTP Connection                             	One request (or until keep-alive ends)	        Carries a single request/response
+MCP Session	                                    Spans multiple requests	                        Maintains client identity and negotiated capabilities
+Bank analogy: You receive a token number ("A102") when you walk in — that's your MCP Session, valid until your business is done. Walking up to Counter 5, talking, and walking away is one HTTP request. Later, going to Counter 8 and showing the same token again is a second HTTP request, same session, different interaction.
+---
+
+Chapter 7: Streaming with SSE:
+Server-Sent Events (SSE) is the mechanism that commonly underpins Streamable HTTP's progress updates: a one-way channel where the server continuously pushes events and the client only listens.
+Server → → → → → Client   (events only flow one direction)
+Normal tool call flow with SSE:
+
+Client sends tools/call.
+Server immediately replies Accepted / Processing Started and keeps the HTTP connection open.
+Server pushes a sequence of event messages — e.g., 10% Reading Database, 20% Executing SQL, 45% Filtering Records, 70% Generating Summary, 95% Formatting Response.
+Server sends Completed; the connection closes.
+Important nuance: SSE by itself is one-directional (server → client). When the server needs something back from the client mid-stream (as in Sampling, covered next), the client's answer is not pushed back over the same SSE stream — it is sent as a new JSON-RPC message, typically via a separate HTTP call in the opposite direction.
+---
+
+Chapter 8: Sampling: Borrowing the Client's AI:
+
+8.1 The Problem Sampling Solves:
+An MCP Server is not an AI model — it's a service exposing tools and resources. Suppose a server receives: "Summarize the last 500 customer support tickets." It can fetch the 500 tickets from the database, but it cannot intelligently summarize them. It needs an LLM's help — but the LLM lives on the client side, not the server side.
+
+8.2 What Sampling Is:
+Sampling is an MCP capability that lets an MCP Server ask the MCP Client to run an LLM inference on its behalf.
+
+This temporarily reverses the normal direction of communication:
+Normal flow	With Sampling
+Client → Server	Server → Client's LLM
+
+8.3 Why the Server Doesn't Just Call OpenAI Directly:
+If every MCP Server called an LLM provider directly, every server would need its own API keys, billing, model selection, and security policy — duplicated across every server in the enterprise. Instead, the client already owns the AI model, authentication, user permissions, model configuration, and cost controls. So the server simply asks: "Can your AI do this for me?"
+
+8.4 End-to-End Sampling Flow
+Scenario: A lawyer asks a Legal MCP Server to "Summarize this 800-page contract." The server can read the PDF and extract text, but cannot understand legal nuance.
+User → Client (tools/call) → MCP Server
+                                  │  reads DB / documents
+                                  ▼
+                          Server has raw data,
+                          but needs reasoning
+                                  │
+                         sampling/createMessage
+                                  ▼
+                             MCP Client
+                                  │  checks: is sampling enabled?
+                                  │          does policy allow it?
+                                  │          which model to use?
+                                  ▼
+                         Client calls its own LLM
+                          (GPT-4 / Gemini / Claude)
+                                  │
+                          LLM generates the answer
+                                  ▼
+                       Client returns result to Server
+                                  ▼
+                    Server completes the original tool call
+                                  ▼
+                              User sees the
+                            final intelligent answer
+
+
+The user never sees the internal sampling round-trip — it's fully transparent.
+Sampling request payload:
+{
+  "jsonrpc": "2.0",
+  "id": 9001,
+  "method": "sampling/createMessage",
+  "params": {
+    "messages": [
+      { "role": "user", "content": "Summarize these tickets." }
+    ]
+  }
+}
+
+Sampling response payload:
+{
+  "jsonrpc": "2.0",
+  "id": 9001,
+  "result": { "content": "Top issue is Login Failure..." }
+}
+A sampling request typically also carries instructions, a preferred model (optional), temperature, max tokens, and an optional system prompt.
+
+
+8.5 Why Sampling Is Better (Centralized AI Governance):
+Without Sampling — every MCP Server needs its own provider keys, billing, model selection, and security review. AI logic is duplicated across every server.
+
+With Sampling — one client owns one LLM connection; many MCP servers (HR, Finance, Legal, SAP, CRM) all reuse it via sampling/createMessage. One AI. Many servers.
+
+
+8.6 Is Sampling Mandatory?:
+No — it's optional and negotiated during the initialize handshake. A server may never use it, use it occasionally, or rely on it heavily. A client may support it, reject it, or require explicit user approval before executing a sampling request.
+
+
+8.7 Tools vs. Sampling — Don't Confuse Them:
+A Tool is a business capability the server exposes (Execute SQL, Read File, Search Documents).
+Sampling is a protocol capability that lets the server borrow the client's reasoning ability. It is not a tool.
+
+--------------------------------------------------------------------------------------------------------
+
+Chapter 9:  Building a Server with FastMCP
+
+FastMCP is to the MCP world what FastAPI is to the REST world: a high-level Python framework that hides all the JSON-RPC/session/transport plumbing. Instead of implementing the protocol yourself, you write:
+
+@mcp.tool
+def search_customer():
+    ...
+...and FastMCP handles the rest.
+
+9.1 Creating the Server Object:
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP(
+    name,
+    instructions,
+    version,
+    lifespan,
+    dependencies,
+    auth,
+    settings,
+    stateless_http,
+    json_response,
+    middleware,
+)
+
+At this point, nothing is running yet — no HTTP port is open, no STDIO transport is active, no client can connect. You have only created and configured an application object. Internally, FastMCP sets up empty registries that decorators like @mcp.tool will populate later:
+FastMCP
+├── Server Metadata
+├── Tool Registry        (empty until @mcp.tool is used)
+├── Resource Registry     (empty until @mcp.resource is used)
+├── Prompt Registry        (empty until @mcp.prompt is used)
+├── Session Manager
+├── Transport Config
+├── Authentication
+└── Middleware
+
+
+9.2 Constructor Parameters — What Each One Does:
+Parameter	                            Purpose	                                                   Typical Usage
+name ⭐⭐⭐⭐⭐	                    Human-readable server name shown to connecting clients	    "Customer Service Server" instead of "Unknown Server"
+instructions ⭐⭐⭐⭐⭐	            System prompt for the server — tells the AI Host how to     e.g. "Never modify records. Always verify customer ID. 
+                                        safely use it, not Python config	                        operations without explicit confirmation."
+
+version ⭐⭐⭐	                        Server version metadata	                                    Compatibility checks across 100s of connected    
+clients,troubleshooting
+
+lifespan ⭐⭐⭐⭐⭐	                Startup/shutdown lifecycle hook	                            Open one DB pool / Redis connection at startup, reuse    across all requests, close cleanly at shutdown — avoids reconnecting on every request
+
+dependencies ⭐⭐⭐	                Declares required packages	                                Similar to requirements.txt — used for packaging/deployment
+
+auth ⭐⭐⭐⭐⭐	                    Who can use the server                                  	OAuth / JWT / API key — critical for anything touching production data (e.g. a Payroll server)
+
+settings ⭐⭐⭐	                    General app configuration	                                Timeouts, rate limits, logging — similar to application.yml/.env
+
+stateless_http ⭐⭐⭐⭐⭐	            Whether HTTP requests share server-side session state	    True = every request independent (simple REST-like calls); False (default) = session persists across requests, needed for Sampling/progress/streaming
+
+json_response ⭐⭐⭐⭐	                One-shot JSON vs. streaming behavior	                    True = single JSON reply, connection closes; False = server can stream progressive updates — required for long-running operations
+
+middleware ⭐⭐⭐⭐	                Cross-cutting request processing	                        Logging, auth checks, rate limiting, tracing, correlation IDs — every request flows: Client → Logging → Auth → Rate Limit → Tool → Response
+
+Version note (accuracy callout): in newer FastMCP SDK releases, stateless_http and json_response are often passed to transport methods like streamable_http_app() rather than the constructor directly. Always check the SDK version your team has pinned before copying constructor signatures verbatim.
+
+
+9.3 A Minimal, Real Server:
+from mcp.server.fastmcp import FastMCP
+
+hr = FastMCP("HR")
+
+@hr.tool
+def get_employee():
+    return "Employee Found"
+
+hr_app = hr.streamable_http_app()   # exposes an ASGI application
+
+
+9.4 Running the Server: run() vs run_stdio() vs streamable_http_app()
+
+Method	                                                 What it does	                                                                When to use
+mcp.run(transport="streamable-http", port=8000):        Starts its own Uvicorn instance, binds a port, serves only this MCP server	    Simple, single-service development or a small standalone deployment
+
+mcp.run_stdio():                                    	Runs over stdin/stdout as a child process, no network at all	                Local tooling — Claude Desktop, Cursor, VS Code
+
+mcp.streamable_http_app():                          	Returns an ASGI application object but starts nothing itself	                Enterprise pattern — mount multiple MCP servers under one shared Uvicorn/FastAPI process
+---
+
+
+Chapter 10:  Enterprise Deployment Architecture
+
+10.1 The Problem With "One Server Per Port":
+If the HR team runs hr.run(transport="streamable-http", port=8000) and the Finance team independently runs finance.run(transport="streamable-http", port=9000), you get two fully independent processes on two ports. This is valid for small setups, but at enterprise scale (10+ departments) it means N ports, N TLS certificates, N auth layers, and N monitoring endpoints to manage.
+
+10.2 The Enterprise Pattern: Mount Multiple MCP Servers Under One Host
+Instead, each team's FastMCP object exposes an ASGI app via streamable_http_app(), and a single parent FastAPI app mounts each one at its own URL path. One Uvicorn process. One port. Multiple independent MCP applications.
+                    Uvicorn (single process, single port)
+                          │
+                       FastAPI  (parent ASGI app)
+             ┌────────────┼─────────────┐
+             ▼             ▼             ▼
+        HR MCP App   Finance MCP App  SAP MCP App   ← siblings, not parent-child
+Mall analogy: one mall entrance (Uvicorn/FastAPI), many independent shops (HR MCP, Finance MCP, SAP MCP) each mounted at their own storefront path. Uvicorn never needs to know whether an incoming request is REST or MCP — FastAPI's routing simply forwards each URL to the correct mounted ASGI app.
+
+10.3 Complete Working Example:
+hr/server.py:
+from mcp.server.fastmcp import FastMCP
+
+hr = FastMCP("HR MCP Server")
+
+@hr.tool
+def get_employee(emp_id: str):
+    return f"Employee : {emp_id}"
+
+hr_app = hr.streamable_http_app()   # exported ASGI application
+
+
+finance/server.py:
+from mcp.server.fastmcp import FastMCP
+
+finance = FastMCP("Finance MCP Server")
+
+@finance.tool
+def get_salary(emp_id: str):
+    return f"Salary : {emp_id}"
+
+finance_app = finance.streamable_http_app()   # exported ASGI application
+
+
+main.py — the single entry point:
+from fastapi import FastAPI
+from hr.server import hr_app
+from finance.server import finance_app
+
+main_app = FastAPI()
+
+main_app.mount("/mcp/hr", hr_app)
+main_app.mount("/mcp/finance", finance_app)
+
+
+Starting the whole platform:
+import uvicorn
+
+uvicorn.run(main_app, host="0.0.0.0", port=8000)
+
+Resulting request routing:
+Client
+   │  POST /mcp/hr
+   ▼
+TCP → Uvicorn → FastAPI Router → Mounted Route (/mcp/hr) → HR MCP → Tool Registry → get_employee() → Response
+
+Client
+   │  POST /mcp/finance
+   ▼
+TCP → Same Uvicorn → Same FastAPI → Mounted Route (/mcp/finance) → Finance MCP → get_salary() → Response
+
+
+10.4 Recommended Enterprise Project Structure:
+enterprise-ai-platform/
+│
+├── main.py                ← Main FastAPI application (single entry point)
+│
+├── hr/
+│   ├── __init__.py
+│   ├── server.py          ← HR FastMCP server + streamable_http_app()
+│   └── tools.py
+│
+├── finance/
+│   ├── __init__.py
+│   ├── server.py          ← Finance FastMCP server + streamable_http_app()
+│   └── tools.py
+│
+└── requirements.txt
+
+Each department owns its own MCP server module and exports a single ASGI app object; main.py never needs to know the internal details of HR or Finance tooling — it only imports and mounts.    
+
+10.5 Architect's Recommendation:
+Scale	                                                                        Recommended pattern
+Development or a single MCP service	                                            mcp.run(transport="streamable-http") — simplest possible setup
+Enterprise platform with many MCP services	                                    One Uvicorn + one FastAPI parent, with each MCP server mounted at its own path
+The enterprise pattern gives you: one TCP port, one HTTPS certificate, one authentication layer, one logging pipeline, one monitoring endpoint, while keeping each department's MCP application fully independent under the hood. This is the same pattern used by production API gateways.
+---
+
+Chapter 10:— Why You Still Need an MCP Client:
+A natural question: "If the MCP Server is just HTTP, can't my browser just call it directly with fetch()?"
+
+Technically, yes. A browser (or requests.post()) can send a raw HTTP POST with a JSON-RPC body to /mcp and get a JSON-RPC response back — nothing stops that mechanically.
+
+But MCP is not REST. A browser understands HTTP. An MCP Server understands HTTP + JSON-RPC + the full MCP protocol — initialize → session → tools/list → tools/call → sampling → progress notifications → resources, correctly sequenced, with session IDs tracked, reconnection handled, and errors managed per spec. Manually re-implementing all of that with raw fetch()/requests.post() calls for every consuming application is painful and error-prone. That is exactly what the MCP Client library exists to do for you.
+
+JDBC analogy: Java could open a raw TCP socket and speak Oracle's wire protocol directly. Nobody does, because the JDBC driver already encapsulates that protocol. Same relationship:
+requests        → HTTP transport
+psycopg         → PostgreSQL protocol
+pymongo         → MongoDB protocol
+boto3           → AWS API protocol
+MCP Client SDK  → MCP protocol over HTTP/STDIO
+10.1 Real Client-Side Code (OpenAI Agent SDK example):
+server = MCPServerStreamableHttp(
+    params=MCPServerStreamableHttpParams(
+        url="http://hr-server:8001/mcp"
+    )
+)
+This one object teaches the OpenAI Agent SDK — which otherwise doesn't know how to "speak" MCP — how to perform, automatically:
+Initialize → Create Session → Store Session ID → tools/list → tools/call
+           → Handle Streaming → Handle Sampling → Reconnect on failure
+
+Without it, your application code would have to hand-roll session management, JSON-RPC message construction, SSE parsing, sampling callbacks, and reconnection logic — for every single consuming app. Nobody does that, for the same reason nobody hand-crafts raw TCP packets to call a REST API.
+
+A browser can become a full MCP client — but only if its JavaScript implements initialize, session handling, JSON-RPC, SSE, sampling, and notifications itself. That is significant, non-trivial protocol logic — which is precisely the value the MCP Client SDK packages up for you.
+---
+
+Chapter 11:— End-to-End Walkthrough (Everything Together):
+Bringing every part of this guide together, here is a single request traced through the entire stack, from user question to final answer — this is the flow to whiteboard for new team members.
+
+Scenario: A sales manager asks, "Show me the total sales for Q2 and summarize the key trends."
+
+Step	                             What Happens
+1. User Request	                    The question reaches the AI Host. The AI recognizes it needs current sales data — not something in its training data.
+
+2. Session Handshake (once)	        Client sends initialize → Server creates a session, returns MCP-Session-ID in headers → Client sends notifications/initialized.
+
+3. Tool Discovery	                Client asks "what can you do?" (tools/list). Sales MCP Server responds: Execute SQL, Get Sales Report, Fetch Regional Revenue.
+
+4. Tool Invocation	                AI selects Get Sales Report. Client sends tools/call (with MCP-Session-ID header) over Streamable HTTP.
+
+5. Server Executes Business Logic	Server queries the database, may call SAP, may aggregate multiple sources. The AI never needs to know these internals.
+
+6. Progress Streaming	            Server pushes SSE progress events: 10% Reading Database → 45% Executing Query → 70% Processing → 95% Formatting.
+
+7. (Optional) Sampling	            If the server needs intelligent summarization it cannot do itself, it sends sampling/createMessage back to the client, which calls its own LLM and returns the generated text.
+
+8. Structured Response          	Server returns structured data: Revenue, Profit, Region, Growth %.
+
+9. AI Reasoning	                    The Host's AI now reasons over trusted, grounded, current enterprise data — not memory or assumptions — and produces insights: "Sales increased 12%. Western region drove the growth. Margin improved vs. last quarter."
+
+10. User Sees the Answer	        The entire session/protocol/streaming/sampling machinery is invisible to the end user — they simply get a fast, accurate, well-reasoned answer.
+---
+
+Chapter 12:— Best Practices & Governance Checklist:
+Use this checklist when reviewing or standing up a new MCP server for production:
+
+[ ] Naming & instructions — every server has a clear name and instructions that tell the AI Host how to use it safely (e.g., "never delete without confirmation").
+[ ] Authentication is mandatory for any server touching sensitive data (Payroll, SAP, Legal) — never ship auth=None to production.
+[ ] Least-privilege tools — expose only the specific tools required; do not wrap an entire raw API surface.
+[ ] Lifespan management — use lifespan to open connection pools once at startup and close them cleanly at shutdown, rather than per-request.
+[ ] Stateless vs. stateful choice is deliberate — set stateless_http based on whether the server needs sampling/progress/streaming, not by default.
+[ ] Middleware for governance — logging, auditing, rate limiting, and correlation IDs on every request for traceability.
+[ ] Sampling policy is explicit — decide per-server and per-client whether sampling is allowed, and whether it requires user approval.
+[ ] One gateway for many servers — at enterprise scale, mount servers under a single FastAPI/Uvicorn host rather than provisioning a port per department.
+[ ] Session hygiene — define and enforce session timeout/expiry policy; never assume sessions live forever.
+[ ] Transport choice matches deployment — STDIO for local/dev tooling, Streamable HTTP for anything remote or long-running.
+
+---
+Appendix — Glossary & Quick Reference:
+    Term	                    Meaning
+    Host	                    The AI application the user interacts with (Claude Desktop, IDE, custom agent app)
+    Client	                    Embedded in the Host; manages the MCP connection and protocol
+    Server	                    Exposes tools/resources/prompts for a specific system (SAP, HR, Legal, etc.)
+    Tool	                    An action the server can perform (mutates state)
+    Resource	                Read-only information the server can provide
+    Prompt	                    A reusable, server-published prompt template
+    Session	                    Server-side memory of a client's identity/capabilities across multiple requests
+    Transport	                The delivery mechanism for JSON-RPC messages: STDIO, HTTP, or Streamable HTTP
+    JSON-RPC 2.0	            The message format every MCP request/response/notification uses
+    Sampling	                A server asking the client to run an LLM inference on its behalf
+    SSE	                        Server-Sent Events — one-way server → client streaming channel
+    ASGI app	                The mountable application object returned by streamable_http_app()
+    FastMCP	                    High-level Python SDK for building MCP servers (the "FastAPI of MCP")
+---
+
+Transport Decision Table:
+Your situation	                                                                Use
+Local tool inside Claude Desktop / Cursor / VS Code	                            STDIO
+Simple, short-lived remote request/response	                                    HTTP
+Remote, long-running, needs progress updates or sampling	                    Streamable HTTP
+---
+
+Deployment Decision Table:
+
+Your situation	                                            Use
+One team,                                                   one MCP service, dev/small scale	mcp.run(transport="streamable-http", port=...)
+Multiple departments/services, enterprise platform	        One FastAPI + one Uvicorn, each server mounted via streamable_http_app()

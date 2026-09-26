@@ -1,0 +1,1228 @@
+They are two different retrieval paths:
+
+Sumo Logic = live operational evidence → real-time tool/API retrieval
+ServiceNow Knowledge Base = relatively stable knowledge → document ingestion + chunking + embeddings + vector retrieval
+
+Then the RCA Agent combines the two evidence sets + incident context + prompt/policies, and the Vertex AI/Gemini model generates the grounded response.
+
+1. Your Proposed Architecture — Refined:
+I would design your architecture like this:
+                         ┌──────────────────┐
+                         │    ServiceNow    │
+                         │                  │
+                         │ Incident Number  │
+                         │ Short Description│
+                         └────────┬─────────┘
+                                  │
+                                  ▼
+                       ┌─────────────────────┐
+                       │    Orchestrator     │
+                       │    Agent - ADK      │
+                       └─────────┬───────────┘
+                                 │
+                    Incident Context
+                    INC0012345
+                    "VPN certificate expired"
+                                 │
+                ┌────────────────┴─────────────────┐
+                │                                  │
+                ▼                                  ▼
+      ┌─────────────────────┐            ┌──────────────────────┐
+      │  Log Analysis Agent │            │     RCA Agent        │
+      │       ADK           │            │       ADK            │
+      └──────────┬──────────┘            └──────────┬───────────┘
+                 │                                  │
+                 ▼                                  ▼
+          Sumo Logic API                    Knowledge Retrieval
+                 │                                  │
+                 ▼                                  ▼
+        REAL-TIME EVIDENCE                  ServiceNow KB
+                 │                           Vector/RAG Store
+                 │                                  │
+                 └──────────────┬───────────────────┘
+                                ▼
+                         ┌───────────────┐
+                         │ Evidence      │
+                         │ + KB Context  │
+                         │ + Incident    │
+                         │ + Prompt      │
+                         └───────┬───────┘
+                                 ▼
+                         ┌────────────────┐
+                         │ Vertex AI      │
+                         │ Gemini LLM     │
+                         └───────┬────────┘
+                                 ▼
+                       Grounded RCA Response
+                                 │
+                    ┌────────────┴────────────┐
+                    ▼                         ▼
+              Citations                  Evaluation
+              Evidence IDs               Groundedness
+              KB references              Faithfulness
+              Log references             Citation accuracy
+                    │
+                    └──────────┬─────────────┘
+                               ▼
+                         Final Response
+						 
+Google currently supports ADK agents deployed on Cloud Run and connected to Vertex AI and external/internal tools, which fits this separation of orchestrator, specialist agents, and tools.
+---
+
+2. Let's Use One Concrete Incident:
+Suppose ServiceNow sends:
+Incident Number:
+INC0012345
+
+Short Description:
+VPN authentication failures after certificate expiration
+
+The ServiceNow webhook/request to your GCP application could conceptually be:
+{
+  "incident_number": "INC0012345",
+  "short_description": "VPN authentication failures after certificate expiration"
+}
+
+Notice something important:
+ServiceNow does NOT send the complete diagnostic evidence.
+It only sends the incident context.
+That is good architecture.
+
+ServiceNow says:
+"There is an incident."
+
+Your AI platform determines:
+"What evidence do I need to investigate this incident?"
+---
+
+3. Step 1 — GCP API Gateway / Entry Point:
+ServiceNow
+    |
+    | HTTPS webhook
+    ↓
+GCP API Gateway
+    |
+    ↓
+Cloud Run
+    |
+    ↓
+Orchestrator Agent
+The request should be authenticated and authorized before reaching the agent.
+
+Your Orchestrator receives:
+incident_number = INC0012345
+
+short_description =
+VPN authentication failures after certificate expiration
+---
+
+It creates an internal investigation context:
+{
+  "incident_id": "INC0012345",
+  "summary": "VPN authentication failures after certificate expiration",
+  "status": "INVESTIGATION_STARTED"
+}
+---
+
+4. Step 2 — Orchestrator Decides What to Do:
+
+This is where Agentic RAG begins.
+The Orchestrator should not itself become responsible for every operation.
+Its responsibility is:
+Understand the task and coordinate specialized capabilities.
+For this incident:
+Orchestrator
+     |
+     ├── Need logs? → YES
+     |
+     ├── Need KB? → YES
+     |
+     ├── Need ServiceNow incident details? → Maybe
+     |
+     └── Need RCA? → YES
+	 
+So it invokes:
+---
+
+5. Step 3 — Log Analysis Agent
+
+Now we come to your first important question:
+
+What chunking strategy should we use for Sumo Logic real-time data?
+
+My recommendation:
+Do NOT use normal RAG document chunking for raw live logs.
+
+Don't do:
+10,000 log lines
+      ↓
+500-token chunks
+      ↓
+Embedding
+      ↓
+Vector DB
+
+for the primary incident investigation path.
+
+Why?
+
+Because these are operational events, not static knowledge documents.
+
+The important dimensions are:
+timestamp
+service
+host
+pod
+namespace
+severity
+trace_id
+request_id
+incident_id
+error_code
+message
+environment
+region
+
+So your first retrieval mechanism should be structured/time-windowed log retrieval, not document chunking
+---
+
+6. Sumo Logic Retrieval
+
+Suppose the incident arrived at:
+10:30 AM
+The Log Analysis Agent can determine a diagnostic window such as:
+10:00 AM → 10:40 AM
+
+or dynamically expand it if the evidence is insufficient.
+
+It can query Sumo Logic using:
+incident
+service
+error keywords
+time range
+environment
+host/pod
+trace/request ID
+
+For example:
+Incident:
+INC0012345
+
+Search:
+"VPN authentication"
+OR
+"certificate expired"
+OR
+"authentication failed"
+
+Time:
+10:00 - 10:40
+
+Environment:
+Production
+
+This is evidence.
+
+But we should not blindly send 10,000 raw log lines to Gemini.
+---
+
+8. So What Does "Chunking" Mean for Logs?
+Here I would introduce a different concept:
+
+Evidence Window / Evidence Grouping
+Instead of traditional semantic document chunks:
+Chunk = 500 tokens
+we create:
+Evidence Group:
+
+based on:
+incident
+time window
+service
+trace
+error
+causal sequence
+correlation ID
+
+For example:
+Evidence Group E001
+
+Incident:
+INC0012345
+
+Time:
+10:21:04 - 10:21:10
+
+Service:
+vpn-auth-service
+
+Evidence:
+1. Certificate validation failed
+2. Certificate expired
+3. TLS handshake failed
+4. Authentication rejected
+
+This is much more meaningful for RCA.
+---
+9. I Would Call This "Evidence Normalization"
+
+Your Log Analysis Agent should perform:
+Raw Sumo Logs
+      ↓
+Filtering
+      ↓
+Deduplication
+      ↓
+Correlation
+      ↓
+Grouping
+      ↓
+Evidence Normalization
+      ↓
+Evidence Objects
+
+For example:
+{
+  "evidence_id": "SUMO-E001",
+  "source": "SumoLogic",
+  "incident_id": "INC0012345",
+  "service": "vpn-auth-service",
+  "time_start": "10:21:04",
+  "time_end": "10:21:10",
+  "severity": "ERROR",
+  "event_type": "certificate_expired",
+  "summary": "VPN certificate validation failed because the certificate expired",
+  "log_references": [
+    "SUMO-LOG-001",
+    "SUMO-LOG-002",
+    "SUMO-LOG-003"
+  ]
+}
+Now you have structured evidence, rather than a giant log dump.
+---
+10. How Should Sumo Evidence Be Filtered?
+This is extremely important.
+
+I would use four levels of filtering.
+
+Level 1 — Time
+Incident time
+      ↓
+± diagnostic window
+
+Example:
+10:00 → 10:40
+
+Level 2 — Service
+If the incident concerns:
+
+vpn-auth-service
+prioritize that service.
+
+Level 3 — Severity
+Prioritize:
+
+ERROR
+CRITICAL
+WARN
+over normal informational logs.
+
+Level 4 — Semantic / Keyword relevance
+Search for:
+certificate
+expired
+TLS
+authentication
+VPN
+handshake
+But don't rely only on keywords.
+
+You can also use semantic classification later if required.
+---
+11. The Important Principle
+
+For Sumo Logic:
+
+Filter first, summarize/group second, embed only if you have a reason to perform semantic historical evidence retrieval.
+
+That gives:
+
+Real-time operational data
+        ↓
+Structured retrieval
+        ↓
+Evidence normalization
+        ↓
+RCA context
+
+rather than:
+Real-time logs
+        ↓
+Chunk everything
+        ↓
+Embed everything
+        ↓
+Vector DB
+That second approach is usually wasteful for the primary live incident path.
+---
+
+12. But Should We Ever Embed Logs?
+Yes.
+There are cases where embedding logs makes sense.
+For example, you want to answer:
+"Have we seen a similar failure before?"
+Then you could have a historical incident/evidence index:
+
+Past Incident
+     ↓
+Incident Summary
+     ↓
+Root Cause
+     ↓
+Evidence
+     ↓
+Embedding
+     ↓
+Vector Store
+
+Then:
+
+Current Incident
+      ↓
+Embedding
+      ↓
+Historical Incident Vector Search
+      ↓
+Similar incidents
+
+That becomes historical incident RAG.
+
+So you can have two paths:
+              LOG DATA
+                 |
+        ┌────────┴─────────┐
+        ↓                  ↓
+   LIVE LOGS          HISTORICAL
+        ↓             INCIDENT DATA
+ Structured             ↓
+ Retrieval            Embedding
+        ↓                ↓
+ Current Evidence   Vector Search
+ 
+ This is a much stronger enterprise architecture.
+ ---
+ 
+ 13. Step 4 — RCA Agent
+
+Now the RCA Agent receives:
+Incident Context
++
+Live Evidence
+
+For example:
+INC0012345
+
+Short Description:
+VPN authentication failures after certificate expiration
+
+Live Evidence:
+
+E001:
+Certificate validation failed
+
+E002:
+Certificate expired
+
+E003:
+TLS handshake failed
+
+E004:
+Authentication rejected
+
+But the RCA Agent still needs business/technical knowledge.
+This is where your ServiceNow Knowledge Base RAG comes in.
+---
+
+14. ServiceNow KB Is Different
+
+ServiceNow KB is comparatively stable knowledge.
+
+Examples:
+KB001001
+VPN Certificate Renewal Procedure
+
+KB001002
+VPN Authentication Troubleshooting
+
+KB001003
+Certificate Lifecycle Policy
+
+KB001004
+VPN Incident Troubleshooting Runbook
+
+This is where traditional RAG ingestion is appropriate.
+---
+15. KB Document Loader
+
+Your question was:
+
+Which DocumentLoader will be used?
+
+If ServiceNow exposes Knowledge Base content through an API, I would not force a PDF/Web/Directory document loader.
+
+I would create a:
+
+ServiceNow Knowledge Connector / API Loader
+
+Conceptually:
+ServiceNow REST API
+        ↓
+ServiceNowKnowledgeLoader
+        ↓
+Normalized Document
+
+For example:
+Document(
+    page_content="""
+    To renew an expired VPN certificate...
+    """,
+    metadata={
+        "source": "ServiceNow",
+        "kb_number": "KB001001",
+        "category": "Network",
+        "subcategory": "VPN",
+        "status": "Published",
+        "version": "3",
+        "environment": "Production"
+    }
+)
+
+The exact framework implementation can vary, but architecturally this should be an API-based enterprise connector, not treating ServiceNow as a random file repository.
+---
+16. KB Chunking Strategy:
+
+Now your second question:
+Which chunking strategy should we use for the KB?
+
+For ServiceNow Knowledge Articles, I would start with:
+Structure-aware + Recursive
+and selectively add:
+Semantic chunking
+
+So:
+ServiceNow KB
+      ↓
+Structure-aware parsing
+      ↓
+Recursive chunking
+      ↓
+Semantic validation
+      ↓
+Embedding
+      ↓
+Vector Store
+Why?
+
+Because ServiceNow articles commonly contain logical structures such as:
+Problem
+Symptoms
+Cause
+Resolution
+Steps
+Troubleshooting
+Notes
+
+We don't want:
+Chunk 1:
+half of a resolution procedure
+
+Chunk 2:
+other half of the procedure
+
+We want:
+Chunk 1
+Symptoms
+
+Chunk 2
+Root Cause
+
+Chunk 3
+Resolution Steps
+
+Chunk 4
+Troubleshooting
+
+Your RAG material emphasizes that chunking should preserve meaningful business ideas and that structure-aware, recursive, semantic and hybrid approaches are useful depending on the document type
+---
+
+17. Example KB Chunk
+
+Suppose:
+
+KB001001
+VPN Certificate Renewal
+
+Chunk:
+Chunk ID:
+KB001001-C03
+
+Title:
+VPN Certificate Renewal
+
+Section:
+Resolution
+
+Content:
+1. Open the Certificate Management Portal.
+2. Select Renew Certificate.
+3. Download the new certificate.
+4. Install the certificate.
+5. Restart the VPN client.
+
+Metadata:
+{
+  "source": "ServiceNow",
+  "kb_number": "KB001001",
+  "section": "Resolution",
+  "category": "Network",
+  "subcategory": "VPN",
+  "environment": "Production",
+  "status": "Published",
+  "version": "3",
+  "classification": "Internal"
+}
+---
+
+18. RCA Agent Queries the KB
+
+The RCA Agent receives:
+Incident:
+INC0012345
+
+Problem:
+VPN authentication failures after certificate expiration
+
+It generates a knowledge retrieval query:
+"VPN certificate expired authentication failure
+certificate renewal production"
+
+Then:
+Query
+ ↓
+Embedding
+ ↓
+Metadata Filter
+ ↓
+Vector Search
+ ↓
+Top-K KB Chunks
+
+Metadata might include:
+source = ServiceNow
+category = Network
+subcategory = VPN
+environment = Production
+status = Published
+---
+
+19. Now RCA Has Two Types of Evidence
+
+This is the most important part of your architecture.
+
+Evidence 1 — Observational Evidence
+
+From Sumo Logic:
+SUMO-E001
+Certificate validation failed
+
+SUMO-E002
+Certificate expired
+
+SUMO-E003
+TLS handshake failed
+This tells us:
+
+WHAT ACTUALLY HAPPENED
+
+
+Evidence 2 — Knowledge Evidence
+
+From ServiceNow KB:
+KB001001-C03
+
+VPN certificates must be renewed
+through the Certificate Management Portal.
+
+KB001001-C03
+
+VPN certificates must be renewed
+through the Certificate Management Portal.
+
+This tells us:
+
+WHAT THE APPROVED PROCEDURE / KNOWLEDGE SAYS
+---
+
+20. This Is Where "Grounding" Becomes Very Clear
+
+You were asking earlier whether grounding is similar to augmentation.
+
+The clean mental model is:
+Evidence
++
+Knowledge
++
+Instructions/Prompt
+        ↓
+Context Assembly
+        ↓
+LLM
+        ↓
+Grounded Response
+
+Augmentation
+
+We add retrieved context to the model input.
+
+Grounding
+
+We require the generated answer to be supported by trusted retrieved evidence/knowledge.
+
+So:
+Augmentation = HOW context enters the prompt
+
+Grounding = HOW the answer is anchored to that context
+---
+
+21. Step 5 — Context Assembly
+
+I would not simply concatenate everything into a giant prompt.
+
+Create a structured context.
+
+For example:
+==================================================
+INCIDENT
+==================================================
+
+Incident Number:
+INC0012345
+
+Short Description:
+VPN authentication failures after certificate expiration
+
+
+==================================================
+LIVE OPERATIONAL EVIDENCE — SUMO LOGIC
+==================================================
+
+Evidence E001:
+Certificate validation failed.
+
+Evidence E002:
+Certificate expired.
+
+Evidence E003:
+TLS handshake failed.
+
+Evidence E004:
+Authentication request rejected.
+
+
+==================================================
+APPROVED KNOWLEDGE — SERVICENOW
+==================================================
+
+KB001001-C03:
+VPN Certificate Renewal
+
+Resolution:
+1. Open Certificate Management Portal.
+2. Select Renew Certificate.
+3. Download certificate.
+4. Install certificate.
+5. Restart VPN client.
+
+
+==================================================
+TASK
+==================================================
+
+Determine the most likely root cause,
+support the conclusion with evidence,
+and provide recommended remediation.
+
+
+==================================================
+RESPONSE RULES
+==================================================
+
+Use only supplied evidence and knowledge.
+Do not invent facts.
+Distinguish observed evidence from inference.
+Cite every material claim.
+If evidence is insufficient, say so.
+
+This is much stronger than:
+"Here are some logs and KB articles. Tell me what's wrong."
+---
+
+22. Step 6 — Vertex AI / Gemini
+
+Now the RCA Agent sends this structured context to your Vertex AI model.
+
+Conceptually:
+RCA Agent
+    |
+    ↓
+Prompt Builder
+    |
+    ├── System Instructions
+    ├── Incident Context
+    ├── Sumo Evidence
+    ├── ServiceNow KB
+    ├── Output Schema
+    └── Citation Rules
+          |
+          ↓
+       Vertex AI
+        Gemini
+---
+23. What Should the LLM Return?
+
+I would not allow free-form text as the only response.
+
+Have the model produce a structured result.
+
+For example:
+{
+  "root_cause": {
+    "statement": "VPN authentication failures are caused by an expired VPN certificate.",
+    "confidence": "high"
+  },
+
+  "evidence": [
+    {
+      "id": "SUMO-E002",
+      "supports": "Certificate expired"
+    },
+    {
+      "id": "SUMO-E003",
+      "supports": "TLS handshake failed"
+    }
+  ],
+
+  "knowledge": [
+    {
+      "id": "KB001001-C03",
+      "supports": "Certificate renewal procedure"
+    }
+  ],
+
+  "recommendation": [
+    "Renew the VPN certificate.",
+    "Install the renewed certificate.",
+    "Restart the VPN client."
+  ]
+}
+
+Then your application—not the LLM—can construct the final citation presentation.
+
+This is a very important architecture principle:
+
+Don't ask the LLM to invent citation metadata. Pass citation IDs through the pipeline and resolve them from your evidence registry	
+---
+
+24. Step 7 — Citation Assembly
+
+Now you have:
+
+LLM Response
++
+Evidence IDs
++
+KB IDs
+
+Your Citation Builder can produce:
+
+Root Cause:
+VPN authentication failures are caused by an expired
+VPN certificate.
+
+Evidence:
+[1] Sumo Logic — E002
+[2] Sumo Logic — E003
+
+Knowledge:
+[3] ServiceNow KB001001-C03
+
+The user can see:
+Root Cause
+   ↓
+[1] Sumo Evidence
+[2] Sumo Evidence
+
+Remediation
+   ↓
+[3] ServiceNow KB
+
+This gives you traceability.
+---
+
+25. Citation Is More Than a UI Feature
+
+This is important.
+
+Citation should provide:
+Answer
+  ↓
+Claim
+  ↓
+Evidence
+  ↓
+Original Source
+
+For example:
+Claim:
+Certificate expired.
+
+       ↓
+
+Evidence ID:
+SUMO-E002
+
+       ↓
+
+Source:
+Sumo Logic
+
+       ↓
+
+Original query:
+INC0012345 / 10:00-10:40
+
+       ↓
+
+Original log:
+certificate validation failed
+	
+Similarly:
+Claim:
+Renew certificate through Certificate Portal.
+
+       ↓
+
+KB001001-C03
+
+       ↓
+
+ServiceNow
+
+       ↓
+
+Original KB Article
+
+That is enterprise-grade explainability.
+---
+
+26. Step 8 — Evaluation:
+
+Keep the following artifacts separately:
+Incident
+   +
+Retrieved Evidence
+   +
+Retrieved KB
+   +
+Prompt Version
+   +
+Model Version
+   +
+LLM Response
+   +
+Citations
+   +
+Evaluation Result
+Then evaluate the entire chain.
+---
+
+27. Evaluation Pipeline
+                    RCA Execution
+                         |
+       ┌─────────────────┼─────────────────┐
+       ↓                 ↓                 ↓
+   Incident          Evidence            KB
+       |                 |                 |
+       └─────────────────┼─────────────────┘
+                         ↓
+                       LLM
+                         ↓
+                   Response
+                         ↓
+                     Citations
+                         ↓
+                  Evaluation Agent
+                         ↓
+        ┌────────────────┼─────────────────┐
+        ↓                ↓                 ↓
+   Retrieval         Groundedness      Citation
+     Quality                           Accuracy
+        |                |                 |
+        └────────────────┼─────────────────┘
+                         ↓
+                   Evaluation Store
+
+---
+						 
+28. What Should We Evaluate?
+
+I would create at least these metrics.
+
+1. Evidence Relevance
+
+Did Sumo retrieval find useful evidence?
+SUMO evidence relevant?
+YES / NO
+
+2. KB Retrieval Relevance
+
+Did we retrieve the right ServiceNow KB?
+
+KB001001
+Relevant = YES
+
+
+3. Groundedness
+
+Is the RCA actually supported by evidence?
+
+Claim:
+Certificate expired
+
+Evidence:
+SUMO-E002
+
+Grounded = YES                         
+
+
+4. Citation Correctness
+
+Does citation [1] actually support the claim?
+
+5. Citation Completeness
+
+Did the system cite important claims?
+
+6. Faithfulness
+
+Did the model add facts that weren't in the evidence?
+
+7. RCA Accuracy
+
+Was the root cause correct according to your validated incident dataset?
+
+8. Latency
+ServiceNow → response
+
+and separately:
+
+Sumo retrieval latency
+KB retrieval latency
+LLM latency
+9. Cost
+
+Track:
+
+Sumo query cost
+Embedding cost
+Vector retrieval
+LLM input tokens
+LLM output tokens
+---
+29. Your Final Architecture Should Separate Three Things
+
+This is the most important architectural refinement I would make.
+
+A. Live Evidence Retrieval
+Sumo Logic
+    ↓
+Real-time query
+    ↓
+Structured evidence
+
+No normal document chunking required.
+
+B. Knowledge Retrieval
+ServiceNow KB
+    ↓
+API Loader
+    ↓
+Parse/Clean
+    ↓
+Structure-aware + Recursive/Semantic Chunking
+    ↓
+Embedding
+    ↓
+Vector Store
+    ↓
+Semantic + Metadata Retrieval
+
+
+C. Historical Incident Retrieval
+
+Optional but very powerful:
+Past incidents
+    ↓
+Incident summaries
+    ↓
+Root causes
+    ↓
+Evidence summaries
+    ↓
+Embedding
+    ↓
+Vector Store
+This can dramatically enrich RCA without mixing historical data with live evidence.
+---
+
+30. Final Enterprise Architecture
+
+I would therefore design your platform like this:
+                        SERVICENOW
+                           |
+                    Incident Webhook
+                           |
+                           ▼
+                  ┌─────────────────┐
+                  │ GCP API Gateway │
+                  └────────┬────────┘
+                           |
+                           ▼
+                  ┌─────────────────┐
+                  │  ORCHESTRATOR   │
+                  │   Google ADK    │
+                  └────────┬────────┘
+                           |
+            ┌──────────────┴──────────────┐
+            |                             |
+            ▼                             ▼
+    LOG ANALYSIS AGENT              RCA AGENT
+            |                             |
+            ▼                             |
+      SUMO LOGIC                          |
+            |                             |
+     Real-time Query                     |
+            |                             |
+            ▼                             ▼
+    Evidence Normalizer            KB Retriever
+            |                             |
+            |                    ServiceNow KB
+            |                             |
+            |                      Vector Store
+            |                             |
+            └──────────────┬──────────────┘
+                           |
+                           ▼
+                  EVIDENCE ASSEMBLER
+                           |
+             ┌─────────────┼─────────────┐
+             ↓             ↓             ↓
+         Incident       Sumo KB       Historical
+          Context       Evidence       Incidents
+             |             |             |
+             └─────────────┼─────────────┘
+                           ↓
+                    POLICY / GUARDRAIL
+                           ↓
+                    PROMPT BUILDER
+                           ↓
+                    VERTEX AI
+                     GEMINI LLM
+                           ↓
+                  STRUCTURED RESPONSE
+                           ↓
+                  CITATION BUILDER
+                           ↓
+             ┌─────────────┴─────────────┐
+             ↓                           ↓
+       User Response                Evaluation
+                                      |
+                            ┌─────────┼─────────┐
+                            ↓         ↓         ↓
+                       Groundedness  Citation  Faithfulness
+                            ↓         ↓         ↓
+                            └─────────┼─────────┘
+                                      ↓
+                              Evaluation Store
+                              
+---
+31. The Most Important Design Decision
+
+If I were reviewing this as a Principal GenAI Architect, I would explicitly document this rule: 
+| Data                             | Nature                | Retrieval                        | Chunking                                            |
+| -------------------------------- | --------------------- | -------------------------------- | --------------------------------------------------- |
+| **ServiceNow incident**          | Transactional/live    | ServiceNow API                   | **No RAG chunking**                                 |
+| **ServiceNow short description** | Query/context         | Passed directly                  | **No chunking**                                     |
+| **Sumo Logic logs**              | Real-time operational | API/query + time/service filters | **Evidence grouping, not normal document chunking** |
+| **ServiceNow KB**                | Enterprise knowledge  | Vector + metadata                | **Structure-aware + Recursive/Semantic**            |
+| **Historical incidents**         | Historical knowledge  | Vector search                    | **Incident/evidence-aware chunks**                  |
+| **RCA prompt**                   | Instruction           | Direct                           | **No chunking**                                     |
+| **LLM response**                 | Generated output      | N/A                              | **No chunking**                                     |
+| **Citations**                    | Traceability          | Evidence registry                | **No chunking**                                     |
+---
+
+32. One Incident — Complete Mental Model
+
+For your interview and boardroom explanation, remember this single flow:
+ServiceNow
+   |
+   | INC0012345
+   | "VPN authentication failure..."
+   ↓
+Orchestrator
+   |
+   ├───────────────→ Log Analysis Agent
+   |                       |
+   |                       ↓
+   |                  Sumo Logic
+   |                       |
+   |                 Real-time logs
+   |                       ↓
+   |                Evidence Grouping
+   |                       ↓
+   |                LIVE EVIDENCE
+   |
+   └───────────────→ RCA Agent
+                           |
+                           ↓
+                    ServiceNow KB
+                           |
+                     Metadata Filter
+                           |
+                    Vector Retrieval
+                           |
+                      KB Evidence
+                           |
+                           ↓
+             ┌─────────────────────────┐
+             │ Context Assembly        │
+             │                         │
+             │ Incident                │
+             │ +                       │
+             │ Sumo Evidence           │
+             │ +                       │
+             │ KB Evidence             │
+             │ +                       │
+             │ Prompt / Policies       │
+             └────────────┬────────────┘
+                          ↓
+                    Vertex AI
+                     Gemini
+                          ↓
+                  Grounded RCA
+                          ↓
+                Citation Builder
+                          ↓
+             ┌────────────┴────────────┐
+             ↓                         ↓
+       Final Response              Evaluation
