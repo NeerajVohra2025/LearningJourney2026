@@ -686,3 +686,11 @@ Chapter 17 Enterprise Best Practices Checklist:
 [ ] Attach source/page metadata to every chunk for citation and audit purposes.
 [ ] Log retrieved documents and similarity scores to support retrieval-quality debugging.
 [ ] Re-embed the full corpus if the embedding model is ever changed — vectors from different models are not interchangeable.
+---
+
+
+
+
+
+
+

@@ -1,0 +1,1306 @@
+Why A2A → What is an Agent → Agent Discovery → Agent Card → Skills → Task → Task State → Executor → Messages → Artifacts → Transport → MCP + A2A → Implementation → Enterprise Architecture → Design Review → Interview Checklist:
+
+1. Executive Summary:
+Modern enterprises are moving from a single AI assistant toward multiple specialized AI agents.
+For example:
+Travel Agent
+Finance Agent
+HR Agent
+Legal Agent
+IT Agent
+Customer Support Agent
+
+Each agent may have its own:
+
+LLM
+memory
+planner
+tools
+APIs
+business rules
+workflow
+technology stack
+
+The challenge is:
+How should independently developed AI agents communicate with each other?
+Traditional REST APIs can be used, but they create tight coupling because the calling agent must understand the target agent's API, endpoint, request format, authentication and implementation details.
+A2A addresses this problem by providing a standardized model for agent discovery, capability advertisement, task delegation, progress communication and result exchange.
+
+
+A2A:
+An open protocol that defines how independent AI agents discover each other, communicate, delegate work, track progress, exchange messages and return results in a standard way.
+A2A is to agents what HTTP is to the web, and what MCP is to tools. It is not an agent framework. It does not replace LangGraph, CrewAI, Google ADK or the OpenAI Agents SDK. Those build agents. A2A lets agents built with any of them talk to each other without knowing each other's internals.
+Business benefit. Without A2A, the Travel Agent needs a custom integration to Finance, another to HR, another to Legal. With A2A, it speaks one protocol to any agent.
+
+
+A2A as an open protocol for independent AI agents to:
+
+Discover each other
+Understand capabilities
+Delegate work
+Create and manage tasks
+Exchange messages
+Track progress
+Exchange artifacts
+Return results
+Agent frameworks build agents. A2A allows independently built agents to communicate.
+---
+
+2. The Business Problem A2A Solves:
+2.1 Before AI Agents:
+
+Traditional enterprise architecture typically looks like:
+
+                    User
+                      |
+                      v
+               Web Application
+                      |
+        +-------------+-------------+
+        |             |             |
+        v             v             v
+      HR API        SAP API      Database
+
+Systems communicate using technologies such as:
+
+REST
+gRPC
+SOAP
+Message Queues
+
+The calling application knows:
+
+Which API to call
+Which URL to use
+Which request schema to send
+Which response schema to expect
+How authentication works
+
+This model works well when systems are deterministic and APIs are stable.
+---
+
+3. The Arrival of AI Agents:
+
+Now consider an enterprise Travel Assistant.
+
+A user asks:
+
+"Book my business trip to London and verify whether my budget is approved."
+
+The Travel Agent may need:
+
+Flight information
+Hotel information
+Employee information
+Company travel policy
+Budget information
+Finance approval
+Visa information
+
+One large AI agent could potentially handle everything.
+
+But that creates another problem.
+
+
+3.1 Why Not Build One Giant Agent?:
+A single agent that owns travel, finance, HR, legal, sales, IT and procurement becomes a very large prompt, a huge memory, a pile of tools, slow, expensive and hard to maintain. Companies organise people into specialists, and the same shape works for agents: one expert agent per domain.
+
+3.2 The new problem: agents must collaborate
+A user asks the Travel Agent: "Book my flight and verify budget approval." The Travel Agent cannot approve budgets. Only the Finance Agent knows the budget rules. How should one talk to the other?
+
+
+Attempt                             	Why it fails
+Custom REST API	                        The Travel Agent must know the Finance URL, API, JSON shape, authentication and version. If Finance changes any of them, Travel breaks. This is tight coupling.
+
+
+MCP	                                    MCP connects an agent to tools. The Finance Agent is not a tool. It reasons, plans, asks questions and can refuse a request. Treating it as a tool is the most common misunderstanding.
+
+
+Each team invents its own protocol	    Every integration is custom, and the result is chaos. MCP removed this problem for tools. Agents needed the same.
+
+
+Suppose:
+
+Travel Agent
+     |
+     ?
+     |
+Finance Agent
+
+The Travel Agent needs Finance Agent to approve a budget.
+
+How should it communicate?
+
+The first approach might be:
+
+Travel Agent
+      |
+      v
+Finance REST API
+      |
+      v
+Finance Agent
+
+This works technically, but the Travel Agent must know:
+
+Finance endpoint
+Finance API
+JSON schema
+Authentication
+API version
+Error model
+
+If Finance changes its API, the Travel Agent may also need to change.
+
+This is tight coupling.
+
+
+3.3 tool Vs agent:
+
+Tool:
+
+Input
+  |
+Execute
+  |
+Output
+
+versus:
+
+
+Agent:
+
+Input
+  |
+Think
+  |
+Plan
+  |
+Call Tools
+  |
+Use LLM
+  |
+Reason
+  |
+Generate Result
+
+
+3.4 llm Vs agent:
+An LLM predicts the next token. It is a brain, not an employee. Ask it to book a flight under company policy and it cannot: it has no access to your calendar, policy, travel portal, budget, visa rules or live flights. Something must do that work. That something is an agent.
+
+An LLM fundamentally processes language:
+
+Input
+  |
+  v
+LLM
+  |
+  v
+Response
+
+An agent is broader:
+
+Goal
+ |
+ v
+Understand
+ |
+ v
+Reason
+ |
+ v
+Plan
+ |
+ v
+Execute
+ |
+ +----> Tools
+ |
+ +----> Memory
+ |
+ +----> Other Agents
+ |
+ v
+Result
+
+The  LLM as one component inside the larger agent architecture.
+
+
+3.4 Agent anatomy:
+A typical enterprise agent contains: an LLM, planner, memory, tool manager, MCP client, A2A client, reasoning engine, executor, state manager and prompt manager. Frameworks implement these differently, but an agent that works with both tools and other agents needs both clients.
+
+
+Component	                                Responsibility
+LLM	                                        Reasoning and language generation
+Planner	                                    Determines execution sequence
+Memory	                                    Maintains required state/context
+Tool Manager                            	Manages tools
+MCP Client                              	Communicates with tools
+A2A Client                              	Communicates with other agents
+Executor	                                Executes tasks
+State Manager                           	Maintains task state
+Prompt Manager	                            Manages prompts
+The agent is the complete software system surrounding the LLM.
+
+
+3.5 Agent versus tool, workflow and microservice:
+Compare	                            Difference
+Agent vs tool	                    A tool takes input, executes, returns output (a weather API returns 25°C). An agent receives a goal, thinks, plans, calls tools, uses an LLM, may ask questions or reject the request.
+
+Agent vs microservice	            POST /approveBudget is deterministic and returns {"approved": true}. An agent asked "Should we approve this international trip given project priority, remaining budget and policy?" reads budget and policy, calls SAP, reasons, may ask the HR Agent, and produces a recommendation.
+
+Agent vs workflow	                A workflow's steps are predefined. An agent decides the next step while running.
+
+Agent vs LangGraph graph	        The graph defines behaviour. The running graph plus LLM, memory and tools forms the agent.
+
+SDK agent vs A2A agent	            An Agent(...) object from an SDK is only an agent inside your application. To be A2A-compatible it also needs an Agent Card, an executor, an HTTP endpoint, and the task and message APIs.
+
+Why A2A talks to agents, not LLMs. An LLM exposes no capabilities, tasks, progress, artifacts, authentication or discovery. It only predicts text. A2A connects autonomous software systems that happen to use LLMs inside.
+
+
+3.6  A2A versus MCP:
+                                MCP	                                               A2A
+Connects	                    An agent to tools and data	                       An agent to another agent
+The other side	                Executes a specific function	                   Reasons, plans, may call many tools
+Exposes                     	Tools, resources, prompts	                       Capabilities through an Agent Card
+Best for	                    Databases, APIs, file systems, SaaS	               Collaboration between autonomous agents
+
+Rule of thumb;
+A2A connects agents to agents. MCP connects agents to tools. They are complementary layers, not competitors. If the other side thinks, use A2A. If it only executes, use MCP.
+---
+
+4. A2A six building blocks:
+
+Block	                          One-line meaning	                                                        Everyday analogy
+Agent Card	                      Machine-readable identity and capability document	                        Business card plus resume
+Skill	                          A business capability the agent offers	                                "Heart surgery", not "scalpel"
+Task	                          One long-lived unit of delegated work, with an ID and a state	            A support ticket
+Executor	                      Runtime component that actually performs the Task	                        The employee who picks up the ticket (like a kubelet running a Pod)
+Message	                          One piece of communication inside a Task	                                Status emails on a project
+Artifact	                      A deliverable the Task produces	                                        The Excel file, not the "done" email
+
+
+4.1 Agent Card: how agents discover each other
+Before one agent can use another agent, it needs to know:
+
+Question	                            Answered by
+Who are you?	                        Name, description, provider, version
+Where are you?	                        URL or endpoint
+What can you do?	                    Skills
+How should I communicate?	            Supported transports and capabilities
+How do I authenticate?	                Authentication requirements
+Which protocol version?             	A2A version and compatibility
+
+This information is provided through an Agent Card.
+
+Field	                                Purpose	                                                                Example
+name	                                Identifies the agent	                                                Finance Agent
+description                         	Lets a client choose among, say, 20 discovered agents	                Handles budget approval and expense validation.
+url                                     Where tasks are sent. Without it nobody can call you.	                https://finance.company.com
+version	                                Compatibility checks between client and server	                        1.0.0
+provider	                            Owning team, useful when several finance agents exist   	            Finance Department
+authentication                      	How to authenticate: OAuth, bearer token, API key, mTLS 	            OAuth
+skills	                                Business capabilities (the most important field)	                    Approve Budget, Generate Invoice
+capabilities	                        Protocol features: streaming, push notifications, artifacts, history	Streaming, notifications
+defaultInputModes	                    Input formats accepted	                                                Text, JSON, file
+defaultOutputModes	                    Output formats produced	                                                Text, JSON, PDF, CSV
+documentation	                        Link to developer docs	                                                Wiki page
+icon	                                UI only: marketplaces, portals	                                        finance.png
+tags                                	Search and categorisation                                           	finance, budget, expense
+
+Skills vs capabilities:
+Skills are what the agent does (Approve Budget). Capabilities are how it communicates (streaming, push notifications). Chef analogy: skill is "cook pizza", capability is "home delivery".
+
+Lifecycle facts:
+Built once at startup. Served to other agents, not read by its own agent. Usually cached by clients. Changes only when skills, capabilities or version change.
+
+Key point:
+The Agent Card is metadata. It never executes anything. Discovery always comes first: need an agent, read its card, validate, then create a Task.
+
+
+4.1.2 Why Agent Discovery Is Necessary:
+Suppose:
+
+Travel Agent
+     |
+     ?
+     |
+Finance Agent
+
+The Travel Agent should not hard-code:
+
+FINANCE_URL = "http://finance-agent:8080"
+
+because:
+
+URL may change
+capabilities may change
+authentication may change
+protocol version may change
+skills may change
+
+Instead:
+
+Travel Agent
+     |
+     v
+Discover Finance Agent
+     |
+     v
+Read Agent Card
+     |
+     v
+Understand Capabilities
+     |
+     v
+Create Task
+
+This reduces coupling.
+
+
+4.1.3 Agent Discovery Lifecycle:
+
+Need Agent
+    |
+    v
+Discover Agent
+    |
+    v
+Read Agent Card
+    |
+    v
+Validate
+    |
+    v
+Create Task
+    |
+    v
+Receive Result
+
+Conceptually, the discovery request may use an endpoint such as:
+
+GET /.well-known/agent.json
+
+or another deployment-defined discovery endpoint.
+
+
+4.1.4 Example Finance Agent Card:
+Conceptually:
+
+name: Finance Agent
+
+description: >
+  Enterprise budget approval and
+  expense validation agent.
+
+version: 1.0
+
+url: https://finance.company.com
+
+provider:
+  organization: Finance Department
+
+skills:
+  - Approve Budget
+  - Expense Validation
+  - Generate Invoice
+
+capabilities:
+  - Streaming
+  - Notifications
+
+authentication:
+  type: OAuth
+
+defaultInputModes:
+  - text
+  - json
+
+defaultOutputModes:
+  - text
+  - json
+  - pdf
+
+The important point is:
+
+The Agent Card describes the agent; it does not execute the agent.
+---
+
+4.2 Skills: the public business contract
+A Skill answers what business problem can this agent solve, never which APIs does it call. It is the entry point to business logic and the public contract of the agent.
+For Finance:
+
+Approve Budget
+Expense Validation
+Generate Invoice
+Travel Reimbursement
+Project Cost Analysis
+
+These are business capabilities.
+
+A good Skill:
+Represents a business function
+Hides internal tools
+Stays stable while technology changes
+Is published in the Agent Card
+Can be reused by many clients
+
+Remember:
+A Skill is not executable code
+They are not implementation details.
+The Executor fulfils it
+An agent can publish several Skills, and the client picks one
+
+
+4.2.1 Skill vs Tool:
+This distinction should be kept very clear.
+Skill	                                        Tool
+Business capability	                            Technical operation
+Public agent capability	                        Internal implementation
+Published in Agent Card	                        Used internally
+"Approve Budget"	                            query_sap()
+"Expense Validation"	                        get_employee()
+"Generate Invoice"	                            create_invoice()
+
+For example:
+
+Travel Agent
+      |
+      | A2A
+      v
+Finance Agent
+      |
+      | Skill: Approve Budget
+      |
+      v
+Executor
+      |
+      +--> MCP --> SAP
+      +--> MCP --> Policy DB
+      +--> REST --> Legacy API
+      +--> LLM --> Reasoning
+
+The Travel Agent should not need to know how Finance internally implements Approve Budget.
+
+The source calls this implementation hiding
+
+
+4.2.2 Why Skills Create Loose Coupling?:
+Today Finance might use:
+
+SAP
+
+Tomorrow Finance might migrate to:
+
+Oracle ERP
+
+The Travel Agent should still call:
+
+Approve Budget
+
+The public business capability remains stable even if the internal implementation changes.
+---
+
+4.3  Tasks: the unit of work:
+A simple POST /employees finishes in milliseconds, so plain REST is enough. Booking an international trip involves budget, policy, grade, cost centre, SAP, exchange rates, an LLM and perhaps a manager who replies two hours later. Holding one HTTP request open that long is impractical: timeouts, memory, connection limits, network failures and retries all bite. A2A therefore replaces request-response with a Task, like opening a support ticket.
+
+Definition:
+A Task is a long-lived unit of work representing a business goal delegated from one agent to another. It can run seconds, minutes, hours or days without holding one HTTP request open. Each Task has a unique ID.
+
+Compare	                            Distinction
+Task vs HTTP request	            A request is short-lived, stateless and ends with the response. A Task persists until the work finishes, has identity and state, and its progress can be tracked. The request creates the Task. It is not the Task.
+
+Task vs session	                    A session is the ongoing conversation between two agents. A Task is one piece of work. One session can contain many Tasks (approve budget, generate invoice, validate expense). The A2A concept for this is a context identifier.
+
+Task vs workflow	                The workflow (read budget, check policy, get approval) runs inside the Task.
+
+Task vs Skill	                    "Approve Budget" is the Skill, published in the card. "Approve Budget for Employee 123" is the Task, created at runtime.
+
+A Task is responsible for: representing one business request, keeping a unique ID, tracking progress through states, holding execution context, and carrying results as messages and artifacts.
+
+
+4.3.1  Task as an Enterprise Ticket:
+A useful analogy is an IT ticket.
+
+Ticket Created
+      |
+      v
+Assigned
+      |
+      v
+Working
+      |
+      v
+Waiting
+      |
+      v
+Completed
+
+Similarly:
+
+A2A Task
+   |
+   v
+Submitted
+   |
+   v
+Working
+   |
+   +--> Input Required
+   |
+   +--> Failed
+   |
+   v
+Completed
+
+
+4.3.2  Task Lifecycle:
+                    Create Task
+                      |
+                      v
+                  Submitted
+                      |
+                      v
+                   Working
+                 /    |     \
+                /     |      \
+               v      v       v
+       Input Required Failed Completed
+               |
+               v
+            Working
+               |
+               v
+           Completed
+
+The important principle:
+
+A Task is stateful work, not simply an HTTP request.
+
+State	                   Meaning	                                                                                                Next states
+
+Submitted	              Accepted and stored, ID issued, no work started. Created by the receiving agent, never by the client.	    Working, Failed, Cancelled
+
+Working	                  Executor is actively processing. Many internal steps happen here without changing state.	                Input Required, Completed, Failed, Cancelled
+
+Input Required	          Paused for approval or missing information. The Task is waiting, not failed. Resumes as the same Task.	Working, Cancelled, Failed
+
+Completed	              Finished successfully. Terminal.	                                                                        None
+
+Failed	                  Execution ran but did not succeed (for example SAP unavailable). Terminal.	                            None
+
+Cancelled	              Stopped at the client's request. Terminal.	                                                            None
+
+
+Submitted State:
+
+When Finance accepts the request:
+
+Task ID:
+TASK-1001
+
+Status:
+Submitted
+
+This means the Task has been accepted but execution has not necessarily completed.
+The server owns the Task state.
+
+
+Working State:
+
+The Executor starts processing.
+
+For example:
+
+Working
+   |
+   +--> Read Employee
+   |
+   +--> Read Budget
+   |
+   +--> Read Policy
+   |
+   +--> Query SAP
+   |
+   +--> LLM Reasoning
+
+The Task may remain in Working while many internal operations execute.
+
+
+
+Input Required:
+
+One of the important enterprise scenarios is waiting for external input.
+
+For example:
+
+Finance Agent
+      |
+      v
+Policy Check
+      |
+      v
+Manager Approval Required
+
+Instead of failing:
+
+Task
+  |
+  v
+Input Required
+
+After approval:
+
+Input Required
+      |
+      v
+Working
+      |
+      v
+Completed
+
+The same Task continues.
+
+
+
+Failed and Cancelled States:
+
+A Task can also reach a terminal state such as:
+
+Failed
+
+or:
+
+Cancelled
+
+For enterprise systems, the Task state should be treated as an explicit state machine rather than assuming every request has an immediate response.
+
+
+Who owns state:
+Only the executing agent changes a Task's state. The Travel Agent can request cancellation but cannot mark the Finance Agent's Task Completed.
+
+State vs progress vs result:
+Progress (10%, 60%, 90%) changes while state stays Working. Completed means execution finished. The outputs are the messages and artifacts attached to the Task.
+---
+
+
+
+4.4  Executor: the engine behind every Task:
+
+Nothing executes itself. The Task is a data object, like a printed work order. The LLM only reasons. The Agent is a logical identity. The component that does the work is the Executor.
+
+Definition:
+
+The Executor is the runtime component that reads the Task, understands the requested Skill, invokes tools, communicates with other agents, updates Task status and produces the result.
+
+Conceptually:
+
+The Agent Card does not execute anything.
+The Skill describes what the agent can do.
+The Task represents what needs to be done.
+The Executor performs the work.
+
+Agent Card
+     |
+     v
+Discovery
+     |
+     v
+Skill
+     |
+     v
+Task
+     |
+     v
+Executor
+     |
+     +----> LLM
+     |
+     +----> MCP
+     |
+     +----> APIs
+     |
+     +----> Database
+     |
+     +----> Other Agents
+     
+Agent:
+Identity, Skills, capabilities, Agent Card. "Who am I?" Like a class.
+
+Executor:
+Execution, reasoning, tool calls, workflow, task updates. "What am I doing?" Like the running object.
+
+The Executor coordinates everything a Task needs: an LLM for reasoning (not every Task needs one, an exchange-rate lookup can call the API directly), MCP tools for SAP and ServiceNow, REST for legacy systems, A2A for other agents, retries, waiting, streaming progress and artifact generation. If the agent is built with LangGraph or the OpenAI Agents SDK, the Executor runs that graph or SDK agent and keeps responsibility for the Task lifecycle.   
+---
+
+
+4.5   Messages: How Agents Communicate During a Task:
+A Task is not simply:
+
+Request
+    |
+    v
+Response
+
+A long-running Task may generate multiple messages.
+
+Example:
+
+Task: Approve Budget
+
+Message 1:
+Task Accepted
+
+Message 2:
+Reading SAP
+
+Message 3:
+Budget Found
+
+Message 4:
+Manager Approval Required
+
+Message 5:
+Manager Approved
+
+Message 6:
+Budget Approved
+
+Message as communication exchanged during Task execution.
+
+
+4.5.1: Task vs Message
+This is an important distinction.
+Task	                                        Message
+Represents the business work	                Communicates information
+Long-lived	                                    Individual communication
+Has lifecycle/state	                            Reports information/progress
+Example: Approve Budget	                        "Checking SAP..."
+Example: Contract Review	                    "Manager approval required"    
+
+Think:
+
+Task
+ |
+ +--> Message
+ |
+ +--> Message
+ |
+ +--> Message
+ |
+ +--> Artifact
+ |
+ v
+Completed
+
+
+4.5.2: Message Decomposation:
+Part of a message	            Purpose
+
+Role	                        Who sent it (user or agent)
+
+Parts	                        Content. Text part (most common), data part (structured JSON such as {"approved": true, "amount": 25000}), file part (a PDF as an attachment), image part. One message may carry several parts.
+
+Metadata	                    Extra context
+
+Messages are small and usually immutable once sent. They describe what is happening. They do not carry the large deliverable.
+---
+
+
+4.6  Artifact — The Business Deliverable:
+After 20 minutes a contract review should hand you RiskReport.pdf, not the sentence "Contract Reviewed". Task is the work, the Executor does it, Messages are the communication, Artifacts are the deliverables.
+
+
+Message	                                            Artifact
+Communicates status	                                Contains the deliverable
+Small, text or JSON	                                Can be large, any format (PDF, Excel, CSV, image, code, slides, audio, video)
+Used during execution	                            Produced as the result of execution
+"Budget approved. See the attached report."	        BudgetApprovalReport.pdf
+
+
+One Task can produce several Artifacts (a PDF summary, an Excel risk matrix, a Word file).
+Do not push a 100 MB PDF through every message. The message says "Report ready" and references the Artifact.
+Only outputs are Artifacts. A user-supplied Passport.pdf is an input file. The agent-generated VisaApproval.pdf is an Artifact.
+Skill, Task and Artifact are three different things: "Generate Invoice" (Skill), "Generate Invoice for Order 1023" (Task), Invoice1023.pdf (Artifact).
+---
+
+4.7  Complete A2A Runtime Model:
+
+             Agent Card
+                  |
+                  v
+             Discovery
+                  |
+                  v
+               Skills
+                  |
+                  v
+                Task
+                  |
+                  v
+             Task State
+                  |
+                  v
+              Executor
+             /   |   \
+            /    |    \
+          LLM   MCP   A2A
+            |
+            v
+         Messages
+            |
+            v
+         Artifacts
+            |
+            v
+          Result
+
+---
+
+4.8 Runtime and transport:
+This part shows how they travel. A2A defines communication rules only. It does not care whether an agent is Java or Python, LangGraph or CrewAI. Agents are network services, so the transport is HTTP: a Finance Agent in AWS, an HR Agent in Azure and a Legal Agent on-premises can all talk because every platform supports HTTP.
+
+
+Travel Agent
+     |
+ A2A Client
+     |
+ HTTP + JSON
+     |
+ A2A Server
+     |
+ Executor
+
+It specifically contrasts this with MCP and describes the A2A implementation in the reference as HTTP-based with JSON payloads.
+
+
+4.8.1 Transport vs Execution:
+This is one of the most important concepts.
+
+HTTP
+ |
+ +--> Transports request
+ |
+ +--> Transports response
+ |
+ +--> Transports messages
+ |
+ +--> Transports artifacts
+
+But:
+
+Executor
+ |
+ +--> Executes Task
+ |
+ +--> Calls LLM
+ |
+ +--> Calls Tools
+ |
+ +--> Applies Business Logic
+
+Therefore:
+
+HTTP transports the work; Executor performs the work.
+
+
+4.8.2 Does the HTTP Connection Stay Open?:
+
+Not necessarily.
+
+Consider:
+
+POST Create Task
+       |
+       v
+Task Accepted
+       |
+HTTP connection ends
+       |
+       v
+Executor continues
+       |
+       v
+Working
+       |
+       v
+Completed
+
+A Task can continue independently of the lifetime of the HTTP request.
+
+This is particularly important for long-running enterprise workloads.
+
+
+4.8.3 Life Cycle Flow:
+Discover:
+The client fetches the Agent Card, typically from a well-known URL on the agent's host. It reads skills, capabilities, authentication, version and endpoint, and caches the result.
+
+Authenticate and create the Task:
+The client sends credentials, for example a bearer token. The server verifies them before creating the Task, then stores the Task, issues an ID, sets state to Submitted and replies. The HTTP connection closes. The Task carries on.
+
+Execute:
+The Executor works. HTTP only moved the request. It never executes business logic.
+
+Receive updates:
+The client learns about progress in one of three ways, chosen per implementation and advertised through capabilities.
+
+Collect results:
+The client reads the final state, messages and artifact references and downloads the artifacts.
+
+
+4.8.4: How Does the Client Receive Progress?:
+Pattern 1 — Polling:
+Client --> Task Status?
+Server --> Working
+
+Client --> Task Status?
+Server --> 60%
+
+Client --> Task Status?
+Server --> Completed  
+
+
+Pattern 2 — Streaming:
+Create Task
+     |
+     v
+10%
+     |
+     v
+30%
+     |
+     v
+60%
+     |
+     v
+Completed
+
+
+Pattern 3 — Callback / Notification:
+Finance Agent
+     |
+     | notification/callback
+     v
+Travel Agent
+
+The precise mechanism depends on the implementation/deployment model described in the source.
+
+
+Update pattern              How it works	                                                                                        Use when
+
+Polling	                    Client repeatedly asks for task status, like checking an order.	                                        Simplest option, no special support
+
+Streaming	                Server keeps a response open and pushes updates (10%, 40%, 80%…). Conceptually like MCP's SSE.	        Live progress UI. Only if the card advertises streaming.
+
+Callbacks / webhooks	    Server notifies the client when something changes.	                                                    Hours-long tasks and approvals
+
+
+
+4.8.5:Common misunderstandings:
+Wrong	                                        Right
+HTTP executes the Task	                        The Executor executes it. HTTP transports.
+A Task is an HTTP request	                    An HTTP request creates the Task.
+An Artifact is the HTTP response	            An Artifact is business output. HTTP only carries it.
+Messages travel on their own	                Messages travel over the transport like everything else.
+
+
+4.8.6: A2A vs MCP:
+
+Dimension	                                        MCP	                                A2A
+Primary relationship	                            Agent ↔ Tool	                    Agent ↔ Agent
+Purpose	                                            Tool/data access	                Agent collaboration
+Public abstraction	                                Tools, resources, prompts	        Agent capabilities/skills
+Typical target	                                    API, DB, SaaS, filesystem	        Another autonomous agent
+Work model	                                        Tool operation	                    Task-oriented collaboration
+Discovery	                                        MCP server capabilities	            Agent Card
+Business work	                                    Usually operation-oriented      	Long-running task-oriented
+Enterprise example	                                SAP API	                            Finance Agent
+---
+
+5. End-to-End Example:
+Business Requirement
+User says:
+
+"Book my business trip to London."
+
+The Travel Agent determines:
+
+Need:
+1. Flight
+2. Hotel
+3. Budget approval
+4. Travel policy validation
+5. Visa validation
+
+Step 1 — Travel Agent Understands the Goal:
+User
+ |
+ v
+Travel Agent
+ |
+ v
+Understand Request
+
+The Travel Agent determines that Finance expertise is required.
+-
+
+Step 2 — Discover Finance Agent:
+Travel Agent
+      |
+      | Discover
+      v
+Finance Agent
+      |
+      v
+Agent Card
+
+Travel Agent reads:
+
+Name
+Description
+Skills
+Capabilities
+Authentication
+Endpoint
+Version
+-
+
+Step 3 — Select the Skill:
+Finance Agent publishes:
+
+Approve Budget
+Expense Validation
+Generate Invoice
+
+Travel Agent chooses:
+
+Approve Budget
+-
+
+Step 4 — Create Task:
+Travel Agent sends the business request:
+
+Approve travel budget
+for employee E101
+for London trip
+estimated cost = $5,000
+
+Finance Agent creates:
+
+Task ID: TASK-1001
+Status: Submitted
+
+-
+Step 5 — Executor Starts:
+TASK-1001
+    |
+    v
+Executor
+    |
+    +--> Read Employee
+    |
+    +--> Read Budget
+    |
+    +--> Read Policy
+    |
+    +--> Query SAP
+
+Task state becomes:
+
+Working
+-
+
+Step 6 — Internal MCP Usage:
+Finance Agent may use MCP internally:
+
+Finance Agent
+     |
+     v
+Executor
+     |
+     v
+MCP Client
+     |
+     +----> SAP
+     |
+     +----> Policy Database
+     |
+     +----> Employee System
+
+Travel Agent does not need to know those implementation details.
+-
+
+Step 7 — Finance Needs Human Approval:
+Suppose policy says:
+
+International trip > $3,000
+requires manager approval
+
+Finance Agent changes:
+
+TASK-1001
+     |
+     v
+Input Required
+
+Message:
+
+Manager approval required.
+-
+
+Step 8 — Manager Approves:
+The approval is received.
+
+The Task continues:
+
+Input Required
+      |
+      v
+Working
+      |
+      v
+Approval Decision
+-
+
+Step 9 — Finance Produces Result
+
+Finance Executor generates:
+
+Budget Approved
+Approved Amount = $5,000
+Cost Center = CC-100
+
+Task:
+
+Completed
+-
+
+Step 10 — Travel Agent Receives Result:
+Finance Agent
+      |
+      | A2A
+      v
+Travel Agent
+
+Travel Agent now continues the overall workflow.
+-
+
+Step 11 —Complete End-to-End Flow:
+USER
+                           |
+                           v
+                    TRAVEL AGENT
+                           |
+                           | 1. Understand
+                           |
+                           v
+                  Discover Finance Agent
+                           |
+                           v
+                     AGENT CARD
+                           |
+                           v
+                    Select Skill
+                  "Approve Budget"
+                           |
+                           v
+                     CREATE TASK
+                           |
+                  ------ A2A ------
+                           |
+                           v
+                   FINANCE AGENT
+                           |
+                           v
+                       EXECUTOR
+                           |
+              +------------+------------+
+              |            |            |
+              v            v            v
+             LLM          MCP          A2A
+                           |            |
+                           v            v
+                          SAP        HR Agent
+                           |
+                           v
+                    Business Rules
+                           |
+                           v
+                   Input Required
+                           |
+                           v
+                  Manager Approval
+                           |
+                           v
+                       Working
+                           |
+                           v
+                      Completed
+                           |
+                           v
+                     A2A Result
+                           |
+                           v
+                    TRAVEL AGENT
+                           |
+                           v
+                       USER
+
+This is the architecture story that should be presented to the board or architecture review team.
+---
+
+
+# Enterprise Reference Architecture
+
+A scalable enterprise implementation can be represented as:
+
+                         ┌──────────────┐
+                         │     User     │
+                         └──────┬───────┘
+                                |
+                                v
+                    ┌──────────────────────┐
+                    │  Supervisor /       │
+                    │  Orchestrator Agent │
+                    └──────────┬───────────┘
+                               |
+                +--------------+--------------+
+                |              |              |
+                v              v              v
+          Travel Agent   Finance Agent    HR Agent
+                |              |              |
+                |              |              |
+               A2A            A2A            A2A
+                |              |              |
+                +--------------+--------------+
+                               |
+                         Agent Registry
+                               |
+              +----------------+----------------+
+              |                                 |
+              v                                 v
+       Agent Discovery                    Agent Cards
+
+
+Inside Each Agent
+
+                 ┌──────────────────┐
+                 │      Agent       │
+                 └────────┬─────────┘
+                          |
+             +------------+------------+
+             |            |            |
+             v            v            v
+            LLM        Planner       Memory
+             |            |            |
+             +------------+------------+
+                          |
+                    Execution Engine
+                          |
+                +---------+---------+
+                |                   |
+                v                   v
+           MCP Client           A2A Client
+                |                   |
+                v                   v
+        Enterprise Tools       Other Agents

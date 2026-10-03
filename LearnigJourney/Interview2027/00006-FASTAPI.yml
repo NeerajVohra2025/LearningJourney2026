@@ -1,0 +1,645 @@
+1. FastAPI  → Build the API
+2. Uvicorn  → Run the API
+3. ASGI     → Define how the server talks to the API
+
+
+1. First: What are we trying to build?
+Suppose we want to build an API:
+Client
+   |
+   | POST /incident
+   v
+Python API
+   |
+   v
+Process incident
+   |
+   v
+Return response
+For example, ServiceNow sends:
+{
+  "incident_id": "INC1001",
+  "description": "Application is not responding"
+}
+Our Python application should receive this and return:
+{
+  "incident_id": "INC1001",
+  "status": "analyzed"
+}
+Now we need three things:
+1. FastAPI  → Build the API
+2. Uvicorn  → Run the API
+3. ASGI     → Define how the server talks to the API
+---
+
+2. FASTAPI — "I want to build an API":
+Let's start with FastAPI.
+FastAPI is a Python web framework used to build APIs.
+Example:
+
+from fastapi import FastAPI
+
+app = FastAPI()
+@app.get("/hello")
+async def hello():
+    return {"message": "Hello World"}
+    
+This gives us an API:
+GET /hello
+and the response:
+{
+  "message": "Hello World"
+}
+
+
+What is app?
+This line is extremely important:
+app = FastAPI()
+app is your FastAPI application object.
+Think of it as:
+app
+ |
+ +-- routes
+ +-- middleware
+ +-- validation
+ +-- dependency injection
+ +-- exception handling
+ +-- request/response processing
+
+So when you write:
+@app.get("/hello") 
+
+you are telling FastAPI:
+"When a GET request comes to /hello, execute this function."
+---
+
+3. What does FastAPI actually do?:
+Suppose the client sends:
+GET /hello
+FastAPI is responsible for things such as:
+Request
+   ↓
+Find the route
+   ↓
+Validate request
+   ↓
+Execute endpoint
+   ↓
+Serialize response
+   ↓
+Return response
+
+So FastAPI is primarily your application/API framework.
+---
+
+
+4. But there is a problem:
+We have written:
+app = FastAPI()
+But who actually listens on:
+http://localhost:8000
+
+Who accepts TCP/HTTP connections?:
+FastAPI itself isn't intended to be the low-level HTTP server.
+
+We need a web server.:
+That's where Uvicorn comes in.
+---
+
+5. UVICORN — "I will run your FastAPI application":
+Uvicorn is an ASGI web server.
+You can start your FastAPI application using:
+uvicorn main:app --port 8000
+
+Suppose your file is:
+main.py
+and inside it:
+app = FastAPI()
+
+Then:
+main:app
+
+means:
+main.py
+  |
+  +--- app
+  
+Uvicorn loads that app.
+Conceptually:  
+                Uvicorn
+                   |
+                   | loads
+                   v
+             FastAPI app
+             
+---
+
+6. What does Uvicorn do?:
+Think of Uvicorn as the front door of your Python application.
+
+A request arrives:       
+Client
+   |
+   | HTTP GET /hello
+   v
+Uvicorn
+
+Uvicorn:
+Listens on a network port.
+Accepts incoming connections.
+Understands HTTP.
+Converts the request into the ASGI format.
+Passes it to your FastAPI application.
+Gets the response.
+Sends the response back to the client.    
+
+So:
+Client
+   |
+   | HTTP
+   v
+Uvicorn
+   |
+   | ASGI
+   v
+FastAPI
+
+Now the question is:
+How does Uvicorn communicate with FastAPI?
+That's where ASGI comes in.  
+---
+
+7. ASGI — "I define the communication contract":
+ASGI stands for:
+Asynchronous Server Gateway Interface
+
+Don't worry about the name initially.
+The easiest definition is:
+ASGI is the standard contract that allows an ASGI server such as Uvicorn to communicate with an application such as FastAPI.
+Think about it like an interface in Java.
+
+You might define:
+interface PaymentService {
+    Payment pay(Request request);
+}
+
+The interface defines how two components communicate.
+Similarly:
+ASGI
+ |
+ +-- Defines how server talks to application
+ 
+ Therefore:
+ Uvicorn
+   |
+   | ASGI contract
+   |
+FastAPI
+
+---
+
+8. The three together:
+Now we can clearly understand the relationship:
+┌──────────────────────┐
+│       Client         │
+└──────────┬───────────┘
+           │
+           │ HTTP
+           ▼
+┌──────────────────────┐
+│       Uvicorn        │
+│     Web Server       │
+└──────────┬───────────┘
+           │
+           │ ASGI
+           │ contract
+           ▼
+┌──────────────────────┐
+│       FastAPI        │
+│    API Framework     │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│   Your Python Code   │
+│  Business Services   │
+└──────────────────────┘
+
+---
+
+9. Let's follow ONE request step by step:
+Suppose ServiceNow calls:
+
+POST /incident
+
+with:
+
+{
+  "incident_id": "INC1001"
+}
+
+Step 1 — Request starts:
+ServiceNow
+    |
+    | POST /incident
+    v
+
+
+Step 2 — Uvicorn receives it:
+ServiceNow
+    |
+    v
+Uvicorn
+Uvicorn is listening on the port.
+For example:
+0.0.0.0:8000
+
+Step 3 — Uvicorn uses ASGI:
+Uvicorn cannot simply "call FastAPI however it wants."
+It follows the ASGI contract.
+Conceptually, it invokes:
+await app(scope, receive, send)
+Don't worry about the implementation yet.
+
+Just remember:
+Uvicorn
+   |
+   | ASGI protocol
+   v
+FastAPI app
+
+---
+
+10. What is scope?:
+ASGI gives FastAPI information about the request through something called:
+scope
+
+Think:
+scope = request/connection information
+It can contain information such as:
+HTTP
+GET /hello
+headers
+query parameters
+client information
+server information
+
+Conceptually:
+scope = {
+    "type": "http",
+    "method": "GET",
+    "path": "/hello"
+}
+So:
+Uvicorn
+   |
+   | scope
+   v
+FastAPI
+
+FastAPI now knows what kind of request it received.
+---
+
+11. What is receive?:
+ASGI also provides:
+receive
+Think:
+receive = mechanism for receiving messages/data from the client
+For example, a POST request may contain:
+
+{
+  "incident_id": "INC1001"
+}
+
+The ASGI layer provides a mechanism through which the application can receive that request data.
+So:
+Client
+   |
+   | Request body
+   v
+Uvicorn
+   |
+   | receive
+   v
+FastAPI
+---
+
+12. What is send?:
+Now FastAPI needs to send the response.
+ASGI provides:
+
+send
+
+Think:
+send = mechanism for sending response messages back through the server
+So:
+
+FastAPI
+   |
+   | send
+   v
+Uvicorn
+   |
+   v
+Client
+
+Therefore the three ASGI concepts are:
+
+scope   → information about the request/connection
+
+receive → receive incoming messages
+
+send    → send outgoing messages
+---
+
+13. Don't confuse ASGI with FastAPI:
+
+FastAPI
+FastAPI gives you convenient things like:
+@app.get("/users")
+async def get_users():
+    ...
+It gives you:
+
+Routing
+Request validation
+Pydantic integration
+Dependency injection
+Middleware
+Exception handling
+OpenAPI/Swagger documentation
+Response serialization
+--
+
+ASGI:
+ASGI does not give you all those FastAPI features.
+ASGI defines the communication interface.
+
+ASGI
+  ↓
+How server ↔ application communicate 
+--
+
+Uvicorn:
+Uvicorn is the actual server implementation.   
+
+Uvicorn
+  ↓
+Listen for network requests
+  ↓
+Speak HTTP
+  ↓
+Use ASGI
+  ↓
+Call FastAPI
+---
+
+14. A very simple analogy:
+Think about a restaurant.
+Customer
+   |
+   v
+Waiter
+   |
+   v
+Kitchen
+
+Now map it:
+| Restaurant          | Python API       |
+| ------------------- | ---------------- |
+| Customer            | Client           |
+| Waiter/front desk   | Uvicorn          |
+| Communication rules | ASGI             |
+| Kitchen/application | FastAPI          |
+| Chef/business logic | Your Python code |
+
+So:
+Customer
+   |
+   | Request
+   v
+Uvicorn
+   |
+   | ASGI contract
+   v
+FastAPI
+   |
+   v
+Business Logic
+---
+
+15. Now let's add your GenAI architecture:
+
+This becomes especially useful for your architecture work.
+ServiceNow
+     |
+     | HTTPS
+     v
+GCP API Gateway
+     |
+     v
+Cloud Run
+     |
+     v
+Uvicorn
+     |
+     | ASGI
+     v
+FastAPI
+     |
+     v
+Orchestrator
+     |
+     ├── Log Analysis Agent
+     │
+     ├── RCA Agent
+     │
+     ├── Incident Agent
+     │
+     └── Action Agent
+     
+Now each component has a clear responsibility.
+GCP API Gateway:
+API exposure
+Authentication
+Routing
+
+Cloud Run:
+Container execution environment
+
+Uvicorn:
+Python ASGI web server
+
+ASGI
+Server ↔ Python application contract
+
+FastAPI
+API framework
+Routing
+Validation
+Dependency injection
+Middleware
+---
+
+16. One complete example:
+Let's create a simple application.
+
+main.py     
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+
+class Incident(BaseModel):
+    incident_id: str
+    description: str
+
+
+@app.post("/incident")
+async def analyze_incident(incident: Incident):
+
+    return {
+        "incident_id": incident.incident_id,
+        "status": "received"
+    }
+    
+Start it:
+uvicorn main:app --host 0.0.0.0 --port 8000    
+
+Now request:
+POST /incident
+Body:
+{
+  "incident_id": "INC1001",
+  "description": "Application is not responding"
+}
+
+The runtime flow is:
+1. Client
+      |
+      | HTTP POST
+      v
+
+2. Uvicorn
+      |
+      | ASGI
+      v
+
+3. FastAPI
+      |
+      | Find /incident
+      |
+      | Validate Incident
+      v
+
+4. analyze_incident()
+      |
+      v
+
+5. Response
+      |
+      v
+
+6. FastAPI
+      |
+      | ASGI
+      v
+
+7. Uvicorn
+      |
+      v
+
+8. Client
+---
+
+17. Why async def appears everywhere
+You will frequently see:
+@app.post("/incident")
+async def analyze_incident():
+The async allows the endpoint to participate in Python's asynchronous execution model.
+
+For example:
+@app.post("/incident")
+async def analyze_incident():
+
+    result = await call_servicenow()
+
+    rca = await call_vertex_ai(result)
+
+    return rca
+    
+Conceptually:
+FastAPI
+   |
+   | await ServiceNow
+   |------------------|
+                      |
+                 waiting for I/O
+                      |
+   | other requests can progress
+                      |
+   |<-----------------|
+   |
+   | await Vertex AI
+   |------------------|
+
+---
+
+
+18. One important architect-level distinction:
+Don't say:
+"FastAPI is the server."
+A more accurate statement is:
+FastAPI is the web/API framework, while Uvicorn is an ASGI server that runs the FastAPI application. ASGI defines the interface between them.
+That's the terminology I would use in an architecture review or interview. 
+---
+
+
+19. Final mental model:
+Remember this sequence:  
+                    ┌───────────────┐
+                    │    Client     │
+                    └───────┬───────┘
+                            │
+                         HTTP
+                            │
+                            ▼
+                    ┌───────────────┐
+                    │    Uvicorn    │
+                    │  ASGI Server  │
+                    └───────┬───────┘
+                            │
+                       ASGI Contract
+                            │
+                            ▼
+                    ┌───────────────┐
+                    │    FastAPI    │
+                    │ API Framework  │
+                    └───────┬───────┘
+                            │
+                         Routing
+                            │
+                            ▼
+                    ┌───────────────┐
+                    │ Your Endpoint │
+                    └───────┬───────┘
+                            │
+                            ▼
+                    ┌───────────────┐
+                    │   Business /  │
+                    │ GenAI Logic   │
+                    └───────────────┘
+The 3-line memory trick:
+
+FastAPI = Build the API
+
+Uvicorn = Run the API
+
+ASGI = Define how Uvicorn and the API communicate
+
+And in your Cloud Run GenAI architecture:
+
+Cloud Run → Uvicorn → ASGI → FastAPI → Orchestrator → Agents → Vertex AI / ServiceNow
+
+That is the cleanest way to understand the complete chain.                    
