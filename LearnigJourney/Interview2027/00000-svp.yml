@@ -1,0 +1,181 @@
+“Can this person help me scale an AI practice/business, not just architect an AI application?”:
+S = Situation (What was the problem?)
+T = Task (What was your responsibility?)
+A = Action (What did you do?)
+R = Result (What business outcome did you achieve?)
+How would you establish and scale an AI Center of Excellence?:
+S:
+At HCL, different teams were building AI solutions independently. They were solving the same problems repeatedly such as security, governance, and monitoring.
+T:
+My objective was to create a common AI foundation that teams could reuse while maintaining security and governance.
+A:
+I designed a shared AI platform on Vertex AI with reusable capabilities such as security controls, prompt management, observability, and cost management.
+
+Example: Instead of 10 teams separately implementing PII protection, we built it once and made it available to all teams.
+R:
+Developer productivity improved by 50-60% and cloud/AI operational costs reduced by about 35%
+Executive Closing:
+The AI CoE should enable innovation, not slow it down."
+How would you build and lead an AI organization?:
+S:
+Organizations often believe AI scale requires a large number of AI engineers.
+T:
+Build an AI capability that can support multiple business initiatives efficiently.
+A:
+I would start with a small core team consisting of AI Architects, AI Engineers, Platform Engineers, Governance Specialists, and Domain Experts.
+Example: If HR, Finance, and IT all want AI assistants, the core AI team builds common capabilities and business teams build their specific use cases.
+R:
+A smaller team can support many business units while keeping standards consistent.
+Executive Closing:
+"I scale capabilities first and teams second."
+How would you define an AI roadmap?:
+S:
+A client wants AI but doesn't know where to begin.
+T:
+Create a roadmap focused on business outcomes.
+A:
+I prioritize use cases based on business value, feasibility, data readiness, and risk.
+R:
+The roadmap becomes focused on measurable business value instead of experimentation.
+SVP Closing:"Start with business outcomes, not AI models.":
+How do you move from POC to Production?:
+S:
+Many AI projects succeed in demos but fail to reach production.
+T:
+Ensure AI initiatives deliver measurable business value.
+A:
+I define success metrics, business ownership, governance controls, and operational support before building the solution.
+Example: For a customer-service chatbot, success could be reducing average handling time from 10 minutes to 7 minutes.
+R:
+Projects have a clear path from pilot to production.
+SVP Closing:"A demo proves technology. Production proves value."
+Tell me about the 40% MTTR reduction.:
+S:
+Incident resolution was taking too long because engineers spent significant time investigating logs and system changes
+T:
+Reduce incident resolution time.
+A:
+I designed a multi-agent AI solution where agents gathered logs, analyzed recent deployments, identified probable causes, and prepared remediation recommendations.
+Example: Instead of engineers manually collecting information for 30–40 minutes, AI prepared the investigation summary automatically.
+R:
+Mean Time to Resolution (MTTR) reduced by approximately 40%
+SVP Closing:"The goal wasn't replacing engineers; it was removing repetitive work."
+How did you reduce AI costs by 35%?:
+S:
+As AI adoption increased, token consumption and cloud costs started growing rapidly.
+T:
+Control costs while scaling AI usage.
+A:
+I introduced token tracking, context optimization, context caching, and model routing.
+Example: Simple tasks used lower-cost models while complex tasks used more capable models.
+R:
+Cloud and AI operational costs reduced by approximately 35%.
+SVP Closing:"Cost optimization must be designed into the architecture from day one.
+How do you handle security and Responsible AI?:
+S:
+Security teams were concerned about AI handling sensitive enterprise information.
+T:
+Build trust without slowing innovation.
+A:
+I implemented Model Armor, DLP, content validation, audit logging, and human approval for high-risk actions
+Example: Customer information was automatically masked before being sent to an LLM.
+R:
+AI solutions could be deployed with consistent governance and security controls.
+SVP Closing:"Responsible AI should be built into the platform, not added later."
+Why do we need an AI platform?:
+S:
+Without a platform, every team builds AI capabilities differently.
+T:
+Reduce duplication and improve consistency.
+A:
+I created reusable services for security, governance, prompt management, and monitoring.
+Example: Similar to enterprise Wi-Fi—build it once and everyone uses it.
+R:
+Faster development, lower cost, and consistent governance.
+SVP Closing:"The platform makes the right way the easiest way."
+How would you convince me to invest $5 million in AI?:
+S:
+Large investments require proof of business value.
+T:
+Build confidence before scaling investment.
+A:
+I would begin with a focused pilot, establish baseline metrics, measure results, and scale only after demonstrating ROI.
+Example: If incident resolution drops from 100 minutes to 60 minutes, we can calculate annual savings and justify further investment.
+R:
+Investment decisions become evidence-based rather than assumption-based.
+SVP Closing:"I prove value first and scale investment second."
+What would you do in your first 90 days?:
+S:
+A new AI leader must quickly understand business priorities and existing capabilities.
+T:
+Create momentum while reducing risk.
+A:
+First 30 days: Meet stakeholders and assess current AI initiatives.
+Days 31–60: Prioritize use cases and launch one measurable pilot.
+Days 61–90: Create reusable standards, governance processes, and a scale-up roadmap.
+Example: Start with a high-value use case like incident management rather than attempting multiple initiatives simultaneously.
+R:
+Leadership gets a clear roadmap, measurable results, and confidence in future investments.
+SVP Closing:"My first job is to create confidence and momentum, not to build everything."
+Powerful SVP-Level Answer for "Why Should We Hire You?":
+S:
+Many organizations struggle to move from AI experimentation to enterprise-scale adoption.
+T:
+They need a leader who can combine technology, governance, and business outcomes.
+A:
+I bring 20+ years of architecture experience along with hands-on experience building enterprise AI platforms, Responsible AI controls, and agentic solutions.
+R:
+My work has delivered measurable outcomes including 40% MTTR reduction, 35% cost reduction, and significant productivity improvements.
+Closing:"I don't see AI as a technology project. I see it as a business transformation capability that must deliver measurable value at scale."
+11 Biggest Challenge Organizations Face with GenAI Today:
+S – Situation:
+Today, the biggest challenge is not building a GenAI demo. Most organizations can create a chatbot or RAG solution in a few weeks. The real challenge is moving from a successful
+POC to enterprise-wide adoption.
+T – Task:
+The challenge is to make AI trusted, secure, cost-effective, and measurable so that business leaders are willing to scale it.
+A – Action:
+I focus on four areas from day one:
+Business value and ROI
+Security and governance
+Cost control
+Production monitoring
+Real Example:
+Imagine a bank builds a GenAI assistant for customer service.
+The demo works great and answers questions correctly.
+But before rolling it out to 5,000 agents, leadership will ask:
+Can customer account information leak?
+How do we know answers are accurate?
+What happens if the model hallucinates?
+What will it cost when millions of requests are processed every month?
+Can regulators audit the decisions?
+If these questions are not answered, the project remains stuck as a POC regardless of how good the technology is.
+R – Result:
+Organizations that address trust, governance, and business value early can scale AI successfully. Those that focus only on the model often end up with dozens of pilots but very
+little production adoption.
+SVP Closing:
+"In my experience, the biggest GenAI challenge today is not technology. It's turning a successful demo into a trusted business capability that delivers measurable value at scale."
+12 What is your vision for Enterprise GenAI in the next 3 years?:
+S – Situation:
+Today, most organizations are experimenting with GenAI through copilots, chatbots, and RAG solutions. However, many of these initiatives are still focused on individual
+productivity rather than end-to-end business transformation.
+T – Task:
+Over the next three years, the challenge will be to move from AI assisting people to AI becoming a trusted digital workforce that works alongside people.
+A – Action:
+My approach is to focus on four areas simultaneously:
+Strong governance and Responsible AI controls
+Clear business KPIs
+Production monitoring and observability
+Cost management from day one
+Example:
+A customer support chatbot may work perfectly in a demo. But in production, leaders will ask:
+Is customer data protected?
+How accurate are the responses?
+How much does it cost per transaction?
+Can we audit decisions?
+Who owns the outcome?
+Unless these questions are answered, adoption stalls.
+R – Result:
+Organizations that address governance, trust, and measurable business outcomes early can scale AI successfully. Those that focus only on the model often remain stuck in the POC
+stage.
+SVP Closing:
+"The biggest GenAI challenge today is not building the technology. It's building trust, governance, and measurable business value at enterprise scale."

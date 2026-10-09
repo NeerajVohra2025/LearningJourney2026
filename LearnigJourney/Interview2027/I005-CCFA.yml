@@ -1,0 +1,570 @@
+Claude - Architect Foundation Assessment Complete History:
+Question 34
+Question: Your team uses a /commit skill in claude/skills/commit/SKILL.md. A developer wants to customize it for their personal workflow (different commit message format, extra checks) without affecting teammates. What do you recommend?
+
+Options:
+
+Add a conditional check in claude/skills/commit/SKILL.md that checks the developer's username.
+
+Create a personal version under ~/.claude/skills/ with a different name, e.g., /my-commit.
+
+Override claude/skills/commit/SKILL.md in a personal git branch and keep it unmerged.
+
+Modify claude/skills/commit/SKILL.md locally and add it to .git/info/exclude.
+
+Answer: Create a personal version under ~/.claude/skills/ with a different name, e.g., /my-commit.
+
+Explanation: Personal skills stored in ~/.claude/skills/ allow individual developers to customize workflows locally without modifying shared project files. Giving it a distinct name prevents namespace collisions or unexpected overrides.
+
+Question 35
+Question: The synthesis agent often needs to verify specific claims while merging results. Currently, when verification is needed, the synthesis agent hands control back to the coordinator, which calls the web-search agent and then re-runs synthesis with the new results. This adds 2–3 extra round trips per task and increases latency by 40%. Your assessment shows that 85% of these checks are simple fact checks (dates, names, statistics), while 15% require deeper investigation. How do you reduce overhead while maintaining reliability?
+
+Options:
+
+Instruct the web-search agent to preemptively collect extra fact-checking data on all potential topics before synthesis begins.
+
+Give the synthesis agent a limited verify_fact tool for simple checks, and continue routing complex verification through the coordinator.
+
+Have the synthesis agent accept unverified claims but flag them with lower confidence in the final report.
+
+Allow the synthesis agent to invoke the web-search agent directly for all verification needs without involving the coordinator.
+
+Answer: Give the synthesis agent a limited verify_fact tool for simple checks, and continue routing complex verification through the coordinator.
+
+Explanation: Providing a limited-scope verification tool directly to the synthesis agent handles 85% of simple checks inline without incurring coordinator overhead, while keeping the coordinator workflow for complex deep-research queries.
+
+Question 36
+Question: After an initial automated review identifies 12 findings, a developer pushes new commits to address issues. Re-running review produces 8 findings, but developers report that 5 duplicate previous comments on code that was already fixed in the new commits. What is the most effective way to eliminate this redundant feedback while maintaining thoroughness?
+
+Options:
+
+Increase the threshold score for reporting findings on subsequent commits.
+
+Suppress all findings on files that were modified in the latest commit.
+
+Include previous review findings in context and instruct Claude to report only new or still-unresolved issues.
+
+Clear the conversation history completely between commits so Claude starts fresh each time.
+
+Answer: Include previous review findings in context and instruct Claude to report only new or still-unresolved issues.
+
+Explanation: Supplying historical review context gives Claude state awareness, allowing it to perform diff-aware tracking that suppresses duplicate alerts on fixed lines while keeping unresolved issues active.
+
+Question 40
+Question: Production monitoring shows your search_catalog tool fails 12% of the time: 8% are network timeouts that succeed when retried, and 4% are query syntax errors that never succeed regardless of retries. Currently both error types are returned identically, causing wasted retries. How should you modify the tool's error handling?
+
+Options:
+
+Implement automatic retry with backoff for network timeouts inside the tool; return syntax errors immediately with parameter validation details.
+
+Disable retries completely and rely on the model to retry all failed tool executions in subsequent turns.
+
+Catch all errors inside the tool and return empty results so the model continues processing.
+
+Raise a system exception on all errors to halt execution immediately.
+
+Answer: Implement automatic retry with backoff for network timeouts inside the tool; return syntax errors immediately with parameter validation details.
+
+Explanation: Handling network timeouts internally inside the tool layer avoids wasteful model turn latency. Returning syntax errors immediately with specific parameter validation feedback allows the LLM to write a corrected query on the next turn.
+
+Question 41
+Question: In testing, you observe that the synthesis agent often needs to verify specific claims while merging results. Currently, when verification is needed, the synthesis agent returns control to the coordinator, which calls the web-search agent and then re-invokes synthesis with the results. This adds 2–3 extra loops per task and increases latency by 40%. Your assessment shows 85% of these verifications are simple fact checks (dates, names, stats) and 15% require deeper research. Which approach most effectively reduces overhead while preserving system reliability?
+
+Options:
+
+Allow the synthesis agent to invoke the full web-search agent directly for all verification tasks.
+
+Give the synthesis agent a limited-scope verify_fact tool for simple checks, while routing complex verifications through the coordinator to the web-search agent.
+
+Require the web-search agent to preemptively perform fact checks on every claim during the initial research phase.
+
+Configure the synthesis agent to skip fact-checking and mark uncertain statements with lower confidence scores.
+
+Answer: Give the synthesis agent a limited-scope verify_fact tool for simple checks, while routing complex verifications through the coordinator to the web-search agent.
+
+Explanation: Equipping the synthesis agent with a restricted fact-check tool resolves 85% of low-complexity checks inline, avoiding extra coordinator turns while keeping full search capabilities reserved for complex cases.
+
+Question 44
+Question: Production logs show a persistent pattern: requests like "analyze the uploaded quarterly report" are routed to the web-search agent 45% of the time instead of the document analysis agent. Reviewing tool definitions, you find that the web-search agent has a tool analyze_content described as "analyzes content and extracts key information," while the document analysis agent has a tool analyze_document described as "analyzes documents and extracts key information." How should you fix the misrouting problem?
+
+Options:
+
+Add a pre-routing classifier that detects whether the user refers to uploaded files or web content before the coordinator decides on delegation.
+
+Rename the web-search tool to extract_web_results and update its description to "processes and returns information retrieved from web search and URLs."
+
+Add few-shot examples to the coordinator prompt showing correct routing: "User uploads a quarterly report -> document analysis agent" and "User asks about a web page -> web-search agent."
+
+Expand the document analysis tool description with usage examples like "Use for uploaded PDFs, Word docs, and spreadsheets," leaving the web-search tool unchanged.
+
+Answer: Rename the web-search tool to extract_web_results and update its description to "processes and returns information retrieved from web search and URLs."
+
+Explanation: Misrouting occurs due to overlapping names (analyze_content vs. analyze_document) and descriptions. Explicitly renaming and describing the web-search tool around web search and URLs creates clear semantic boundaries separating it from uploaded document processing.
+
+Question 45
+Question: You're adding error-handling wrappers around external API calls across a 120-file codebase. The work has three phases: (1) discover all call sites and patterns, (2) collaboratively design the error-handling approach, and (3) implement wrappers consistently. In Phase 1, Claude generates large output listing hundreds of call sites with context, quickly filling the context window before discovery finishes. Which approach is most effective to complete the task while maintaining implementation consistency?
+
+Options:
+
+Use an Explore subagent for Phase 1 to isolate verbose discovery output and return a summary, then continue Phases 2–3 in the main conversation.
+
+Do all phases in the main conversation, periodically using /compact to reduce context usage while moving through files.
+
+Switch to headless mode with continue, passing explicit context summaries between batch calls to maintain continuity.
+
+Define the error-handling pattern in CLAUDE.md, then process files in batches across multiple sessions relying on the shared memory file for consistency.
+
+Answer: Use an Explore subagent for Phase 1 to isolate verbose discovery output and return a summary, then continue Phases 2–3 in the main conversation.
+
+Explanation: Spawning an Explore subagent offloads heavy file scanning and output generation away from the main thread. Returning only a clean summary preserves working context capacity for collaborative design (Phase 2) and implementation (Phase 3).
+
+Question 46
+Question: You need to add Slack as a new notification channel. The existing codebase has clear, established patterns for email, SMS, and push channels. However, Slack's API offers fundamentally different integration approaches—incoming webhooks (simple, one-way), bot tokens (support delivery confirmation and programmatic control), or Slack Apps (two-way events, requires workspace approval). Your task says "add Slack support" without specifying integration method or requiring advanced features like delivery tracking. How should you approach this task?
+
+Options:
+
+Start in direct execution mode using incoming webhooks to match the existing one-way notification pattern.
+
+Switch to planning mode to explore integration options and architectural implications, then present a recommendation before implementation.
+
+Start in direct execution mode by scaffolding a Slack channel class using existing patterns, deferring the integration method decision.
+
+Start in direct execution mode using a bot-token approach to ensure delivery confirmation is possible.
+
+Answer: Switch to planning mode to explore integration options and architectural implications, then present a recommendation before implementation.
+
+Explanation: When facing underspecified requirements with multiple valid implementation strategies, switching to planning mode allows the agent to analyze trade-offs and present a reasoned recommendation prior to writing code.
+
+Question 47
+Question: While testing, you notice the agent often calls get_customer when users ask about order status, even though lookup_order would be more appropriate. What should you check first to address this problem?
+
+Options:
+
+Implement a preprocessing classifier to detect order-related requests and route them directly to lookup_order.
+
+Reduce the number of tools available to the agent to simplify choice.
+
+Add few-shot examples to the system prompt covering all possible order request patterns to improve tool selection.
+
+Check the tool descriptions to ensure they clearly differentiate each tool's purpose.
+
+Answer: Check the tool descriptions to ensure they clearly differentiate each tool's purpose.
+
+Explanation: Agent tool selection relies on tool schema descriptions. Verifying that tool descriptions explicitly differentiate scope and purpose is the primary, lowest-overhead diagnostic step before making structural system changes.
+
+Question 48
+Question: Your automated code review averages 15 findings per pull request, and developers report a 40% false-positive rate. The bottleneck is investigation time: developers must click into each finding to read Claude's rationale before deciding whether to fix or dismiss it. Your CLAUDE.md already contains comprehensive rules for acceptable patterns, and stakeholders rejected any approach that filters findings before developers see them. What change best addresses investigation time?
+
+Options:
+
+Require Claude to include its rationale and confidence estimate directly in each finding.
+
+Add a post-processor that analyzes finding patterns and automatically suppresses those that match historical false-positive signatures.
+
+Categorize findings as "blocking issues" vs "suggestions," with different review requirements by level.
+
+Configure Claude to show only high-confidence findings, filtering uncertain flags before developers see them.
+
+Answer: Require Claude to include its rationale and confidence estimate directly in each finding.
+
+Explanation: Surfacing the rationale and confidence score inline within top-level comments allows developers to evaluate findings at a glance without extra navigation, directly solving the investigation bottleneck while respecting the rule against automated filtering.
+
+Question 49
+Question: The system researches "AI impact on creative industries," but reports cover only visual art. The coordinator decomposed the topic into: "AI in digital art," "AI in graphic design," "AI in photography." What's the cause?
+
+Options:
+
+The synthesis agent does not detect gaps
+
+The coordinator decomposed the task too narrowly
+
+The web search agent does not search thoroughly enough
+
+The document analysis agent filters out non-visual sources
+
+Answer: The coordinator decomposed the task too narrowly
+
+Explanation: Subagents can only execute queries on subtasks delegated to them. The coordinator prematurely limited task decomposition to visual media, missing non-visual creative sectors like music, writing, and film.
+
+Question 50
+Question: Production logs show the agent misinterprets outputs from your MCP tools: Unix timestamps from get_customer, ISO 8601 dates from lookup_order, and numeric status codes (
+1
+=
+1= pending, 
+2
+=
+2= shipped). Some tools are third-party MCP servers you cannot modify. Which approach to data format normalization is most maintainable?
+
+Options:
+
+Use a PostToolUse hook to intercept tool outputs and apply formatting transformations before the agent processes them.
+
+Modify tools you control to return human-readable formats and create wrappers for third-party tools.
+
+Create a normalize_data tool that the agent calls after every data retrieval to transform values.
+
+Add detailed format documentation to the system prompt explaining each tool's data conventions.
+
+Answer: Use a PostToolUse hook to intercept tool outputs and apply formatting transformations before the agent processes them.
+
+Explanation: A lifecycle middleware hook (PostToolUse) programmatically normalizes tool outputs into consistent representations centrally before they enter the model's context, requiring zero modifications to third-party MCP tool code.
+
+Question 51
+Question: Production metrics show your agent averages 4+ API loops per resolution. Analysis reveals Claude often requests get_customer and lookup_order in separate sequential turns even when both are needed initially. What is the most effective way to reduce the number of loops?
+
+Options:
+
+Implement speculative execution that automatically calls likely-needed tools in parallel with any requested tool and returns all results regardless of what was requested.
+
+Increase max_tokens to give Claude more room to plan and naturally combine tool requests.
+
+Create composite tools like get_customer_with_orders that bundle common lookup combinations into single calls.
+
+Instruct Claude in the prompt to bundle tool requests into one turn and return all results together before the next API call.
+
+Answer: Create composite tools like get_customer_with_orders that bundle common lookup combinations into single calls.
+
+Explanation: Consolidating frequently paired operations into a composite tool executes both lookups programmatically in a single turn, reducing loop count deterministically without depending on model tool-bundling behavior.
+
+Question 52
+Question: The web-search and document-analysis agents have completed their tasks and returned results to the coordinator. What is the next step for creating a research report? Which next step is most appropriate?
+
+Options:
+
+Each agent sends its results directly to the report-writing agent, bypassing the coordinator.
+
+The document analysis agent requests web-search results and merges them internally.
+
+The coordinator passes both sets of results to the synthesis agent for a unified report.
+
+The coordinator concatenates the raw outputs from both agents and returns them as the final result.
+
+Answer: The coordinator passes both sets of results to the synthesis agent for a unified report.
+
+Explanation: In a coordinator-led multi-agent architecture, the coordinator routes combined worker outputs to a dedicated synthesis agent designed specifically to merge, de-duplicate, and format the final research report.
+
+Question 53
+Question: Your CI/CD system runs three Claude-based analyses: (1) fast style checks on every PR that block merging until completion, (2) comprehensive weekly security audits of the entire codebase, and (3) nightly test-case generation for recently changed modules. The Message Batches API offers 50% savings but processing can take up to 24 hours. You want to optimize API cost while maintaining an acceptable developer experience. Which combination correctly matches each task to an API approach?
+
+Options:
+
+Use the Message Batches API for all three tasks to maximize 50% savings, configuring the pipeline to poll for batch completion.
+
+Use synchronous calls for PR style checks; use the Message Batches API for weekly security audits and nightly test generation.
+
+Use synchronous calls for all three tasks for consistent response times, relying on prompt caching to reduce costs across workloads.
+
+Use synchronous calls for PR style checks and nightly test generation; use the Message Batches API only for weekly security audits.
+
+Answer: Use synchronous calls for PR style checks; use the Message Batches API for weekly security audits and nightly test generation.
+
+Explanation: Blocking PR checks require real-time synchronous execution to preserve developer speed. Non-blocking background jobs (weekly security audits, nightly test runs) leverage the Message Batches API for 50% cost savings.
+
+Question 54
+Question: Your team uses Claude Code for generating code suggestions, but you notice a pattern: non-obvious issues—performance optimizations that break edge cases, cleanups that unexpectedly change behavior—are only caught when another team member reviews the PR. Claude's reasoning during generation shows it considered these cases but concluded its approach was correct. Which approach directly addresses the root cause of this self-check limitation?
+
+Options:
+
+Run a second independent instance of Claude Code to review the changes without access to the generator's reasoning.
+
+Enable extended thinking mode for the generation stage to allow more thorough deliberation before producing suggestions.
+
+Add explicit self-review instructions to the generation prompt asking Claude to critique its own suggestions before finalizing output.
+
+Include full test files and documentation in prompt context so Claude better understands expected behavior during generation.
+
+Answer: Run a second independent instance of Claude Code to review the changes without access to the generator's reasoning.
+
+Explanation: Evaluating code in the same context window causes self-confirmation bias. Spawning a second independent instance without access to prior reasoning traces evaluates code diffs objectively.
+
+Question 55
+Question: While researching a broad topic, you observe that the web-search agent and the document analysis agent investigate the same subtopics, leading to substantial duplication in their outputs. Token usage nearly doubles without a proportional increase in research breadth or depth. What is the most effective way to address this?
+
+Options:
+
+Allow both agents to finish in parallel, then have the coordinator deduplicate overlapping results before passing them to the synthesis agent.
+
+The coordinator explicitly partitions the research space before delegating, assigning each agent distinct subtopics or source types.
+
+Implement a shared-state mechanism where agents log their current focus area so other agents can dynamically avoid duplication during execution.
+
+Switch to sequential execution where document analysis runs only after web search completes, using web-search results as context to avoid duplication.
+
+Answer: The coordinator explicitly partitions the research space before delegating, assigning each agent distinct subtopics or source types.
+
+Explanation: Assigning mutually exclusive subtopics or source domains upfront at the coordinator layer prevents subagents from querying identical topics, eliminating redundant tool execution and token usage at the source.
+
+
+#####
+Claude Architect Foundation Assessment - Reference Guide
+Question 36
+After an initial automated review identifies 12 findings, a developer pushes new commits to address issues. Re-running review produces 8 findings, but developers report that 5 duplicate previous comments on code that was already fixed in the new commits. What is the most effective way to eliminate this redundant feedback while maintaining thoroughness?
+
+Options
+Run review only when the PR is created and in the final pre-merge state, skipping intermediate commits.
+Add a post-processing filter that removes findings that match previous ones by file paths and issue descriptions before posting comments.
+Restrict review scope to files changed in the most recent push, excluding files from earlier commits.
+Include previous review findings in context and instruct Claude to report only new or still-unresolved issues.
+Answer
+Include previous review findings in context and instruct Claude to report only new or still-unresolved issues.
+
+Explanation
+Stateful Continuity Across Iterations: Automated review agents running in isolation on fresh commits lack historical context. Supplying the agent with the prior review's findings gives it the necessary state awareness to evaluate whether reported issues were resolved, remain unaddressed, or are newly introduced in the latest commits.
+Why Option 4 is correct: Providing the previous feedback directly in the context prompt allows Claude to perform diff-aware logical tracking. It suppresses duplicate reporting on resolved code lines while maintaining full coverage for remaining or new issues.
+Why other options fail:
+Option 1: Skipping reviews on intermediate commits removes feedback during active developer iterations, defeating the purpose of continuous automated review.
+Option 2: Naive string or path matching in post-processing removes legitimate recurring issues that remain unresolved across commits because the description and path match the previous run.
+Option 3: Restricting review strictly to files in the latest push misses cross-file regressions introduced in earlier commits or untouched dependent modules.
+Question 40
+Production monitoring shows your search_catalog tool fails 12% of the time: 8% are network timeouts that succeed when retried, and 4% are query syntax errors that never succeed regardless of retries. Currently both error types are returned identically, causing wasted retries. How should you modify the tool's error handling?
+
+Options
+Add few-shot examples to your system prompt demonstrating how to distinguish network errors from syntax errors.
+Apply exponential backoff retry logic to all errors uniformly.
+Implement automatic retry with backoff for network timeouts inside the tool; return syntax errors immediately with parameter validation details.
+Return all errors with a retryable boolean flag and error type details.
+Answer
+Implement automatic retry with backoff for network timeouts inside the tool; return syntax errors immediately with parameter validation details.
+
+Explanation
+Differentiating Transient vs. Deterministic Failures: Network timeouts (8%) are transient errors that resolve upon retry, whereas query syntax errors (4%) are deterministic failures that will fail every single time unless the input query parameters are rewritten.
+Why Option 3 is correct: Handling transient retries inside the tool layer prevents unnecessary turn-taking latency with the model for simple network hiccups. Meanwhile, returning syntax errors immediately back to the model with specific validation feedback allows the LLM to inspect parameter errors and generate a corrected query on the next turn.
+Why other options fail:
+Option 1: Prompt examples in the system prompt cannot fix backend network timeouts or syntax-level validation handling inside code tools.
+Option 2: Uniform retry logic wastes compute and increases latency by retrying non-recoverable syntax errors that will never succeed without parameter modification.
+Option 4: Returning transient network errors to the model with a retryable: true flag forces an unnecessary LLM conversation turn to handle network retries that could have been handled programmatically.
+Question 41
+In testing, you observe that the synthesis agent often needs to verify specific claims while merging results. Currently, when verification is needed, the synthesis agent returns control to the coordinator, which calls the web-search agent and then re-invokes synthesis with the results. This adds 2–3 extra loops per task and increases latency by 40%. Your assessment shows 85% of these verifications are simple fact checks (dates, names, stats) and 15% require deeper research. Which approach most effectively reduces overhead while preserving system reliability?
+
+Options
+Give the synthesis agent access to all web-search tools so it can handle any verification need directly without coordinator loops.
+Have the synthesis agent accumulate all verification needs and return them as a batch to the coordinator at the end, which then sends them all to the web-search agent at once.
+Have the web-search agent proactively cache extra context around each source during initial research in anticipation of synthesis needing verification.
+Give the synthesis agent a limited-scope verify_fact tool for simple checks, while routing complex verifications through the coordinator to the web-search agent.
+Answer
+Give the synthesis agent a limited-scope verify_fact tool for simple checks, while routing complex verifications through the coordinator to the web-search agent.
+
+Explanation
+Tiered Tool Access & Local Loop Optimization: Escalating every single fact-check back up to the coordinator adds 2–3 extra loops and increases latency by 40%[cite: 15]. Since 85% of these verifications are straightforward lookups (dates, names, stats), equipping the synthesis agent with a specialized, restricted tool allows it to satisfy those quick checks locally[cite: 15].
+Why Option 4 is correct: Providing a narrow verify_fact tool directly to the synthesis subagent resolves 85% of low-complexity checks inline without incurring coordinator re-invocation overhead[cite: 15]. The remaining 15% of complex checks that require full discovery are safely delegated back to the web-search agent via the coordinator[cite: 15].
+Why other options fail:
+Option 1: Giving full web-search tools directly to the synthesis agent breaks tool isolation, leads to scope creep, and bloats the synthesis subagent's context window.
+Option 2: Delaying verification checks to the end creates circular dependencies, preventing the synthesis agent from generating verified outputs in real-time.
+Option 3: Proactively caching extra content during initial web searches consumes unnecessary tokens on facts that might never need verification during final synthesis[cite: 15].
+Question 44
+Production logs show a persistent pattern: requests like "analyze the uploaded quarterly report" are routed to the web-search agent 45% of the time instead of the document analysis agent. Reviewing tool definitions, you find that the web-search agent has a tool analyze_content described as "analyzes content and extracts key information," while the document analysis agent has a tool analyze_document described as "analyzes documents and extracts key information." How should you fix the misrouting problem?
+
+Options
+Add a pre-routing classifier that detects whether the user refers to uploaded files or web content before the coordinator decides on delegation.
+Rename the web-search tool to extract_web_results and update its description to "processes and returns information retrieved from web search and URLs."
+Add few-shot examples to the coordinator prompt showing correct routing: "User uploads a quarterly report document analysis agent" and "User asks about a web page web-search agent."
+Expand the document analysis tool description with usage examples like "Use for uploaded PDFs, Word docs, and spreadsheets," leaving the web-search tool unchanged.
+Answer
+Rename the web-search tool to extract_web_results and update its description to "processes and returns information retrieved from web search and URLs."
+
+Explanation
+Resolving Overlapping Tool Names & Semantics: The misrouting occurs because both tools currently share near-identical names (analyze_content vs. analyze_document) and descriptions ("analyzes content and extracts key information" vs. "analyzes documents and extracts key information"). To a coordinator LLM, "uploaded quarterly report" easily matches the generic verb "content."
+Why Option 2 is correct: Renaming analyze_content to extract_web_results and updating its description to explicitly tie it to web search and URLs creates clear semantic differentiation between web content vs. local uploaded documents, resolving misrouting at the root tool definition layer.
+Why other options fail:
+Option 1: Introduces unnecessary routing layer architecture overhead before fixing the underlying ambiguous tool definitions.
+Option 3: Addresses routing symptoms via soft prompt tuning without fixing the root cause of overlapping tool descriptions.
+Option 4: Leaving the web-search tool unchanged retains the generic analyze_content name, meaning the LLM will still misroute incoming requests to it.
+Question 45
+You're adding error-handling wrappers around external API calls across a 120-file codebase. The work has three phases: (1) discover all call sites and patterns, (2) collaboratively design the error-handling approach, and (3) implement wrappers consistently. In Phase 1, Claude generates large output listing hundreds of call sites with context, quickly filling the context window before discovery finishes. Which approach is most effective to complete the task while maintaining implementation consistency?
+
+Options
+Use an Explore subagent for Phase 1 to isolate verbose discovery output and return a summary, then continue Phases 2–3 in the main conversation.
+Do all phases in the main conversation, periodically using /compact to reduce context usage while moving through files.
+Switch to headless mode with continue, passing explicit context summaries between batch calls to maintain continuity.
+Define the error-handling pattern in CLAUDE.md, then process files in batches across multiple sessions relying on the shared memory file for consistency.
+Answer
+Use an Explore subagent for Phase 1 to isolate verbose discovery output and return a summary, then continue Phases 2–3 in the main conversation.
+
+Explanation
+Context Isolation via Subagents: In Phase 1, listing hundreds of external API call sites across 120 files produces massive, highly verbose search output that rapidly fills the main conversation's context window. Spawning a subagent (context: fork) isolates all intermediate search dumps and file scans into a separate context execution.
+Why Option 1 is correct: Using an Explore subagent offloads the heavy discovery processing away from the primary thread. The subagent returns only a clean, aggregated summary of call sites back to the main thread, keeping the main context window pristine for collaborative design (Phase 2) and consistent wrapper implementation (Phase 3).
+Why other options fail:
+Option 2: Periodically compacting the context window discards architectural nuances and early discussion history, increasing the risk of inconsistent code generation in Phase 3.
+Option 3: Headless batch runs break the interactive human-in-the-loop requirement needed for Phase 2's collaborative design step.
+Option 4: Splitting execution across unrelated fresh sessions relies on external memory files rather than keeping active working state intact, which creates friction and risks implementation drift during Phases 2 and 3.
+Question 46
+You need to add Slack as a new notification channel. The existing codebase has clear, established patterns for email, SMS, and push channels. However, Slack's API offers fundamentally different integration approaches—incoming webhooks (simple, one-way), bot tokens (support delivery confirmation and programmatic control), or Slack Apps (two-way events, requires workspace approval). Your task says "add Slack support" without specifying integration method or requiring advanced features like delivery tracking. How should you approach this task?
+
+Options
+Start in direct execution mode using incoming webhooks to match the existing one-way notification pattern.
+Switch to planning mode to explore integration options and architectural implications, then present a recommendation before implementation.
+Start in direct execution mode by scaffolding a Slack channel class using existing patterns, deferring the integration method decision.
+Start in direct execution mode using a bot-token approach to ensure delivery confirmation is possible.
+Answer
+Switch to planning mode to explore integration options and architectural implications, then present a recommendation before implementation.
+
+Explanation
+Architectural Ambiguity Requires Upfront Planning: The requirement asks to "add Slack support" without specifying an integration strategy (e.g., incoming webhooks vs. bot tokens vs. two-way Slack Apps). Choosing an implementation path without analyzing workspace approvals, delivery tracking needs, and system boundaries introduces risk and potential rework.
+Why Option 2 is correct: When facing underspecified requirements that carry multiple valid implementation paths with distinct trade-offs, switching to planning mode allows the agent to analyze trade-offs, evaluate existing codebase conventions, and present a reasoned recommendation prior to writing code.
+Why other options fail:
+Option 1: Unilaterally selecting incoming webhooks makes restrictive architectural assumptions without confirming whether delivery tracking or two-way capabilities will be required later.
+Option 3: Scaffolding code before deciding on the integration mechanism leads to dead code or structural refactoring once the core mechanism is chosen.
+Option 4: Selecting the bot-token approach assumes advanced requirements (delivery confirmation) that were explicitly not specified in the task prompt, increasing implementation complexity unnecessarily.
+Question 47
+While testing, you notice the agent often calls get_customer when users ask about order status, even though lookup_order would be more appropriate. What should you check first to address this problem?
+
+Options
+Implement a preprocessing classifier to detect order-related requests and route them directly to lookup_order.
+Reduce the number of tools available to the agent to simplify choice.
+Add few-shot examples to the system prompt covering all possible order request patterns to improve tool selection.
+Check the tool descriptions to ensure they clearly differentiate each tool's purpose.
+Answer
+Check the tool descriptions to ensure they clearly differentiate each tool's purpose.
+
+Explanation
+Tool Description Clarity First: Tool choice in agentic systems is primarily guided by tool schema descriptions. When an agent misroutes actions—like selecting get_customer instead of lookup_order for order queries—the primary root cause is typically ambiguous, overlapping, or poorly defined tool descriptions.
+Why Option 4 is correct: Verifying that tool descriptions explicitly differentiate scope and purpose is the fundamental, lowest-overhead diagnostic step before making structural or programmatic changes.
+Why other options fail:
+Option 1: Introducing an external preprocessing classifier adds unnecessary system complexity and infrastructure overhead before checking basic tool schema definitions.
+Option 2: Arbitrarily removing available tools restricts agent capabilities without addressing why the model is confusing the two actions.
+Option 3: Adding system prompt few-shot examples without updating the underlying tool definitions pollutes the main prompt context and leaves the root ambiguity intact.
+Question 48
+Your automated code review averages 15 findings per pull request, and developers report a 40% false-positive rate. The bottleneck is investigation time: developers must click into each finding to read Claude's rationale before deciding whether to fix or dismiss it. Your CLAUDE.md already contains comprehensive rules for acceptable patterns, and stakeholders rejected any approach that filters findings before developers see them. What change best addresses investigation time?
+
+Options
+Require Claude to include its rationale and confidence estimate directly in each finding.
+Add a post-processor that analyzes finding patterns and automatically suppresses those that match historical false-positive signatures.
+Categorize findings as "blocking issues" vs "suggestions," with different review requirements by level.
+Configure Claude to show only high-confidence findings, filtering uncertain flags before developers see them.
+Answer
+Require Claude to include its rationale and confidence estimate directly in each finding.
+
+Explanation
+Direct Inline Visibility for Investigation Efficiency: The problem states that developers spend significant investigation time clicking into each individual finding to inspect Claude's reasoning before deciding whether to act on or dismiss it[cite: 15]. Surfacing the rationale and confidence score inline within the top-level comment UI lets developers triaging findings make an immediate judgment without extra navigation steps[cite: 15].
+Why Option 1 is correct: Including rationale and confidence scores right in the findings directly targets the primary bottleneck—investigation time—while completely respecting stakeholder constraints that all findings must remain visible[cite: 15].
+Why other options fail:
+Option 2 & Option 4: Both options explicitly use automated suppression/filtering before developers see the findings, which violates the strict constraint that "stakeholders rejected any approach that filters findings before developers see them."[cite: 15]
+Option 3: Severity categorization ("blocking issues" vs. "suggestions") organizes the backlog, but it still requires developers to click into each item to evaluate Claude's logic and rationale, failing to solve the core investigation bottleneck[cite: 15].
+Question 49
+The system researches "AI impact on creative industries," but reports cover only visual art. The coordinator decomposed the topic into: "AI in digital art," "AI in graphic design," "AI in photography." What's the cause?
+
+Options
+The synthesis agent does not detect gaps
+The coordinator decomposed the task too narrowly
+The web search agent does not search thoroughly enough
+The document analysis agent filters out non-visual sources
+Answer
+The coordinator decomposed the task too narrowly
+
+Explanation
+Upstream Task Decomposition Failure: The broad goal was to research the entire spectrum of "AI impact on creative industries" (which includes music, writing, film, game design, theater, etc.). However, the coordinator decomposed the task into subtopics exclusively focused on visual domains: "AI in digital art," "AI in graphic design," and "AI in photography."
+Why Option 2 is correct: Downstream research agents can only search for the specific subtasks delegated to them by the coordinator. Because the coordinator's initial planning and decomposition stage prematurely constrained the scope to visual media, downstream workers never executed queries on music, writing, or film, directly resulting in an incomplete final report.
+Why other options fail:
+Option 1: The synthesis agent can only combine the research inputs passed to it; it cannot generate or report on domain coverage that was never searched for during decomposition.
+Option 3: The search agent correctly executed the queries assigned to it ("digital art," "graphic design," "photography"); the issue is the missing non-visual query assignments.
+Option 4: The absence of non-visual art context is due to upstream task creation, not downstream filtering.
+Question 50
+Production logs show the agent misinterprets outputs from your MCP tools: Unix timestamps from get_customer, ISO 8601 dates from lookup_order, and numeric status codes (1=pending, 2=shipped). Some tools are third-party MCP servers you cannot modify. Which approach to data format normalization is most maintainable?
+
+Options
+Use a PostToolUse hook to intercept tool outputs and apply formatting transformations before the agent processes them.
+Modify tools you control to return human-readable formats and create wrappers for third-party tools.
+Create a normalize_data tool that the agent calls after every data retrieval to transform values.
+Add detailed format documentation to the system prompt explaining each tool's data conventions.
+Answer
+Use a PostToolUse hook to intercept tool outputs and apply formatting transformations before the agent processes them.
+
+Explanation
+Centralized Programmatic Normalization: When tool outputs return inconsistent representations (e.g., Unix timestamps vs. ISO 8601 vs. raw integer status codes), requiring the LLM to perform inline translation creates cognitive overhead and error drift. A programmatic PostToolUse hook intercepts tool outputs as middleware and normalizes them into clean, human-readable strings before they enter the model's context window.
+Why Option 1 is correct: A lifecycle middleware hook handles both internal and third-party tools uniformly in a single, centralized location. It requires zero modifications to external third-party MCP server source code and zero changes to internal tool signatures.
+Why other options fail:
+Option 2: Splitting logic between modifying internal tools and authoring custom wrapper code for third-party tools creates fragmented code maintenance and technical debt.
+Option 3: Forcing the agent to manually execute an additional tool call after every data retrieval adds unnecessary turn latency, token consumption, and execution cost.
+Option 4: Prompt-based instructions rely on soft steering to normalize complex formats (like converting epoch timestamps to readable dates mentally) rather than enforcing deterministic, error-free programmatic normalization.
+Question 51
+Production metrics show your agent averages 4+ API loops per resolution. Analysis reveals Claude often requests get_customer and lookup_order in separate sequential turns even when both are needed initially. What is the most effective way to reduce the number of loops?
+
+Options
+Implement speculative execution that automatically calls likely-needed tools in parallel with any requested tool and returns all results regardless of what was requested.
+Increase max_tokens to give Claude more room to plan and naturally combine tool requests.
+Create composite tools like get_customer_with_orders that bundle common lookup combinations into single calls.
+Instruct Claude in the prompt to bundle tool requests into one turn and return all results together before the next API call.
+Answer
+Create composite tools like get_customer_with_orders that bundle common lookup combinations into single calls.
+
+Explanation
+Reducing API Turn Loops via Tool Composition: When two or more lookup operations are nearly always executed together during task initialization (such as fetching customer details alongside their order history), forcing sequential single-purpose tool calls creates unnecessary API round trips and latency. Bundling frequently paired operations into a single composite tool reduces the overall number of execution turns.
+Why Option 3 is correct: A composite tool (get_customer_with_orders) executes both database/API lookups programmatically in a single execution step, immediately dropping the loop count without relying on the model to issue parallel tool requests.
+Why other options fail:
+Option 1: Unilaterally executing arbitrary tools in parallel regardless of user intent wastes resources, causes unnecessary backend load, and introduces unpredictable side effects.
+Option 2: Increasing generation token limits gives the model more space to output long reasoning chains, but it does not change the model's structural tendency to call tools sequentially.
+Option 4: Relying solely on prompt instructions to bundle tool calls is soft steering; models often default to single-tool executions across turns, making prompt guidance less reliable than architectural consolidation.
+Question 52
+The web-search and document-analysis agents have completed their tasks and returned results to the coordinator. What is the next step for creating a research report?
+
+Options
+Each agent writes its results directly to the report document, appending line items.
+The document analysis agent requests web search results and merges both internally.
+The coordinator passes both sets of results to the synthesis agent for a unified report.
+The coordinator concatenates the raw outputs from both agents and returns the final result.
+Answer
+The coordinator passes both sets of results to the synthesis agent for a unified report.
+
+Explanation
+Coordinator-Led Delegation & Synthesis Pattern: In a coordinator-led multi-agent setup, subagents (web-search and document-analysis) are isolated execution nodes that perform upstream data gathering and return their structured findings back to the central coordinator[cite: 15]. The coordinator's primary role is orchestration rather than heavy text generation; it routes those combined findings to the dedicated synthesis subagent to merge, de-duplicate, and produce the final cohesive research report[cite: 15].
+Why Option 3 is correct: Handing both sets of structured worker outputs to the synthesis subagent maintains proper isolation boundaries, prevents context bloat in the coordinator, and leverages the specialized role designed specifically for output aggregation[cite: 15].
+Why other options fail:
+Option 1: Having subagents write directly to the output file bypasses the synthesis process entirely, leading to fragmented, uncoordinated, and overlapping sections.
+Option 2: Forcing subagents to exchange data directly (document-analysis requesting web-search results) breaks subagent isolation and violates the coordinator-led architecture.
+Option 4: Having the coordinator perform the synthesis directly bloats its own context window with raw subagent findings instead of offloading the heavy synthesis task to a dedicated subagent.
+Question 53
+Your CI/CD system runs three Claude-based analyses: (1) fast style checks on every PR that block merging until completion, (2) comprehensive weekly security audits of the entire codebase, and (3) nightly test-case generation for recently changed modules. The Message Batches API offers 50% savings but processing can take up to 24 hours. You want to optimize API cost while maintaining an acceptable developer experience. Which combination correctly matches each task to an API approach?
+
+Options
+Use the Message Batches API for all three tasks to maximize 50% savings, configuring the pipeline to poll for batch completion.
+Use synchronous calls for PR style checks; use the Message Batches API for weekly security audits and nightly test generation.
+Use synchronous calls for all three tasks for consistent response times, relying on prompt caching to reduce costs across workloads.
+Use synchronous calls for PR style checks and nightly test generation; use the Message Batches API only for weekly security audits.
+Answer
+Use synchronous calls for PR style checks; use the Message Batches API for weekly security audits and nightly test generation.
+
+Explanation
+Matching Latency SLA Requirements to API Patterns:
+PR Style Checks (Task 1): Block merging on every pull request, requiring fast, real-time responses to avoid stalling developer velocity. These must use synchronous API calls.
+Weekly Security Audits (Task 2) & Nightly Test Generation (Task 3): Both are non-blocking, asynchronous background workloads with flexible completion windows (weekly and overnight). Utilizing the Message Batches API for these non-urgent jobs achieves 50% cost savings without degrading developer experience.
+Why Option 2 is correct: It optimizes API costs by applying the 50% Message Batches discount to asynchronous, long-window tasks while preserving real-time synchronous execution for developer-blocking PR checks[cite: 15].
+Why other options fail:
+Option 1: Running PR checks through the Message Batches API would force developers to wait up to 24 hours just to merge a pull request.
+Option 3: Using synchronous calls for weekly audits and nightly test runs forfeits the 50% batch discount on massive background workloads.
+Option 4: Nightly test generation runs in an overnight window and does not require instant synchronous feedback; excluding it from batching misses significant cost-optimization potential.
+Question 54
+Your team uses Claude Code for generating code suggestions, but you notice a pattern: non-obvious issues—performance optimizations that break edge cases, cleanups that unexpectedly change behavior—are only caught when another team member reviews the PR. Claude's reasoning during generation shows it considered these cases but concluded its approach was correct. Which approach directly addresses the root cause of this self-check limitation?
+
+Options
+Run a second independent instance of Claude Code to review the changes without access to the generator's reasoning.
+Enable extended thinking mode for the generation stage to allow more thorough deliberation before producing suggestions.
+Add explicit self-review instructions to the generation prompt asking Claude to critique its own suggestions before finalizing output.
+Include full test files and documentation in prompt context so Claude better understands expected behavior during generation.
+Answer
+Run a second independent instance of Claude Code to review the changes without access to the generator's reasoning.
+
+Explanation
+Mitigating Generator Bias via Isolated Evaluation: The problem explicitly highlights that Claude considered the edge cases during generation but rationalized that its approach was correct. When an LLM critiques its own work within the same conversation context, it exhibits cognitive bias (self-confirmation bias) and defends its prior reasoning trace. Passing the code to a separate, isolated instance without access to the generator's internal rationale forces a fresh, unbiased evaluation of the diff.
+Why Option 1 is correct: An independent reviewer instance evaluates the proposed code changes purely on their merits and edge cases, breaking the self-confirmation loop that causes the generator to overlook its own subtle regressions.
+Why other options fail:
+Option 2: Enabling extended thinking mode inside the primary generator instance gives it more tokens to double-down on and justify its flawed assumptions rather than eliminating self-confirmation bias.
+Option 3: Self-review instructions in the same prompt fail because the model is still bound by its initial reasoning chain in the context window.
+Option 4: Including test files provides helpful context, but if the edge cases are non-obvious or un-tested, the generating instance will still rationalize away the behavioral changes.
+Question 55
+While researching a broad topic, you observe that the web-search agent and the document analysis agent investigate the same subtopics, leading to substantial duplication in their outputs. Token usage nearly doubles without a proportional increase in research breadth or depth. What is the most effective way to address this?
+
+Options
+Allow both agents to finish in parallel, then have the coordinator deduplicate overlapping results before passing them to the synthesis agent.
+The coordinator explicitly partitions the research space before delegating, assigning each agent distinct subtopics or source types.
+Implement a shared-state mechanism where agents log their current focus area so other agents can dynamically avoid duplication during execution.
+Switch to sequential execution where document analysis runs only after web search completes, using web-search results as context to avoid duplication.
+Answer
+The coordinator explicitly partitions the research space before delegating, assigning each agent distinct subtopics or source types.
+
+Explanation
+Upstream Boundaries to Prevent Duplicate Work: Token bloat occurs when subagents operate without mutually exclusive domains, causing them to query the same topics in parallel. By partitioning the responsibility upfront (e.g., assigning external live data to web-search and internal/uploaded files to document-analysis, or assigning distinct subtopics), work is partitioned deterministically before any tokens are spent.
+Why Option 2 is correct: Explicit task partitioning at the delegation layer eliminates redundant tool calls and API tokens at the source, maximizing both efficiency and overall research breadth.
+Why other options fail:
+Option 1: Allowing both agents to do duplicate work and deduplicating results afterwards still burns double the tokens during execution, failing to fix the cost problem.
+Option 3: A dynamic shared-state lock mechanism adds continuous inter-agent sync overhead and runtime complexity compared to simple upfront task partitioning.
+Option 4: Forcing sequential execution eliminates parallel execution benefits and drastically increases task completion latency without necessity.

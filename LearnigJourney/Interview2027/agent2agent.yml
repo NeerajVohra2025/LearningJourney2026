@@ -1304,3 +1304,144 @@ Inside Each Agent
                 |                   |
                 v                   v
         Enterprise Tools       Other Agents
+        
+---
+
+# packages
+
+a2a-sdk langgraph openai-agents langchain langchain-ollama fastapi uvicorn httpx python-dotenv
+
+# Responsibilities of Major Components
+Component                                       Responsibility        
+Agent Card	                                    Describe agent
+Discovery	                                    Find agent
+Skill	                                        Describe business capability
+Task	                                        Represent business work
+Task Manager	                                Manage task state
+Executor                                    	Execute business logic
+Message	                                        Communicate information/progress
+Artifact	                                    Deliver business output
+HTTP + JSON	                                    Transport communication
+MCP Client	                                    Access tools/data
+A2A Client	                                    Communicate with other agents
+LLM	                                            Reasoning/language generation
+
+
+# The Complete Mental Model
+The easiest way for the engineering team to remember A2A is:
+
+AGENT CARD
+"What are you?"
+
+        ↓
+
+DISCOVERY
+"Can I find you?"
+
+        ↓
+
+SKILL
+"What can you do?"
+
+        ↓
+
+TASK
+"Please perform this work."
+
+        ↓
+
+TASK STATE
+"What is happening?"
+
+        ↓
+
+EXECUTOR
+"Who performs the work?"
+
+        ↓
+
+MESSAGE
+"What is happening during execution?"
+
+        ↓
+
+ARTIFACT
+"What did you produce?"
+
+        ↓
+
+RESULT
+"What was the final outcome?"
+
+And the network layer:
+
+                 A2A
+                  |
+               HTTP
+                  |
+                JSON
+
+# The complete lifecycle can now be represented as:
+
+┌──────────────────────────────────────────────┐
+│                  USER REQUEST                │
+└──────────────────────┬───────────────────────┘
+                       |
+                       v
+              ┌─────────────────┐
+              │   SOURCE AGENT  │
+              │  Travel Agent   │
+              └────────┬────────┘
+                       |
+                       | Discover
+                       v
+              ┌─────────────────┐
+              │   AGENT CARD    │
+              │                 │
+              │ Identity        │
+              │ Skills          │
+              │ Capabilities    │
+              │ Authentication  │
+              │ Endpoint        │
+              └────────┬────────┘
+                       |
+                       | Select Skill
+                       v
+              ┌─────────────────┐
+              │      TASK       │
+              │ Approve Budget  │
+              └────────┬────────┘
+                       |
+                       v
+              ┌─────────────────┐
+              │    EXECUTOR     │
+              └────────┬────────┘
+                       |
+              +--------+--------+
+              |        |        |
+              v        v        v
+             LLM      MCP      A2A
+              |        |        |
+              |        v        v
+              |       SAP    HR Agent
+              |
+              v
+          Reasoning
+              |
+              v
+          Messages
+              |
+              v
+          Artifacts
+              |
+              v
+          Completed
+              |
+              v
+        Result to Source Agent
+              |
+              v
+             USER
+             
+             
+             

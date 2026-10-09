@@ -1,21 +1,20 @@
-
 # GenAI Architect — “Tell Me About Yourself”
-
 ## 90-Second Interview Version
+Hi, I’m Neeraj Vohra.
+I have over 20 years of experience in software architecture and technology. My career started with Java and distributed systems and evolved into solution architecture, cloud modernization, cloud-native platforms, Kubernetes, DevOps, and infrastructure automation. Over the last three years, my primary focus has been Enterprise Generative AI and Agentic AI.
 
-Hi, I’m **Neeraj Vohra**.
+Currently, I work as a Solutions Architect at HCL Technologies, where I design and lead secure, governed, scalable GenAI platforms and multi-agent solutions, primarily using Google Vertex AI.
 
-I have **20+ years of experience in software architecture and technology**. My career started with **Java and distributed systems** and evolved through **solution architecture, cloud modernization, cloud-native platforms, Kubernetes, DevOps, and infrastructure automation**. Over the last three years, I have been deeply focused on **Generative AI and Agentic AI**.
+I stay hands-on. I work with business stakeholders to understand the real problem, design the architecture, review the critical pieces myself, and stay with the team until the solution is running in production and delivering numbers.
 
-Currently, I work as a **Solutions Architect at HCL Technologies**, where I design and build **secure, governed, scalable GenAI platforms and multi-agent solutions**, primarily on **Google Vertex AI**.
+From the GenAI perspective, my recent work has focused on Agentic AI, Multi-Agent Systems, RAG, MCP, Responsible AI, AI Governance, DLP, Model Armor, Guardrails, Evaluation, Observability, Context Caching, and AI Cost Optimization.
 
-I consider myself a **hands-on architect**. I believe architecture should not stop at diagrams and design documents. I stay close to the code, build and validate critical components, and work with engineering teams to make sure the architecture is practical and production-ready.
+One of the key differences I see between traditional software and GenAI systems is predictability. Traditional applications are generally built around deterministic business logic, whereas GenAI systems are probabilistic. Therefore, a GenAI architect has to think beyond scalability and performance and also address hallucination, security, data protection, governance, evaluation, observability, reliability, and cost.
 
-My recent focus has been on **Agentic AI, Multi-Agent Systems, RAG, MCP, Responsible AI, AI Governance, DLP, Model Armor, Guardrails, Evaluation, Observability, Context Caching, and AI Cost Optimization**.
+My architectural approach is modular and policy-driven. I separate core business capabilities from AI capabilities and expose them through well-defined, reusable interfaces. This allows us to evolve models, guardrails, and AI services without continuously changing the core business logic.
 
-One principle that strongly influences my GenAI architecture approach is **determinism**. Traditional software is generally designed around predictable and deterministic behavior, whereas GenAI systems are **probabilistic**. Therefore, a GenAI architect has to design not only for scalability and performance, but also for **safety, hallucination control, data protection, governance, observability, and cost**.
+I also believe an architect should be accountable not just for the architecture, but for the production outcome. That means considering security, reliability, performance, observability, deployment, operational issues, and cost throughout the lifecycle.
 
-I address these challenges through a **modular, policy-driven architecture**, where AI capabilities are exposed through reusable interfaces and policies control how those capabilities can be used. This allows the core business logic to remain stable while models, guardrails, and AI services can evolve independently.
+So, in summary, my strength is combining architecture, hands-on technical depth, and engineering leadership to build GenAI solutions that are not only intelligent, but also secure, responsible, observable, scalable, and production-ready.
 
-Ultimately, my focus is not just on building intelligent agents. My focus is on building **production-ready AI platforms that are secure, responsible, observable, scalable, and cost-optimized**.
----
+###########################################

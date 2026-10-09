@@ -1,0 +1,1973 @@
+Enterprise Responsible Agent Platform:
+End-to-End GCP Architecture & Team Handover
+
+Architecture Style: Policy-Driven Hexagonal Enterprise Clean Architecture
+Cloud Platform: Google Cloud Platform
+AI Platform: Vertex AI / Gemini
+Agent Framework: Google ADK
+Integration: ServiceNow Webhook → Google API Gateway
+Deployment: Cloud Run
+Knowledge: CMDB + Enterprise Knowledge/RAG
+Evidence: Runtime Evidence + GCS Evidence Archive
+Observability: W3C Trace Context + Google Cloud Logging + Cloud Trace + Cloud Monitoring
+Tool Integration: MCP / Enterprise API Adapters
+---
+
+The Most Important Responsible AI Concepts — Simple Mental Model:
+The architecture should follow:
+LLM
+→ Reasons
+
+Evidence
+→ Provides facts
+
+Grounding
+→ Connects reasoning to trusted facts
+
+Citation
+→ Shows where facts came from
+
+DLP
+→ Protects sensitive data
+
+Model Armor
+→ Protects model interaction
+
+Policy Engine
+→ Determines what is allowed
+
+Human
+→ Controls high-risk decisions
+
+Observability
+→ Proves what happened
+---
+
+End-to-End Flow — Step by Step:
+Step 1 — Incident Detection:
+The process starts outside the GenAI platform.
+For example:
+Application
+    ↓
+Monitoring Platform
+    ↓
+Anomaly Detection
+    ↓
+Event
+    ↓
+ServiceNow Incident
+
+our architecture identifies monitoring sources such as:
+Grafana
+Sumologic
+
+followed by anomaly detection and ServiceNow incident creation
+---
+
+1. Architecture Vision:
+
+The platform is designed to investigate enterprise incidents using responsible, governed and observable AI agents.
+
+The core principle is:
+
+ServiceNow
+    |
+    | Incident Webhook
+    v
+Google API Gateway
+    |
+    v
+Responsible AI / Security Boundary
+    |
+    v
+Google ADK Orchestrator
+    |
+    +-------------------+-------------------+
+    |                   |                   |
+    v                   v                   v
+Log Analysis Agent   Knowledge Agent     RCA Agent
+    |                   |                   |
+    v                   v                   v
+Evidence Tools       RAG / CMDB        Vertex AI
+    |                   |                Gemini
+    +---------+---------+                   |
+              |                             |
+              v                             v
+       Evidence + Knowledge          RCA / Claims
+              |                             |
+              +------------+----------------+
+                           |
+                           v
+                  Grounding Validation
+                           |
+                           v
+                    Citation Resolver
+                           |
+                           v
+                  Responsible AI Controls
+                           |
+                           v
+                     Policy Engine
+                           |
+                    +------+------+
+                    |             |
+                    v             v
+              Human Approval   Auto Action
+                    |             |
+                    +------+------+
+                           |
+                           v
+                      ServiceNow
+
+Cross-cutting:
+W3C Trace Context
+Cloud Logging
+Cloud Trace
+Cloud Monitoring
+Cloud Audit Logs
+Caching
+Security
+DLP
+Model Armor
+Evaluation
+
+The architecture separates workflow orchestration, specialist execution, evidence, knowledge, grounding, model reasoning, validation, authorization and action execution. This separation is essential for responsible enterprise AI.
+---
+
+2. Core Architectural Principle:
+
+The most important boundary is:
+
+ORCHESTRATOR
+     |
+     | "What happens next?"
+     |
+     v
+SPECIALIST AGENTS
+     |
+     | "Perform the actual work"
+     |
+     v
+TOOLS / MCP
+     |
+     | "Access enterprise systems"
+     |
+     v
+ENTERPRISE SYSTEMS
+
+The Orchestrator does not perform the actual investigation.
+
+It coordinates:
+
+workflow
+sequencing
+state
+agent selection
+context propagation
+retries
+timeout handling
+result aggregation
+investigation completion
+
+The Specialist Agents perform the domain work.
+
+For example:
+
+Component:	                                    Responsibility
+Orchestrator	                                Manage workflow
+Log Analysis Agent	                            Analyze runtime evidence
+Evidence Agent	                                Normalize/package evidence
+Knowledge Agent	                                Retrieve enterprise knowledge
+RCA Agent	                                    Perform grounded reasoning
+Action Agent	                                Execute approved actions
+MCP/Tool Layer	                                Controlled enterprise API access
+Policy Engine	                                Decide whether action is permitted
+---
+
+
+3. Architecture Principles:
+
+The platform follows these principles.
+
+Principle:	                                Meaning
+Policy Driven	                            Every sensitive operation is policy controlled
+Hexagonal	                                Core business logic is isolated from external systems
+Clean Architecture	                        Dependencies point toward business/application logic
+Agent Responsibility	                    Every agent has a clearly bounded responsibility
+Least Privilege                         	Agents receive only required tools
+Evidence First                          	AI reasoning begins from trusted evidence
+Knowledge Separate from Evidence	        Runtime facts and enterprise knowledge are different
+Grounded Generation                     	Gemini reasons over controlled context
+Validation Before Action	                AI output is validated before operational action
+Human-in-the-Loop	                        High-risk operations require approval
+Observable by Design                    	Every investigation is traceable end-to-end
+Auditable	                                Decisions and actions are reconstructable
+Idempotent                              	Repeated webhook/events do not create duplicate actions
+Fail Closed	                                Security/policy controls do not silently bypass
+Framework Agnostic Core                  	Agent frameworks remain behind adapters
+---
+
+4. Target GCP Architecture:
+                         GCP
+                          |
+                 +--------+--------+
+                 |                 |
+          API / Security       AI Platform
+                 |                 |
+          Google API Gateway   Vertex AI
+                 |                 |
+                 v               Gemini
+             Cloud Run
+                 |
+        +--------+---------+
+        |                  |
+        v                  v
+  GENAI ORCHESTRATOR   Supporting Services
+     Google ADK        Cloud Storage
+        |              Cloud Logging
+        |              Cloud Trace
+        |              Cloud Monitoring
+        |
+        +-----------------------------+
+        |              |              |
+        v              v              v
+ Log Analysis      Knowledge        RCA Agent
+    Agent            Agent             |
+        |              |               |
+        v              v               v
+ Evidence Tools   CMDB / RAG       Vertex AI
+        |              |
+        v              v
+ Cloud Logging    Knowledge Index
+ Monitoring
+ Trace
+ ServiceNow
+ Deployment APIs
+---
+
+
+5. Final Architecture Diagram:
+
+                         SERVICE NOW
+                             |
+                         Webhook
+                             |
+                             v
+                    +------------------+
+                    |  GOOGLE API      |
+                    |    GATEWAY       |
+                    +------------------+
+                             |
+                     W3C Trace Context
+                             |
+                             v
+              +-------------------------------+
+              |       CLOUD RUN               |
+              |                               |
+              |       ORCHESTRATOR            |
+              |         Google ADK            |
+              |                               |
+              |  Observability Middleware     |
+              |  • W3C Trace Context          |
+              |  • Correlation Context        |
+              |  • Investigation Context      |
+              |                               |
+              |  Workflow / State / Routing   |
+              +---------------+---------------+
+                              |
+               +--------------+--------------+
+               |              |              |
+               v              v              v
+        Log Analysis      Knowledge       RCA Agent
+           Agent            Agent             |
+               |              |               |
+               v              v               v
+             MCP          CMDB / RAG      Vertex AI
+               |              |             Gemini
+               |              |               |
+               v              v               v
+       +---------------+  +---------+   Structured RCA
+       | Cloud Logging |  |Vertex AI |        |
+       | Monitoring    |  |Search/RAG|        v
+       | Trace         |  +---------+   Validation
+       | ServiceNow    |                     |
+       | Deployment    |                     v
+       +---------------+               Citation Resolver
+               |                             |
+               v                             v
+        Runtime Evidence              DLP / Model Armor
+               |                             |
+               +-------------+---------------+
+                             |
+                             v
+                    Evidence Package
+                             |
+                             v
+                    Grounding Builder
+                             |
+                             v
+                       Grounding
+                             |
+                             v
+                    Policy / Risk Engine
+                             |
+                    +--------+--------+
+                    |                 |
+                 APPROVAL          AUTOMATIC
+                    |                 |
+                    v                 v
+               Human HITL        Action Agent
+                    |                 |
+                    +--------+--------+
+                             |
+                             v
+                       MCP / Tool
+                             |
+                             v
+                       ServiceNow
+
+
+=========================================================
+              CROSS-CUTTING CONTROL PLANE
+=========================================================
+
+ IAM
+ DLP
+ Model Armor
+ Policy
+ Human Approval
+ Caching
+ W3C Trace Context
+ Cloud Logging
+ Cloud Trace
+ Cloud Monitoring
+ Cloud Audit Logs
+ Evaluation
+ Security / Audit
+---
+
+6. Principal Architect Mental Model:
+
+The entire platform can be explained in one sequence:
+
+SERVICE NOW
+"What happened?"
+        ↓
+ORCHESTRATOR
+"What workflow should happen next?"
+        ↓
+SPECIALIST AGENTS
+"Perform the actual domain work."
+        ↓
+EVIDENCE
+"What facts do we have?"
+        ↓
+KNOWLEDGE
+"What does the enterprise already know?"
+        ↓
+RAG
+"What knowledge is relevant?"
+        ↓
+GROUNDING
+"What trusted context should Gemini use?"
+        ↓
+GEMINI
+"What does the evidence indicate?"
+        ↓
+VALIDATION
+"Is the answer actually supported?"
+        ↓
+CITATION
+"Where did each important claim come from?"
+        ↓
+POLICY
+"Are we allowed to act?"
+        ↓
+HUMAN / AUTOMATION
+"Execute only if permitted."
+        ↓
+AUDIT
+"Can we prove what happened?"
+        ↓
+EVALUATION
+"How do we improve the system?"
+---
+
+07 The Five Most Important Architectural Boundaries:
+
+The team should remember these five rules.
+
+Boundary 1 — Orchestrator:
+
+Orchestrator manages workflow; it does not perform specialist work.
+
+Boundary 2 — Evidence:
+
+Evidence establishes what actually happened.
+
+Boundary 3 — Knowledge:
+
+Knowledge explains what the enterprise already knows.
+
+Boundary 4 — Gemini:
+
+Gemini reasons over controlled grounding context; it does not authorize actions.
+
+Boundary 5 — Policy:
+
+Policy independently determines whether an action is permitted.
+
+And one cross-cutting rule:
+
+Observability
+
+Observability is injected at the Orchestrator boundary and propagated through the entire execution chain using W3C Trace Context. 
+
+#########################################################################################################################################################
+
+
+# 3. System overview
+#  3.1 Planes
+┌──────────────────────────────── DATA PLANE ─────────────────────────────────┐
+│  ServiceNow   Cloud Logging   Monitoring   Trace   Deploy history   CMDB    │
+│        │            │             │          │            │           │     │
+│        └────────────┴───── Evidence Collection ───────────┘           │     │
+│                              │                                        │     │
+│                         Evidence Package ── GCS (immutable)           │     │
+│                              │                                        │     │
+│   Knowledge sources ─► Ingestion ─► Vertex AI Search ◄─ Retrieval ◄───┘     │
+│                              │                                              │
+│                      Grounding Package ─► Gemini (Vertex AI) ─► Structured RCA
+└──────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────── CONTROL PLANE ───────────────────────────────┐
+│ IAM/Zero Trust · DLP · Model Armor · Policy Engine · Token Governance ·       │
+│ Cache · Human Approval · Audit · Observability · Evaluation                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+# 3.3 GCP service mapping
+
+Capability:                             	GCP service
+API edge	                                Apigee (preferred) or API Gateway, Cloud Armor (WAF)
+Compute	                                    Cloud Run services and jobs
+Agent framework	                            Google ADK (in Cloud Run); Agent Engine as future option
+LLM	                                        Vertex AI Gemini (pinned model versions)
+Knowledge retrieval	                        Vertex AI Search (data stores), Vertex AI Ranking API; RAG Engine optional
+Embeddings	                                Vertex AI embedding models (via Search or RAG Engine)
+Grounding check                             Vertex AI / Discovery Engine Check Grounding API plus our deterministic validators
+Doc parsing	                                Document AI layout/OCR parser (PDF, scanned docs)
+Sensitive data	                            Sensitive Data Protection (DLP)
+Prompt/response safety                  	Model Armor
+Evidence archive	                        Cloud Storage (CMEK, Object Retention, versioning)
+Evidence/event index, analytics         	BigQuery
+Investigation state                     	Firestore (durable) + Memorystore Redis (cache)
+Messaging	                                Pub/Sub, Cloud Tasks (retries), Eventarc
+Workflow orchestration (batch)	            Cloud Workflows / Cloud Scheduler for ingestion
+Secrets & keys	                            Secret Manager, Cloud KMS
+Identity	                                IAM, Workload Identity, per-service service accounts
+Network security                        	VPC, Private Service Connect, VPC Service Controls, Serverless VPC Access / Direct VPC egress
+Observability	                            Cloud Logging, Monitoring, Trace, Error Reporting, Cloud Audit Logs
+Evaluation	                                Vertex AI Gen AI evaluation service + our regression harness
+CI/CD	                                    Cloud Build, Artifact Registry, Cloud Deploy, Terraform
+---
+
+
+7. ServiceNow Incident Entry:
+The business process begins in ServiceNow.
+
+Example:
+
+Incident:
+
+INC0012345
+
+Short Description:
+Payment API returning HTTP 500
+
+Priority:
+P2
+
+Service:
+payment-api
+
+Environment:
+production
+
+ServiceNow generates a webhook.
+
+ServiceNow
+     |
+     | HTTPS Webhook
+     v
+Google API Gateway
+
+The webhook should contain enough information to identify and investigate the incident.
+---
+
+
+8. API Gateway:
+
+Google API Gateway is the external entry point.
+
+Responsibilities:
+Receive webhook.
+Authenticate caller.
+Validate request.
+Apply API-level authorization.
+Apply rate limits/quotas as configured.
+Propagate W3C Trace Context.
+Forward request to Cloud Run.
+Reject malformed or unauthorized requests.
+
+It should not perform RCA.
+It should not decide the root cause.
+It should not invoke multiple specialist agents directly.
+The request is forwarded to the Orchestrator.
+---
+
+9. Orchestrator Observability Injection:
+Observability is injected at the Orchestrator boundary.
+
+API Gateway
+     |
+     | W3C traceparent
+     v
++-----------------------------------+
+|          ORCHESTRATOR             |
+|                                   |
+| Observability Middleware          |
+|                                   |
+| 1. Extract trace context          |
+| 2. Create/continue trace          |
+| 3. Create correlation context     |
+| 4. Create investigation context   |
+| 5. Start orchestrator span       |
+| 6. Propagate context to agents   |
++-----------------------------------+
+
+The Orchestrator does not necessarily write every log.
+
+Instead, it establishes the telemetry context.
+---
+
+10. W3C Trace Context:
+The platform uses:
+traceparent
+tracestate
+baggage
+
+The same distributed trace should travel through:
+ServiceNow
+   ↓
+API Gateway
+   ↓
+Orchestrator
+   ↓
+Log Analysis Agent
+   ↓
+MCP
+   ↓
+Cloud APIs
+   ↓
+Knowledge Agent
+   ↓
+RCA Agent
+   ↓
+Vertex AI
+   ↓
+Validation
+   ↓
+Policy
+   ↓
+Action
+   ↓
+ServiceNow
+
+The critical rule is:
+
+Do not create a completely independent trace for every agent.
+
+Instead:
+ONE INVESTIGATION
+      |
+      +-- ONE correlation_id
+      |
+      +-- ONE investigation_id
+      |
+      +-- ONE distributed trace
+             |
+             +-- Orchestrator span
+             +-- Agent span
+             +-- Tool span
+             +-- Model span
+             +-- Validation span
+             +-- Policy span
+             +-- Action span
+---
+
+11. Standard Execution Context:
+Create a common context object.
+{
+  "trace_id": "TRACE-123",
+  "correlation_id": "CORR-123",
+  "incident_id": "INC0012345",
+  "investigation_id": "INV-789",
+  "environment": "production",
+  "tenant": "enterprise",
+  "request_id": "REQ-10001"
+}
+
+Every downstream specialist receives this context.
+
+This provides consistent correlation across the entire investigation.
+---
+
+# 23. Knowledge Architecture
+Recommended:
+
+                 KNOWLEDGE DOMAIN
+                       |
+       +---------------+---------------+
+       |               |               |
+       v               v               v
+      CMDB           GCS Docs      Historical RCA
+       |               |               |
+       |               |               |
+       +---------------+---------------+
+                       |
+                       v
+              Knowledge Ingestion
+                       |
+                       v
+                 Processing
+                       |
+                       v
+              Chunking / Metadata
+                       |
+                       v
+               Embedding / Index
+                       |
+                       v
+             Vertex AI Search/RAG
+
+CMDB should provide:
+
+CI
+service
+owner
+environment
+dependencies
+business criticality
+relationships
+configuration metadata
+
+Document RAG should provide:
+
+runbooks
+SOPs
+architecture
+troubleshooting guides
+known errors
+operational procedures
+historical RCA
+engineering documentation
+---
+
+# 24. Knowledge Ingestion Pipeline
+
+This is a separate pipeline from runtime incident investigation.
+
+Enterprise Sources
+      |
+      +---- CMDB
+      +---- Runbooks
+      +---- SOPs
+      +---- Architecture Docs
+      +---- Historical RCA
+      +---- Known Errors
+      |
+      v
+Raw Knowledge Landing
+      |
+      v
+Security / DLP
+      |
+      v
+Document Parsing
+      |
+      v
+Cleaning
+      |
+      v
+Semantic Chunking
+      |
+      v
+Metadata Enrichment
+      |
+      v
+Embedding
+      |
+      v
+Indexing
+      |
+      v
+Vertex AI Search / RAG
+      |
+      v
+Knowledge Published
+
+The reference RAG architecture similarly treats ingestion, chunking, embeddings, retrieval and grounding as a complete knowledge lifecycle rather than simply vector search.
+---
+
+# 27. Retrieval and Re-Ranking
+
+Knowledge retrieval should follow:
+
+Query
+  |
+  v
+Metadata Filtering
+  |
+  v
+Candidate Retrieval
+  |
+  +-- Semantic Search
+  +-- Keyword Search
+  +-- Hybrid Search
+  |
+  v
+Re-ranking
+  |
+  v
+Top Relevant Knowledge
+
+Do not blindly pass the entire knowledge base to Gemini.
+---
+
+# 28. Log Analysis Result
+
+The Log Analysis Agent should return structured data.
+
+{
+  "investigation_id": "INV-10001",
+
+  "observations": [
+    "HTTP 500 increased",
+    "Database timeout increased",
+    "Connection pool exhaustion detected"
+  ],
+
+  "evidence_ids": [
+    "E001",
+    "E002",
+    "E003"
+  ],
+
+  "knowledge_ids": [
+    "K001",
+    "K002",
+    "K003"
+  ],
+
+  "hypotheses": [
+    "Database connection exhaustion"
+  ],
+
+  "evidence_gaps": [
+    "Database pool utilization unavailable"
+  ]
+}
+
+The Orchestrator stores this result in investigation state.
+---
+
+# 29. Evidence + Knowledge Correlation
+
+Now:
+
+                Investigation
+                     |
+          +----------+----------+
+          |                     |
+          v                     v
+       Evidence              Knowledge
+          |                     |
+          +----------+----------+
+                     |
+                     v
+             Correlation Layer
+                     |
+                     v
+              Evidence Package
+
+The system now knows:
+
+What happened
+     +
+What the enterprise knows
+     +
+What is still unknown
+---
+
+
+# 30. Grounding Context Builder
+
+Do not send raw evidence and all retrieved documents directly to Gemini.
+
+Introduce:
+
+Grounding Context Builder
+
+Responsibilities:
+
+Select relevant evidence.
+Select relevant knowledge.
+Remove irrelevant content.
+Resolve conflicting information.
+Preserve provenance.
+Preserve timestamps.
+Preserve evidence IDs.
+Preserve knowledge IDs.
+Identify gaps.
+Apply policy constraints.
+---
+
+
+# 31. Grounding Context
+
+Example:
+
+{
+  "grounding_id": "GR-10001",
+
+  "incident": {
+    "id": "INC0012345",
+    "service": "payment-api",
+    "environment": "production"
+  },
+
+  "facts": [
+    {
+      "evidence_id": "E001",
+      "fact": "HTTP 500 increased to 43%"
+    },
+    {
+      "evidence_id": "E002",
+      "fact": "Database connection timeouts increased"
+    },
+    {
+      "evidence_id": "E003",
+      "fact": "Connection pool exhaustion detected"
+    }
+  ],
+
+  "knowledge": [
+    {
+      "knowledge_id": "K001",
+      "title": "Payment API Runbook",
+      "relevant_section": "Database connection exhaustion"
+    }
+  ],
+
+  "unknowns": [
+    "Database pool utilization unavailable"
+  ]
+}
+---
+
+# 32. RAG vs Augmentation vs Grounding
+
+Use these terms carefully.
+
+RAG
+ |
+ +-- Retrieve
+ |
+ +-- Augment
+ |
+ +-- Generate
+
+Augmentation means adding retrieved information to model context.
+
+Grounding means ensuring the generated response is anchored to trusted, verifiable information.
+
+Therefore:
+
+Enterprise Data
+      ↓
+Retrieval
+      ↓
+Relevant Knowledge
+      ↓
+Augmentation
+      ↓
+Controlled Grounding Context
+      ↓
+Gemini
+      ↓
+Grounded Response
+
+The reference architecture explicitly recommends treating augmentation and grounding as related but distinct concepts.
+---
+
+# 33. RCA Agent
+
+The Orchestrator now invokes:
+
+Grounding Package
+       |
+       v
+RCA Agent
+       |
+       v
+Vertex AI Adapter
+       |
+       v
+Vertex AI Gemini
+
+The RCA Agent is responsible for reasoning.
+
+The LLM is not responsible for authorization.
+---
+
+
+# 34. RCA Prompt Contract
+
+The RCA Agent should enforce rules such as:
+
+You are an enterprise RCA Agent.
+
+Rules:
+
+1. Use only supplied evidence and knowledge.
+2. Do not invent facts.
+3. Distinguish observation from inference.
+4. Distinguish correlation from causation.
+5. Reference evidence IDs.
+6. Reference knowledge IDs.
+7. Identify unknowns.
+8. Identify assumptions.
+9. State confidence.
+10. Do not authorize operational actions.
+---
+
+# 35. Gemini Structured Output
+
+Never rely on free-form RCA text.
+
+Example:
+
+{
+  "root_cause": {
+    "statement": "Database connection pool exhaustion is the most likely cause.",
+    "evidence_ids": [
+      "E002",
+      "E003"
+    ],
+    "confidence": "HIGH"
+  },
+
+  "contributing_factors": [
+    {
+      "statement": "Deployment v2.8.3 temporally preceded the incident.",
+      "evidence_ids": [
+        "E004"
+      ]
+    }
+  ],
+
+  "knowledge_references": [
+    "K001"
+  ],
+
+  "unknowns": [
+    "Database pool utilization during 10:02-10:04 was unavailable."
+  ],
+
+  "assumptions": []
+}
+---
+
+
+#36. Grounding Validation
+
+The generated RCA must be validated.
+
+Gemini Response
+      |
+      v
+Schema Validation
+      |
+      v
+Grounding Validation
+      |
+      v
+Fact Validation # ground truth
+      |
+      v
+Citation Validation
+
+Example:
+
+Claim:
+Database CPU reached 95%.
+
+Evidence:
+Maximum CPU = 72%.
+
+Result:
+GROUNDING VALIDATION FAILED
+
+The reference architecture explicitly includes grounding and fact validation before downstream action.
+---
+
+
+# 39. Responsible AI Output Pipeline
+
+The validated RCA now passes through:
+
+RCA
+ |
+ v
+Schema Validation
+ |
+ v
+Grounding Validation
+ |
+ v
+Fact Validation
+ |
+ v
+Citation Validation
+ |
+ v
+DLP
+ |
+ v
+Model Armor / Safety Controls
+ |
+ v
+Risk Classification
+ |
+ v
+Policy Engine
+---
+
+# 42. Action Agent
+
+Only after authorization:
+
+Policy Decision
+      |
+      v
+Action Agent
+      |
+      v
+MCP / Tool
+      |
+      v
+Enterprise System
+
+The Action Agent performs the approved operation.
+
+Example:
+
+restart_service(
+    service="payment-api",
+    environment="production"
+)
+
+The tool independently verifies authorization before execution.
+---
+
+# 43. ServiceNow Update
+
+After investigation:
+
+Action Agent / RCA Service
+        |
+        v
+ServiceNow Adapter
+        |
+        v
+ServiceNow Incident
+
+The update should contain:
+
+RCA
+evidence
+citations
+confidence
+unknowns
+recommended resolution
+approval status
+action taken
+audit reference
+---
+
+# 44. Observability Architecture
+
+Observability is injected at the Orchestrator level.
+
+                 ORCHESTRATOR
+                      |
+              Observability
+                Middleware
+                      |
+       +--------------+--------------+
+       |              |              |
+       v              v              v
+   Trace Context   Structured     Metrics
+                   Logging
+       |              |              |
+       v              v              v
+   Cloud Trace   Cloud Logging  Cloud Monitoring
+
+The context is then propagated:
+
+Orchestrator
+    |
+    +--> Log Analysis Agent
+    |       |
+    |       +--> MCP
+    |
+    +--> Knowledge Agent
+    |       |
+    |       +--> CMDB/RAG
+    |
+    +--> RCA Agent
+            |
+            +--> Vertex AI
+---
+
+# 45. Observability Context
+
+Every investigation should correlate:
+
+trace_id
+span_id
+correlation_id
+request_id
+incident_id
+investigation_id
+agent_id
+agent_execution_id
+tool_id
+tool_execution_id
+evidence_id
+knowledge_id
+grounding_id
+policy_decision_id
+approval_id
+action_id
+model_id
+model_version
+prompt_version
+
+This gives the operations team the complete chain:
+
+Incident
+   ↓
+Trace
+   ↓
+Orchestrator
+   ↓
+Agent
+   ↓
+Tool
+   ↓
+Evidence
+   ↓
+Knowledge
+   ↓
+Grounding
+   ↓
+Model
+   ↓
+Validation
+   ↓
+Policy
+   ↓
+Approval
+   ↓
+Action   
+---
+
+
+# 46. Cloud Logging
+
+Use structured JSON logging.
+
+Example:
+
+{
+  "severity": "INFO",
+  "message": "Log Analysis Agent completed",
+
+  "trace_id": "TRACE-123",
+  "span_id": "SPAN-456",
+
+  "correlation_id": "CORR-123",
+  "incident_id": "INC0012345",
+  "investigation_id": "INV-789",
+
+  "agent_id": "log-analysis-agent",
+  "tool_id": "cloud-logging-search",
+
+  "operation": "collect_runtime_evidence",
+
+  "evidence_ids": [
+    "E001",
+    "E002",
+    "E003"
+  ],
+
+  "duration_ms": 1250,
+  "status": "SUCCESS"
+}
+
+Do not indiscriminately log:
+
+credentials
+tokens
+secrets
+complete sensitive prompts
+PII
+sensitive enterprise payloads
+
+Log identifiers and metadata wherever possible.    
+---
+
+# 47. Cloud Trace
+
+Cloud Trace provides the distributed execution view.
+
+Example:
+
+Trace: INC0012345
+
++-- API Gateway                         20 ms
+|
++-- Orchestrator                       15 ms
+|
++-- Log Analysis Agent              1,850 ms
+|     |
+|     +-- MCP Tool                     50 ms
+|     +-- Cloud Logging Query       1,200 ms
+|     +-- Evidence Normalization      100 ms
+|
++-- Knowledge Agent                    900 ms
+|     |
+|     +-- CMDB Query                   150 ms
+|     +-- RAG Retrieval                500 ms
+|
++-- RCA Agent                       3,200 ms
+|     |
+|     +-- Grounding Builder            100 ms
+|     +-- Vertex AI / Gemini         2,800 ms
+|     +-- Validation                   200 ms
+|
++-- Policy Engine                       50 ms
+|
++-- Action Agent                       400 ms
+|
++-- ServiceNow Update                  200 ms
+
+This allows the team to identify exactly where latency occurs.    
+---
+
+# 48. Cloud Monitoring
+
+Cloud Monitoring should provide:
+
+Platform metrics
+Request rate
+Error rate
+p50 latency
+p95 latency
+p99 latency
+Cloud Run CPU
+Cloud Run memory
+Instance count
+Agent metrics
+Agent execution count
+Agent failure count
+Agent latency
+Agent retry count
+Agent timeout count
+Tool metrics
+Tool calls
+Tool failures
+Tool denials
+Tool latency
+Tool timeout
+AI metrics
+Token usage
+Model latency
+Model errors
+RAG retrieval latency
+Retrieval relevance
+Grounding failures
+Citation failures
+Policy denials
+HITL requests 
+---
+
+# 49. Observability vs Evidence
+
+This distinction must be explicit.
+
+Layer	                            Purpose
+Cloud Logging	                    Application/agent operational logs
+Cloud Trace	                        Distributed execution
+Cloud Monitoring                	Metrics and alerting
+Cloud Audit Logs	                Platform/API/security audit
+GCS Evidence Store	                Investigation evidence
+Knowledge Store                 	Enterprise knowledge
+Evaluation Store	                AI quality evaluation
+
+Therefore:
+
+Cloud Logging is not the evidence archive.
+
+Cloud Logging tells us what the application/system logged.
+
+The Evidence Store contains the normalized facts selected for the investigation.
+---
+
+
+# 50. Caching Architecture
+
+Caching is cross-cutting.
+
+Recommended five cache categories:
+
+                    CACHE
+                      |
+       +--------------+--------------+
+       |              |              |
+       v              v              v
+ Incident State   Evidence Cache  Retrieval Cache
+       |
+       v
+ Semantic Cache
+       |
+       v
+ Vertex AI Context Cache
+Cache 1 — Incident State
+
+Stores:
+
+current stage
+agent results
+evidence IDs
+knowledge IDs
+grounding ID
+RCA status
+approval status
+Cache 2 — Evidence
+
+Caches expensive runtime queries where safe.
+
+Cache 3 — Retrieval
+
+Caches repeated knowledge retrieval.
+
+Cache 4 — Semantic
+
+Caches semantically equivalent requests only where the answer remains valid.
+
+Be very careful for live incidents.
+
+Cache 5 — Vertex AI Context Cache
+
+Use for relatively stable repeated context such as:
+
+system instructions
+large runbooks
+stable architecture context
+repeated enterprise documentation
+
+Do not blindly cache rapidly changing incident evidence.
+
+The reference architecture also distinguishes application/workflow caching from Vertex AI context caching.
+---
+
+# 51. Security Architecture
+
+Security should exist at multiple layers.
+
+ServiceNow
+    |
+    v
+API Gateway
+    |
+    +-- Authentication
+    +-- Authorization
+    +-- Rate Control
+    |
+    v
+Orchestrator
+    |
+    +-- IAM
+    +-- DLP
+    +-- Model Armor
+    +-- Policy
+    |
+    v
+Agents
+    |
+    v
+MCP
+    |
+    +-- Tool Authorization
+    +-- Input Validation
+    +-- Audit
+    |
+    v
+Enterprise Systems
+
+Important principle:
+
+MCP is not itself a security boundary.
+
+Authorization must ultimately be enforced by the application/tool/enterprise API.
+---
+
+# 52. Data Plane vs Control Plane
+
+This separation should be visible on the architecture diagram.
+
+====================================================
+                    DATA PLANE
+====================================================
+
+ServiceNow
+Runtime Evidence
+CMDB
+Knowledge
+RAG
+Grounding
+Gemini
+RCA
+Actions
+
+
+====================================================
+                   CONTROL PLANE
+====================================================
+
+IAM
+Authentication
+Authorization
+DLP
+Model Armor
+Policy
+Risk
+Approval
+Caching
+Observability
+Audit
+Evaluation
+
+This makes the architecture easier to govern.
+---
+
+# 53. Failure and Resilience
+
+The system should explicitly define failure behavior.
+
+Failure	                                                                        Expected Behavior
+API Gateway unavailable	                                                        Retry according to policy
+Orchestrator unavailable	                                                    ServiceNow retry / durable queue
+Evidence source unavailable	                                                    Mark evidence unavailable
+No evidence	                                                                    INSUFFICIENT_EVIDENCE
+Conflicting evidence	                                                        CONFLICTING_EVIDENCE
+RAG unavailable                                                             	Controlled degraded mode
+Gemini unavailable	                                                            Retry / pending investigation
+Validation failure	                                                            Do not proceed to action
+Policy unavailable	                                                            Fail closed
+Approval unavailable                                                        	Keep action pending
+ServiceNow unavailable	                                                        Durable retry
+Tool timeout	                                                                Retry if safe/idempotent
+Duplicate webhook	                                                            Idempotency check
+---
+
+# 54. Responsible AI States
+
+The investigation should not simply be:
+
+SUCCESS / FAILURE
+
+It should support:
+
+EVIDENCE_INSUFFICIENT
+EVIDENCE_CONFLICTING
+KNOWLEDGE_NOT_FOUND
+GROUNDING_FAILED
+FACT_VALIDATION_FAILED
+CITATION_FAILED
+POLICY_DENIED
+APPROVAL_REQUIRED
+ACTION_FAILED
+INVESTIGATION_COMPLETE
+
+This gives the platform operationally meaningful outcomes.
+---
+
+# 55. Evaluation
+
+Evaluation should measure the entire system, not only Gemini.
+
+Knowledge Quality
+       +
+Retrieval Quality
+       +
+Evidence Quality
+       +
+Grounding Quality
+       +
+Model Quality
+       +
+Validation Quality
+       +
+Agent Quality
+       +
+Tool Quality
+       +
+Policy Quality
+       =
+Enterprise AI Quality
+
+Metrics should include:
+
+Retrieval relevance
+Evidence completeness
+Grounding score
+Citation accuracy
+Unsupported claim rate
+Hallucination rate
+RCA accuracy
+Agent success rate
+Tool success rate
+Policy violation rate
+Human override rate
+Latency
+Token cost
+---
+
+# 56. Complete Knowledge Ingestion Sequence
+
+This happens independently of incident execution.
+
+1. Enterprise Source
+       ↓
+2. CMDB / GCS / Knowledge Source
+       ↓
+3. Raw Landing
+       ↓
+4. Security Classification
+       ↓
+5. DLP
+       ↓
+6. Document Parsing
+       ↓
+7. Cleaning
+       ↓
+8. Semantic Chunking
+       ↓
+9. Metadata Enrichment
+       ↓
+10. Embedding
+       ↓
+11. Indexing
+       ↓
+12. Vertex AI Search / RAG
+       ↓
+13. Quality Validation
+       ↓
+14. Publish
+       ↓
+15. Knowledge Version Available
+---
+
+# 57. Complete Runtime Investigation Sequence
+
+This is the master runtime sequence.
+
+01. ServiceNow Incident
+          ↓
+02. ServiceNow Webhook
+          ↓
+03. Google API Gateway
+          ↓
+04. Authentication / Authorization
+          ↓
+05. W3C Trace Context Propagation
+          ↓
+06. Cloud Run
+          ↓
+07. Orchestrator Observability Middleware
+          ↓
+08. Create Correlation / Investigation Context
+          ↓
+09. Incident Idempotency / Cache Check
+          ↓
+10. Google ADK Orchestrator
+          ↓
+11. Workflow / Routing Decision
+          ↓
+12. Log Analysis Agent
+          ↓
+13. Evidence Cache Check
+          ↓
+14. MCP / Evidence Tools
+          ↓
+15. Cloud Logging / Monitoring / Trace
+          ↓
+16. Runtime Evidence
+          ↓
+17. Evidence Normalization
+          ↓
+18. Evidence Package
+          ↓
+19. Knowledge Agent
+          ↓
+20. CMDB Context
+          ↓
+21. RAG Retrieval
+          ↓
+22. Re-ranking / Filtering
+          ↓
+23. Knowledge Context
+          ↓
+24. Evidence + Knowledge Correlation
+          ↓
+25. Grounding Context Builder
+          ↓
+26. Grounding Package
+          ↓
+27. RCA Agent
+          ↓
+28. Vertex AI / Gemini
+          ↓
+29. Structured RCA
+          ↓
+30. Schema Validation
+          ↓
+31. Grounding Validation
+          ↓
+32. Fact Validation
+          ↓
+33. Citation Resolution
+          ↓
+34. Output DLP / Safety Controls
+          ↓
+35. Risk Classification
+          ↓
+36. Policy Engine
+          ↓
+37. Human Approval if required
+          ↓
+38. Action Agent
+          ↓
+39. MCP / Enterprise Tool
+          ↓
+40. ServiceNow Update
+          ↓
+41. Audit Record
+          ↓
+42. Investigation Completion
+          ↓
+43. Evaluation
+
+---
+
+# 59. Final Responsibility Matrix
+Component                                           	What it does	                                        What it must NOT do
+ServiceNow	                                            Creates incident	                                    AI reasoning
+API Gateway	                                            Secure entry	                                        RCA
+Orchestrator	                                        Workflow/state                                      	Domain investigation
+Observability Middleware                            	Trace/context/telemetry	                                Business decisions
+Log Analysis Agent                                      Runtime investigation	                                Authorization
+Knowledge Agent	                                        Knowledge retrieval	                                    Execute remediation
+Evidence Layer	                                        Establish facts	                                        Generate RCA
+Grounding Builder                                   	Build trusted context	                                Make final decision
+RCA Agent	                                            Reason over evidence	                                Authorize action
+Gemini	                                                Reason/generate	                                        Grant permission
+Validator	                                            Check claims	                                        Execute actions
+Citation Resolver                                   	Resolve sources	                                        Invent citations
+Policy Engine                                       	Authorization	                                        Generate RCA
+Human	                                                Approve high-risk actions	                            —
+Action Agent                                        	Execute authorized action                           	Self-authorize
+MCP                                                 	Controlled tool access	                                Become security boundary
+Cloud Logging                                       	Operational logs	                                    Become evidence archive
+GCS Evidence	                                        Investigation evidence	                                Replace runtime logging
+Evaluation	                                            Measure quality	                                        Change production policy directly
+---
+# 60. Final Architecture Diagram
+                         SERVICE NOW
+                             |
+                         Webhook
+                             |
+                             v
+                    +------------------+
+                    |  GOOGLE API      |
+                    |    GATEWAY       |
+                    +------------------+
+                             |
+                     W3C Trace Context
+                             |
+                             v
+              +-------------------------------+
+              |       CLOUD RUN                |
+              |                               |
+              |       ORCHESTRATOR            |
+              |         Google ADK            |
+              |                               |
+              |  Observability Middleware     |
+              |  • W3C Trace Context          |
+              |  • Correlation Context         |
+              |  • Investigation Context       |
+              |                               |
+              |  Workflow / State / Routing   |
+              +---------------+---------------+
+                              |
+               +--------------+--------------+
+               |              |              |
+               v              v              v
+        Log Analysis      Knowledge       RCA Agent
+           Agent            Agent             |
+               |              |               |
+               v              v               v
+             MCP          CMDB / RAG      Vertex AI
+               |              |             Gemini
+               |              |               |
+               v              v               v
+       +---------------+  +---------+   Structured RCA
+       | Cloud Logging |  |Vertex AI |        |
+       | Monitoring    |  |Search/RAG|        v
+       | Trace         |  +---------+   Validation
+       | ServiceNow    |                     |
+       | Deployment    |                     v
+       +---------------+               Citation Resolver
+               |                             |
+               v                             v
+        Runtime Evidence              DLP / Model Armor
+               |                             |
+               +-------------+---------------+
+                             |
+                             v
+                    Evidence Package
+                             |
+                             v
+                    Grounding Builder
+                             |
+                             v
+                       Grounding
+                             |
+                             v
+                    Policy / Risk Engine
+                             |
+                    +--------+--------+
+                    |                 |
+                 APPROVAL          AUTOMATIC
+                    |                 |
+                    v                 v
+               Human HITL        Action Agent
+                    |                 |
+                    +--------+--------+
+                             |
+                             v
+                       MCP / Tool
+                             |
+                             v
+                       ServiceNow
+
+
+=========================================================
+              CROSS-CUTTING CONTROL PLANE
+=========================================================
+
+ IAM
+ DLP
+ Model Armor
+ Policy
+ Human Approval
+ Caching
+ W3C Trace Context
+ Cloud Logging
+ Cloud Trace
+ Cloud Monitoring
+ Cloud Audit Logs
+ Evaluation
+ Security / Audit
+ ---
+ 
+# 61. Principal Architect Mental Model
+
+The entire platform can be explained in one sequence:
+
+SERVICE NOW
+"What happened?"
+        ↓
+ORCHESTRATOR
+"What workflow should happen next?"
+        ↓
+SPECIALIST AGENTS
+"Perform the actual domain work."
+        ↓
+EVIDENCE
+"What facts do we have?"
+        ↓
+KNOWLEDGE
+"What does the enterprise already know?"
+        ↓
+RAG
+"What knowledge is relevant?"
+        ↓
+GROUNDING
+"What trusted context should Gemini use?"
+        ↓
+GEMINI
+"What does the evidence indicate?"
+        ↓
+VALIDATION
+"Is the answer actually supported?"
+        ↓
+CITATION
+"Where did each important claim come from?"
+        ↓
+POLICY
+"Are we allowed to act?"
+        ↓
+HUMAN / AUTOMATION
+"Execute only if permitted."
+        ↓
+AUDIT
+"Can we prove what happened?"
+        ↓
+EVALUATION
+"How do we improve the system?"
+---
+
+# 62. The Five Most Important Architectural Boundaries
+
+The team should remember these five rules.
+
+Boundary 1 — Orchestrator
+
+Orchestrator manages workflow; it does not perform specialist work.
+
+Boundary 2 — Evidence
+
+Evidence establishes what actually happened.
+
+Boundary 3 — Knowledge
+
+Knowledge explains what the enterprise already knows.
+
+Boundary 4 — Gemini
+
+Gemini reasons over controlled grounding context; it does not authorize actions.
+
+Boundary 5 — Policy
+
+Policy independently determines whether an action is permitted.
+
+And one cross-cutting rule:
+
+Observability
+
+Observability is injected at the Orchestrator boundary and propagated through the entire execution chain using W3C Trace Context.
+---
+
+# 63. Final Team Recommendation
+
+The target architecture should therefore be implemented as:
+
+ServiceNow
+    ↓
+Google API Gateway
+    ↓
+Cloud Run
+    ↓
+Google ADK Orchestrator
+    ↓
+Observability Middleware
+    ↓
+Specialist Agents
+    ↓
+MCP / Tool Layer
+    ↓
+Enterprise Systems
+    ↓
+Evidence + Knowledge
+    ↓
+Grounding Context
+    ↓
+Vertex AI Gemini
+    ↓
+Validation
+    ↓
+Citation
+    ↓
+DLP / Model Armor
+    ↓
+Policy
+    ↓
+HITL
+    ↓
+Action Agent
+    ↓
+ServiceNow
+
+With these persistent supporting capabilities:
+
+                    CONTROL PLANE
+                         |
+       +---------+-------+-------+---------+
+       |         |               |         |
+      IAM       DLP          Policy      Audit
+       |         |               |         |
+       +---------+-------+-------+---------+
+                         |
+                    OBSERVABILITY
+                         |
+          +--------------+--------------+
+          |              |              |
+      W3C Trace      Cloud Logging  Cloud Trace
+          |              |              |
+          +--------------+--------------+
+                         |
+                  Cloud Monitoring
+
+And the data architecture:
+
+             ENTERPRISE KNOWLEDGE
+                     |
+       +-------------+-------------+
+       |                           |
+      CMDB                     Documents
+       |                           |
+       |                    GCS / Knowledge
+       |                           |
+       +-------------+-------------+
+                     |
+                RAG / Search
+                     |
+                     v
+                KNOWLEDGE
+
+
+             RUNTIME SYSTEMS
+                     |
+       +-------------+-------------+
+       |             |             |
+   Logging       Monitoring      Trace
+       |             |             |
+       +-------------+-------------+
+                     |
+                  EVIDENCE
+                     |
+                     v
+             GCS Evidence Store

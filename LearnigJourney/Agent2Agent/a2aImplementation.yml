@@ -1,0 +1,320 @@
+1. Target architecture:
+                         ┌──────────────────────┐
+                         │   FastAPI / Uvicorn  │
+                         │      ASGI Layer      │
+                         └──────────┬───────────┘
+                                    │
+                         Cross-Cutting Middleware
+                                    │
+                 ┌──────────────────┼──────────────────┐
+                 │                  │                  │
+              Logging            Tracing           Security
+              Metrics             Audit            Correlation
+                 │                  │                  │
+                 └──────────────────┼──────────────────┘
+                                    │
+                         ┌──────────▼──────────┐
+                         │  Runtime Bootstrap  │
+                         │  Config / DI /      │
+                         │  Dynamic Agent Load │
+                         └──────────┬──────────┘
+                                    │
+                     Runtime-selected Agent Package
+                                    │
+              ┌─────────────────────┼─────────────────────┐
+              │                                           │
+      ┌───────▼────────┐                         ┌─────────▼────────┐
+      │  Travel Agent  │                         │  Finance Agent   │
+      │ independent    │                         │ independent      │
+      │ Python package │                         │ Python package   │
+      └───────┬────────┘                         └─────────┬────────┘
+              │                                           │
+              └─────────────────┬─────────────────────────┘
+                                │
+                         ┌──────▼──────┐
+                         │ A2A Adapter │
+                         └──────┬──────┘
+                                │
+                           A2A Protocol
+                                │
+                         ┌──────▼──────┐
+                         │ Application │
+                         │   Use Case  │
+                         └──────┬──────┘
+                                │
+                    ┌───────────┼───────────┐
+                    │           │           │
+                 Policy      Reasoning   Enterprise
+                  Port         Port        API Port
+                    │           │           │
+                    ▼           ▼           ▼
+                  OPA/       Vertex AI    Google APIs
+                 Policy       / ADK       SAP / SNOW
+                              / CrewAI    HR / Finance
+                              / LangGraph
+                              / OpenAI
+                              
+2. The clean-architecture boundary:
+agent-platform/
+│
+├── pyproject.toml
+├── README.md
+├── Makefile
+├── .env.example
+│
+├── platform/
+│   │
+│   ├── configuration/
+│   │   ├── loader.py
+│   │   ├── environment.py
+│   │   └── validation.py
+│   │
+│   ├── security/
+│   │   ├── authentication/
+│   │   ├── authorization/
+│   │   ├── identity/
+│   │   └── credentials/
+│   │
+│   ├── governance/
+│   │   ├── policy/
+│   │   ├── guardrails/
+│   │   ├── approvals/
+│   │   └── decisions/
+│   │
+│   ├── observability/
+│   │   ├── logging/
+│   │   ├── tracing/
+│   │   ├── metrics/
+│   │   ├── context/
+│   │   └── redaction/
+│   │
+│   ├── audit/
+│   │   ├── events.py
+│   │   └── sink.py
+│   │
+│   ├── a2a/
+│   │   ├── client/
+│   │   ├── models/
+│   │   └── utilities/
+│   │
+│   └── integrations/
+│       ├── vertex_ai/
+│       ├── google_cloud/
+│       ├── http/
+│       └── persistence/
+│
+├── agents/
+│   │
+│   ├── travel/
+│   │   │
+│   │   ├── core/
+│   │   │   ├── domain/
+│   │   │   │   ├── models/
+│   │   │   │   ├── services/
+│   │   │   │   └── policies/
+│   │   │   │
+│   │   │   ├── application/
+│   │   │   │   ├── commands/
+│   │   │   │   ├── queries/
+│   │   │   │   └── services/
+│   │   │   │
+│   │   │   └── ports/
+│   │   │       ├── inbound/
+│   │   │       └── outbound/
+│   │   │
+│   │   ├── adapters/
+│   │   │   ├── inbound/
+│   │   │   │   ├── a2a/
+│   │   │   │   │   ├── executor.py
+│   │   │   │   │   ├── routes.py
+│   │   │   │   │   └── card.py
+│   │   │   │   └── http/
+│   │   │   │
+│   │   │   └── outbound/
+│   │   │       ├── a2a/
+│   │   │       ├── travel_provider/
+│   │   │       ├── reasoning/
+│   │   │       └── google_cloud/
+│   │   │
+│   │   ├── configuration/
+│   │   │   ├── settings.py
+│   │   │   ├── agent.yaml
+│   │   │   └── policies.yaml
+│   │   │
+│   │   ├── bootstrap/
+│   │   │   ├── container.py
+│   │   │   └── dependencies.py
+│   │   │
+│   │   ├── agent.py
+│   │   ├── application.py
+│   │   └── __main__.py
+│   │
+│   └── finance/
+│       │
+│       ├── core/
+│       │   ├── domain/
+│       │   │   ├── models/
+│       │   │   ├── services/
+│       │   │   └── policies/
+│       │   ├── application/
+│       │   │   ├── commands/
+│       │   │   ├── queries/
+│       │   │   └── services/
+│       │   └── ports/
+│       │       ├── inbound/
+│       │       └── outbound/
+│       │
+│       ├── adapters/
+│       │   ├── inbound/
+│       │   │   ├── a2a/
+│       │   │   │   ├── executor.py
+│       │   │   │   ├── routes.py
+│       │   │   │   └── card.py
+│       │   │   └── http/
+│       │   │
+│       │   └── outbound/
+│       │       ├── a2a/
+│       │       ├── finance_system/
+│       │       ├── reasoning/
+│       │       └── google_cloud/
+│       │
+│       ├── configuration/
+│       │   ├── settings.py
+│       │   ├── agent.yaml
+│       │   └── policies.yaml
+│       │
+│       ├── bootstrap/
+│       │   ├── container.py
+│       │   └── dependencies.py
+│       │
+│       ├── agent.py
+│       ├── application.py
+│       └── __main__.py
+│
+├── deployment/
+│   ├── travel/
+│   │   ├── Dockerfile
+│   │   └── cloudrun.yaml
+│   │
+│   └── finance/
+│       ├── Dockerfile
+│       └── cloudrun.yaml
+│
+└── tests/
+    ├── architecture/
+    ├── contract/
+    └── integration/
+    
+    
+####
+
+agent-platform/
+├── README.md
+├── Makefile
+├── .env.example
+├── .github/workflows/
+│   ├── sdk.yaml                        # runs on sdk/** changes
+│   ├── travel-agent.yaml               # runs on services/travel-agent/** changes
+│   └── finance-agent.yaml              # runs on services/finance-agent/** changes
+│
+├── docs/
+│   ├── adr/
+│   ├── architecture/
+│   └── logging-standard.md
+│
+├── sdk/                                # SHARED KERNEL: no business logic
+│   ├── pyproject.toml
+│   ├── CHANGELOG.md
+│   ├── .importlinter
+│   ├── src/agent_platform/
+│   │   ├── configuration/              # loader.py, environment.py, validation.py
+│   │   ├── security/
+│   │   │   ├── authentication/
+│   │   │   ├── authorization/
+│   │   │   ├── identity/
+│   │   │   └── credentials/
+│   │   ├── governance/
+│   │   │   ├── policy/                 # PDP engine, loader, models
+│   │   │   ├── guardrails/{input,output,tool}/
+│   │   │   ├── approvals/              # human-in-the-loop
+│   │   │   ├── decisions/
+│   │   │   └── enforcement/            # PEP interceptors
+│   │   ├── observability/
+│   │   │   ├── logging/
+│   │   │   ├── tracing/
+│   │   │   ├── metrics/
+│   │   │   ├── context/                # trace_id, correlation_id, task_id, agent_id
+│   │   │   ├── redaction/
+│   │   │   ├── middleware/
+│   │   │   └── taxonomy.py
+│   │   ├── audit/                      # events.py, sink.py, sinks/
+│   │   ├── a2a/
+│   │   │   ├── protocol/               # Agent Card, Task, Message models
+│   │   │   ├── server/                 # app, executor, card_builder, task_store, middleware
+│   │   │   └── client/                 # discovery, ID-token auth, retries, trace inject
+│   │   ├── resilience/                 # retry, timeout, circuit breaker, idempotency
+│   │   ├── evaluation/
+│   │   ├── prompts/
+│   │   ├── integrations/{vertex_ai,google_cloud,http,persistence}/
+│   │   └── testing/                    # fakes and contract-test helpers
+│   └── tests/
+│
+├── services/
+│   ├── travel-agent/                   # INDEPENDENT SERVICE 1
+│   │   ├── pyproject.toml              # depends on agent-platform-sdk>=1,<2
+│   │   ├── Dockerfile
+│   │   ├── .importlinter
+│   │   ├── contracts/                  # public API of this service
+│   │   │   ├── agent-card.json
+│   │   │   └── skills/                 # e.g. search_flights.v1.json
+│   │   ├── docs/{adr/, runbook.md}
+│   │   ├── infra/                      # cloudrun.tf, iam.tf, secrets.tf, datastore.tf
+│   │   ├── src/travel_agent/
+│   │   │   ├── core/                   # PURE: no SDK, no framework, no I/O
+│   │   │   │   ├── domain/{models,services,policies}/
+│   │   │   │   ├── application/{commands,queries,services,interceptors}/
+│   │   │   │   └── ports/
+│   │   │   │       ├── inbound/        # HandleTaskUseCase
+│   │   │   │       └── outbound/       # ReasoningEnginePort, ToolPort, MemoryPort,
+│   │   │   │                           # ModelGatewayPort, PolicyPort, AuditPort,
+│   │   │   │                           # RemoteAgentPort, TravelProviderPort
+│   │   │   ├── adapters/
+│   │   │   │   ├── inbound/{a2a,http}/ # a2a: handler.py + card.py (data only)
+│   │   │   │   └── outbound/
+│   │   │   │       ├── a2a/            # calls finance-agent via generated client
+│   │   │   │       ├── travel_provider/
+│   │   │   │       ├── reasoning/{langgraph,crewai,google_adk,openai_agents,vertex_ai}/
+│   │   │   │       ├── tools/
+│   │   │   │       ├── memory/
+│   │   │   │       └── google_cloud/
+│   │   │   ├── configuration/          # settings.py, agent.yaml, policies.yaml
+│   │   │   ├── prompts/
+│   │   │   ├── bootstrap/              # container.py (only place that wires adapters)
+│   │   │   └── __main__.py
+│   │   └── tests/{architecture,unit,contract,integration,security,evals}/
+│   │
+│   └── finance-agent/                  # INDEPENDENT SERVICE 2 (same layout)
+│       ├── pyproject.toml
+│       ├── Dockerfile
+│       ├── .importlinter
+│       ├── contracts/{agent-card.json, skills/}
+│       ├── docs/{adr/, runbook.md}
+│       ├── infra/
+│       ├── src/finance_agent/
+│       │   ├── core/
+│       │   │   ├── domain/{models,services,policies}/
+│       │   │   ├── application/{commands,queries,services,interceptors}/
+│       │   │   └── ports/{inbound,outbound}/   # FinanceSystemPort instead of TravelProviderPort
+│       │   ├── adapters/
+│       │   │   ├── inbound/{a2a,http}/
+│       │   │   └── outbound/{a2a,finance_system,reasoning,tools,memory,google_cloud}/
+│       │   ├── configuration/          # settings.py, agent.yaml, policies.yaml
+│       │   ├── prompts/
+│       │   ├── bootstrap/
+│       │   └── __main__.py
+│       └── tests/{architecture,unit,contract,integration,security,evals}/
+│
+└── infra/                              # shared GCP only
+    ├── log_sinks.tf                    # central logging project
+    ├── audit_bigquery.tf               # write-only, immutable audit dataset
+    └── artifact_registry.tf            # SDK package and container images    

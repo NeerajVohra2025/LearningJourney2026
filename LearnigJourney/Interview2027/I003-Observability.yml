@@ -1,0 +1,1564 @@
+Enterprise GenAI Observability — From Basic Terms to OpenTelemetry:
+
+1. Telemetry:
+Telemetry is data your running system sends out about its own behavior, so you can understand it from the outside without logging into the server.
+Analogy: A car dashboard. Speed, fuel level and engine temperature are telemetry. You don't open the engine to know how the car is doing.
+# Telemetry is the automatic collection of data about how a system is behaving while it runs.
+Telemetry comes in three main types: logs, metrics and traces
+
+Signal	                            Question it answers	                                            Example
+Logs (text events)                  What happened?	                                                ERROR: LLM call failed, status 429   # (“user X asked for summary”, “model timed out”)
+
+
+Metrics (numbers)	                How much / how often / how fast?	                            p95 latency = 4.2s, tokens/min = 180k  # (latency, request count, GPU utilization, token usage)
+
+
+Traces                          	Where did the request go, and where was it slow?	            API → Retriever → Vector DB → LLM → Guardrail # the full journey of a single request across services
+A fourth signal, profiles, is emerging, and OTel is adding it.
+
+
+Why GenAI Needs More Than Standard Telemetry:
+Answer: GenAI systems are non-deterministic, slow, expensive and multi-step. Classic "HTTP 200 = healthy" isn't enough. An LLM can return 200 OK with a hallucinated or unsafe answer.
+Extra things we must observe:
+
+Layer:	                        What we watch
+LLM	                            Model, tokens, time to first token, retries
+Agent	                        Reasoning loops, handoffs
+Tools	                        Which tools ran, success or failure
+RAG	                            Retrieval latency, top_k, relevance
+Quality	                        Groundedness, hallucination, citation accuracy
+Policy / safety	G               uardrail blocks, human-in-the-loop approvals
+Cost	                        Tokens and money per request, user, tenant
+---
+
+
+2. Observability:
+Observability is the ability to understand what is happening inside a running system by looking at the data that the system produces.
+Monitoring tells you something is wrong ("latency is high").
+Observability helps you find out why ("the Gemini call timed out and retried"), without deploying new code.
+
+Analogy: Monitoring is a smoke alarm. Observability is the camera footage that shows where the fire started.
+
+                 RUNNING APPLICATION
+                        |
+             +----------+----------+
+             |          |          |
+             v          v          v
+           Logs      Metrics     Traces
+             |          |          |
+             +----------+----------+
+                        |
+                        v
+                OBSERVABILITY
+                        |
+                        v
+             Understand the system
+             
+---
+
+
+3. Logging:
+A log is a text record of an event that happened. It answers: "What happened?"     
+2026-10-06 20:10:03 ERROR  LLM call failed, status 429 (rate limited)
+2026-10-06 20:10:04 INFO   retry 1 succeeded
+
+Best practice: write structured logs (JSON), not free text, so they can be searched.   
+{"level":"ERROR","agent_id":"rca-agent","model_id":"gemini-2.5-pro",
+ "status":429,"retry_count":1,"trace_id":"4bf92f35..."}
+
+What does logging answer?:
+What happened? 
+For example:
+Tool call failed
+RAG returned zero documents
+Gemini returned 429
+Policy denied action
+ServiceNow update failed
+--
+
+
+4. Metrics: A metric is a numerical measurement collected over time.
+A metric is a number measured over time. It answers: "How much? How often? How fast?"
+Examples: requests per second, p95 latency, error rate, tokens per minute, GPU utilization, cost per day.
+Metrics are cheap to store and ideal for dashboards and alerts ("alert me if error rate > 2%").
+Warning: don't put high-variety values like user_id or raw prompts into metric labels. This is called cardinality explosion and it makes metrics systems slow and expensive.
+---
+
+
+5. Tracing:
+A trace is the full journey of one request through your system. It answers: "Where did the request go, and where was it slow?"
+
+Two words to know:
+
+Trace: the whole journey.
+Span: one step in the journey (e.g., "vector search"). A span has a name, start and end time, attributes, and a status.
+Example: an agent request
+Trace ID: 4bf92f35...
+└─ POST /chat                       1.9s   ← root span
+   └─ agent.run (rca-agent)         1.8s
+      ├─ rag.vector_search          0.2s
+      ├─ tool.call (get_logs)       0.2s
+      └─ llm.generate (gemini)      1.2s   ← the slow step
+Every span shares one Trace ID, and each span has a Span ID and a Parent Span ID. That's how the tree is built.      
+---
+
+
+6. The Three Signals Working Together:
+Problem: "Our RCA (root cause analysis) agent takes 8 seconds."
+Signal	                    What it tells you
+Metric	                    Latency is 8s (that it's slow)
+Trace	                    The Gemini call took 6.2s (where it's slow)
+Log	                        "Gemini timed out, retrying" (why it's slow)
+Root cause: the Vertex AI call is causing most of the delay.
+---
+
+
+7. Instrumentation:
+Instrumentation means adding code (or a plugin) to your application so that it produces telemetry. Without it, the app is a black box.
+# Instrumentation means adding the capability to an application so that it produces telemetry.
+Without instrumentation:
+Application
+     |
+     X
+No visibility
+
+With instrumentation:
+
+Application
+     |
+     v
+Instrumentation
+     |
+     +---- Logs
+     +---- Metrics
+     +---- Traces
+     
+Simple analogy:
+Think about a factory.
+
+You install:
+
+Temperature sensors
+Pressure sensors
+Production counters
+Error sensors
+
+You haven't changed what the factory produces.
+You have simply added sensors.
+Instrumentation is the equivalent of adding those sensors to software.     
+
+Types of Instrumentation:
+There are three common approaches.
+
+
+1 Automatic Instrumentation:  # Auto (zero-code)
+Efforts: Lowest
+Use automatic instrumentation for common technologies:
+
+FastAPI
+HTTP
+Database
+gRPC
+
+This provides fast adoption.
+
+
+
+2 Library Instrumentation:
+Efforts: Low
+You enable a plugin for a specific framework (FastAPI, requests)
+For example:
+FastAPIInstrumentor.instrument_app(app)
+The application code remains mostly unchanged.
+
+
+3 Manual Instrumentation: # This is extremely important for GenAI applications
+Efforts: Highest	
+You write spans and attributes yourself for business logic, agents, tools, RAG
+For GenAI, you will almost always need some manual instrumentation, because no generic tool knows what your agent's "tool call" or "guardrail check" means.
+---
+
+8. Context Propagation and W3C Trace Context: # How do we propagate trace information between services?
+When Service A calls Service B, how does B know it's part of the same trace? A tiny header travels with the request:
+traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+             │   │                                │                │
+             │   └ trace-id                       │                └ flags (01 = sampled)
+             └ version                             └ parent span-id
+             
+This format is the W3C Trace Context standard.
+
+Inject: the caller writes the header.
+Extract: the receiver reads it and continues the same trace.             
+---
+
+10. What is OpenTelemetry (OTel)?: # How do we instrument applications and produce/collect telemetry?.
+# it does not provide storage or visualization.
+OpenTelemetry is an open-source, vendor-neutral standard (a CNCF project) for generating, collecting and exporting telemetry.
+It supports:
+Logs
+Metrics
+Traces
+
+It provides:
+Piece	                        Plain-English meaning
+API	                            Functions your code calls (tracer.start_span())
+SDK	                            The engine behind the API: sampling, batching, exporting
+Instrumentation libraries	    Ready-made plugins for frameworks and LLM SDKs
+Context propagation	            Passing trace identity between services
+OTLP	                        The standard format and protocol for sending telemetry
+Collector                   	A service that receives, cleans and routes telemetry
+Semantic conventions	        Standard attribute names (gen_ai.request.model)
+
+The key point: OpenTelemetry does not store or display anything. It is the pipe, not the dashboard.
+
+Remember this:
+OpenTelemetry is not Grafana.
+OpenTelemetry is not Prometheus.
+OpenTelemetry is not Cloud Trace.
+OpenTelemetry is not Kibana.
+Think of OTel as the telemetry plumbing.
+                 APPLICATION
+                     |
+                     v
+              OpenTelemetry
+                     |
+             +-------+-------+
+             |       |       |
+           Logs   Metrics   Traces
+             |       |       |
+             +-------+-------+
+                     |
+                     v
+              Telemetry Backend
+                     |
+             +-------+-------+
+             |       |       |
+           Google  Prometheus Grafana
+           Cloud             |
+                             |
+                         Dashboards
+                         
+                         
+OpenTelemetry Architecture:
+A typical enterprise architecture looks like:      
++------------------------------------------------+
+|              GenAI Application                 |
+|                                                |
+| FastAPI / ADK / Agents / RAG / Gemini         |
++-------------------------+----------------------+
+                          |
+                          v
+                OpenTelemetry SDK
+                          |
+                          v
+                  OTLP Exporter
+                          |
+                          v
+                OpenTelemetry Collector
+                          |
+             +------------+------------+
+             |            |            |
+             v            v            v
+        Google Cloud  Prometheus    Other
+           Stack                    Backend
+             |
+       +-----+------+
+       |            |
+       v            v
+   Cloud Trace   Cloud Logging
+
+
+
+What is the OpenTelemetry Collector?:
+The Collector has three stages: Receivers (accept data) → Processors (clean, filter, sample) → Exporters (send to backends).
+
+Collector pipeline:
+
+Receivers: accept data (OTLP, Prometheus, Jaeger)
+Processors: batch, filter, redact PII, sample, add attributes
+Exporters: send to backends
+
+Application
+     |
+     | telemetry
+     v
+OTel Collector
+     |
+     +---- Process
+     +---- Filter
+     +---- Redact
+     +---- Sample
+     +---- Enrich
+     |
+     v
+Backend
+
+
+Receiver:
+Receives telemetry.
+OTLP
+Prometheus
+Jaeger
+
+
+Processor:
+Processes telemetry.
+For example:
+Batch
+Filter
+Redact
+Sampling
+Add attributes
+
+
+Exporter:
+Sends telemetry somewhere.
+Google Cloud
+Prometheus
+Grafana ecosystem
+Other backend
+---
+
+
+OpenTelemetry vs Prometheus vs Grafana:
+Simple explanation:
+OpenTelemetry
+
+Creates, collects and exports telemetry.
+
+Prometheus: # Primarily a metrics monitoring/time-series ecosystem.
+Prometheus is a system for collecting, storing and querying metrics (numbers over time). It uses a query language called PromQL and is very common in Kubernetes. It also supports alerting rules.
+It does not handle traces, and it isn't a general logging tool.
+
+Grafana:
+Grafana is a visualization and alerting tool. It doesn't produce telemetry. It connects to data stores (Prometheus, Google Cloud Monitoring, Tempo, Loki, Elasticsearch and more) and draws dashboards from them.
+
+Therefore:
+Application
+     |
+     v
+OpenTelemetry
+     |
+     +---- Metrics
+     |       |
+     |       v
+     |   Prometheus
+     |
+     +---- Traces
+     |       |
+     |       v
+     |   Trace Backend
+     |
+     +---- Logs
+             |
+             v
+        Log Backend
+             |
+             v
+          Grafana
+          
+
+
+How They Fit Together:          
+Your agent (OTel SDK + instrumentation)
+        │  OTLP
+        ▼
+   OTel Collector
+        │
+        ├─► Prometheus / Cloud Monitoring   (metrics)
+        ├─► Tempo / Jaeger / Cloud Trace    (traces)
+        └─► Loki / Elastic / Cloud Logging  (logs)
+                      │
+                      ▼
+                   Grafana  (dashboards, alerts)          
+                   
+The Enterprise Technology Map:
+This table is worth remembering for interviews.                   
+| Technology              | Primary Responsibility           |
+| ----------------------- | -------------------------------- |
+| W3C Trace Context       | Trace propagation                |
+| OpenTelemetry           | Instrumentation and telemetry    |
+| OTel Collector          | Collect/process/export telemetry |
+| Google Cloud Logging    | Log storage/search               |
+| Google Cloud Trace      | Distributed tracing              |
+| Google Cloud Monitoring | Metrics/alerting                 |
+| Prometheus              | Metrics/time-series ecosystem    |
+| Grafana                 | Dashboards/visualization         |
+| Elasticsearch           | Search/analytics storage         |
+| Kibana                  | Elasticsearch visualization      |
+| Jaeger                  | Distributed tracing backend      |
+#########################################################################################################################################
+
+PART 3: How to Configure OpenTelemetry:
+16. The Big Picture:
+Configuration is a chain of decisions:
+Instrumentation → SDK → Resource → Sampler → Exporter → Collector → Backend
+
+Step 1 — Instrument the Application:
+Our application contains:
+
+FastAPI
+Google ADK
+Agents
+RAG
+MCP
+Geminini
+
+
+Use automatic instrumentation for infrastructure and manual instrumentation for GenAI business operations.
+
+Automatic
+    |
+    +-- FastAPI
+    +-- HTTP
+    +-- Database
+    +-- gRPC
+
+Manual
+    |
+    +-- Agent
+    +-- MCP
+    +-- RAG
+    +-- Grounding
+    +-- Gemini
+    +-- Policy
+-
+
+Step 2 — Configure the OTel SDK:
+The SDK controls how telemetry is generated and processed.
+
+Example:
+
+from opentelemetry import trace
+
+tracer = trace.get_tracer("rca-agent")
+
+Then create a business-level span:
+
+with tracer.start_as_current_span(
+    "rca.investigation"
+) as span:
+
+    span.set_attribute(
+        "agent.id",
+        "RCAAgent"
+    )
+
+    perform_rca()
+    
+-
+
+   
+Step 3 — Define Resource Identity:
+Every telemetry record must clearly identify where it came from.
+Example:
+
+service.name = rca-agent
+service.version = 1.4.2
+deployment.environment = prod
+cloud.provider = gcp
+cloud.region = asia-south1
+
+This allows the SRE to answer:
+
+Which service?
+Which version?
+Which environment?
+Which region?
+
+Without service.name, telemetry can become difficult to identify; the reference notes that it can appear as unknown_service.
+-
+
+
+Step 4 — Configure Sampling:
+Imagine:
+
+10,000 requests/sec
+
+We may not want to permanently retain every trace.
+
+Sampling determines what is retained.
+
+Typical strategies:
+
+Always On
+Always Off
+Trace ID Ratio
+Parent Based
+Tail Sampling
+
+For a Responsible GenAI platform:
+
+100% Errors
+100% Policy Denials
+100% Guardrail Blocks
+100% High-Risk Actions
+100% HITL
+
+10% Normal Successful Requests
+
+This ensures that the most important security and operational events are retained.
+
+Why Parent-Based Sampling?:
+Consider:
+
+Service A
+   |
+   v
+Service B
+   |
+   v
+Service C
+
+If Service A samples the trace but Service B independently makes another decision, the trace can become fragmented.
+
+Parent-based sampling allows child services to honor the upstream decision.
+
+Conceptually:
+
+Parent Trace
+      |
+      +---- Child Span
+      |
+      +---- Child Span
+      |
+      +---- Child Span
+
+This helps preserve end-to-end trace continuity.
+
+
+
+---
+
+Step 5 — Configure the OTLP Exporter: #The exporter determines where telemetry is sent.
+
+The application sends telemetry through OTLP.
+
+Application
+     |
+     v
+OTel SDK
+     |
+     v
+OTLP Exporter
+     |
+     v
+OTel Collector
+
+OTLP because it keeps the application independent of the final telemetry backend.
+---
+
+
+Step 6 — Configure the OTel Collector:
+
+The Collector becomes our enterprise telemetry gateway.
+
+It has three major stages:
+
+Receiver
+   ↓
+Processor
+   ↓
+Exporter
+Receiver
+
+Receives telemetry.
+
+OTLP/gRPC
+OTLP/HTTP
+Processor
+
+Controls telemetry.
+
+Batch
+Filter
+Redaction
+Sampling
+Enrichment
+Exporter
+
+Sends telemetry to:
+
+Google Cloud
+Prometheus
+Grafana ecosystem
+Other backends
+
+
+Responsible AI Requirement — Protect Telemetry:
+This is one of the most important SRE responsibilities.
+Do not assume telemetry is safe merely because it is observability data.
+
+GenAI telemetry can contain:
+
+Prompts
+Responses
+PII
+Secrets
+Tokens
+User information
+Business information
+
+Therefore:
+
+Application
+     |
+     v
+OTel Collector
+     |
+     +-- Redact
+     +-- Filter
+     +-- Sample
+     +-- Batch
+     |
+     v
+Backend
+
+redaction and controlled handling of prompts/responses as important Responsible AI considerations.
+
+---
+
+Step 7 — Send Telemetry to Google Cloud:                  
+For our GCP architecture:
+                    Application
+                         |
+                    OpenTelemetry
+                         |
+                    OTel Collector
+                         |
+          +--------------+--------------+
+          |              |              |
+          v              v              v
+    Cloud Logging   Cloud Trace   Cloud Monitoring
+          |              |              |
+          +--------------+--------------+
+                         |
+                         v
+                    SRE / Operations
+                    
+This fits well with our existing architecture because:
+Cloud Logging → Detailed application/system logs
+Cloud Trace → Distributed request traces
+Cloud Monitoring → Metrics, dashboards and alerts  
+---
+
+What Should We Instrument in a GenAI System?:
+Traditional application telemetry is not enough.
+
+For our responsible-agent platform, instrument:               
+                    GenAI Observability
+                           |
+       +-------------------+-------------------+
+       |                   |                   |
+     Agent               Tool                LLM
+       |                   |                   |
+     RAG                MCP                  Gemini
+       |                   |                   |
+  Grounding           Enterprise API      Tokens
+       |                                      |
+  Evaluation                            Latency/Cost
+       |
+    Policy
+    
+    
+--
+
+GenAI Instrumentation — Agent Layer:
+
+Every agent should expose operational telemetry.
+
+Recommended attributes:
+
+agent_id
+agent_version
+trace_id
+incident_id
+investigation_id
+start_time
+end_time
+latency
+status
+retry_count
+tool_count
+
+Example:
+
+agent_id = RCAAgent
+agent_version = 2.1
+status = SUCCESS
+latency = 6.8 sec
+tools_called = 3
+
+The reference identifies these exact dimensions for agent telemetry.      
+--
+GenAI Instrumentation — MCP / Tool Layer:
+
+For every MCP/tool call:
+
+tool_id
+tool_name
+agent_id
+trace_id
+duration
+status
+error
+authorization_result
+
+Example:
+
+tool = get_logs
+agent = LogAnalysisAgent
+status = SUCCESS
+latency = 320 ms
+authorization = ALLOWED
+
+For a high-risk operation:
+
+tool = restart_service
+risk = HIGH
+policy = ALLOWED
+approval = REQUIRED
+approval_id = APR123
+
+This allows us to answer:
+
+Did the AI merely recommend the action, or did the system actually execute it?
+
+That distinction is fundamental in Responsible AI.
+---
+
+GenAI Instrumentation — Gemini:
+
+For Gemini/Vertex AI calls capture:
+
+model_id
+model_version
+prompt_version
+request_id
+trace_id
+agent_id
+input_token_count
+output_token_count
+latency
+retry_count
+error
+grounding_id
+
+Potentially:
+
+time_to_first_token
+generation_latency
+safety_result
+guardrail_result
+
+Example:
+
+with tracer.start_as_current_span(
+    "gemini.generate"
+) as span:
+
+    span.set_attribute(
+        "gen_ai.request.model",
+        "gemini"
+    )
+
+    span.set_attribute(
+        "app.agent_id",
+        "RCAAgent"
+    )
+
+    response = model.generate_content(prompt)
+
+    span.set_attribute(
+        "gen_ai.usage.input_tokens",
+        response.usage_metadata.prompt_token_count
+    )
+
+    span.set_attribute(
+        "gen_ai.usage.output_tokens",
+        response.usage_metadata.candidates_token_count
+    )
+
+The reference uses this same pattern for Gemini telemetry.
+---
+
+Critical Responsible AI Rule:
+
+Do not automatically put the complete prompt and model response into every trace.
+
+Why?
+
+Because they may contain:
+
+PII
+Secrets
+Aadhaar/PAN-like identifiers
+Customer information
+Production data
+Confidential business information
+
+Instead capture:
+
+prompt_version
+prompt_hash
+grounding_id
+knowledge_ids
+token counts
+model
+latency
+evaluation result
+
+And store sensitive content only where explicitly required, protected and governed.
+--
+
+
+####  The Most Important Architecture Distinction:
+For our enterprise GenAI platform, keep these concepts separate:
+Telemetry
+   ↓
+What the system emitted
+
+Instrumentation
+   ↓
+How the application produces telemetry
+
+OpenTelemetry
+   ↓
+Framework/standard used to generate and transport telemetry
+
+W3C Trace Context
+   ↓
+How distributed trace context travels between services
+
+OTel Collector
+   ↓
+Central telemetry processing pipeline
+
+Cloud Logging
+   ↓
+Where logs can be stored/searched
+
+Cloud Trace
+   ↓
+Where distributed traces can be analyzed
+
+Cloud Monitoring
+   ↓
+Where metrics/alerts can be managed
+
+Grafana
+   ↓
+Visualization/dashboard layer
+
+Prometheus
+   ↓
+Metrics/time-series ecosystem
+
+Observability
+   ↓
+Ability to understand why the system behaved as it did
+
+And for Agentic AI, extend the traditional three pillars:
+Traditional Observability
+        |
+        +-- Logs
+        +-- Metrics
+        +-- Traces
+
+             +
+
+GenAI Observability
+        |
+        +-- Agent telemetry
+        +-- Tool/MCP telemetry
+        +-- LLM telemetry
+        +-- RAG telemetry
+        +-- Grounding telemetry
+        +-- Evaluation telemetry
+        +-- Policy telemetry
+        +-- Cost telemetry
+        +-- Safety telemetry
+        
+#############################################################################################################
+
+
+26. Reference Python SDK Configuration:        
+A simplified enterprise bootstrap looks like:
+
+from opentelemetry import trace, metrics
+
+from opentelemetry.sdk.resources import Resource
+
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+from opentelemetry.sdk.trace.sampling import (
+    ParentBased,
+    TraceIdRatioBased
+)
+
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import (
+    PeriodicExportingMetricReader
+)
+
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+    OTLPSpanExporter
+)
+
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+    OTLPMetricExporter
+)
+
+
+resource = Resource.create({
+    "service.name": "rca-agent",
+    "service.version": "1.4.2",
+    "deployment.environment": "prod",
+    "cloud.provider": "gcp",
+    "cloud.region": "asia-south1",
+})
+
+
+provider = TracerProvider(
+    resource=resource,
+    sampler=ParentBased(
+        TraceIdRatioBased(0.10)
+    )
+)
+
+
+provider.add_span_processor(
+    BatchSpanProcessor(
+        OTLPSpanExporter(
+            endpoint="otel-collector:4317"
+        )
+    )
+)
+
+
+trace.set_tracer_provider(provider)
+
+The reference provides this same basic implementation pattern.
+---
+
+27. Environment-Based Configuration:
+
+Instead of hard-coding configuration, we can externalize it.
+
+Example:
+
+export OTEL_SERVICE_NAME=rca-agent
+
+export OTEL_RESOURCE_ATTRIBUTES=\
+service.version=1.4.2,\
+deployment.environment=prod,\
+cloud.provider=gcp
+
+export OTEL_EXPORTER_OTLP_ENDPOINT=\
+http://otel-collector:4317
+
+export OTEL_PROPAGATORS=tracecontext,baggage
+
+export OTEL_TRACES_SAMPLER=\
+parentbased_traceidratio
+
+export OTEL_TRACES_SAMPLER_ARG=0.1
+
+Then:
+
+opentelemetry-instrument python app.py
+
+This approach is useful when the same application is deployed across:
+
+DEV
+QA
+UAT
+PROD
+
+with different operational configuration.
+
+The reference provides this environment-variable approach.
+
+---
+
+28. Collector Configuration:
+
+Conceptually:
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+
+  batch: {}
+
+exporters:
+
+  googlecloud: {}
+
+service:
+
+  pipelines:
+
+    traces:
+      receivers: [otlp]
+      processors:
+        - memory_limiter
+        - batch
+      exporters:
+        - googlecloud
+
+    metrics:
+      receivers: [otlp]
+      processors:
+        - memory_limiter
+        - batch
+      exporters:
+        - googlecloud
+
+The reference adds additional Responsible AI processing such as redaction and tail sampling.
+--
+29. Responsible AI Collector Pipeline:
+
+For production, the conceptual pipeline should be:
+
+                   OTLP
+                    |
+                    v
+              +-----------+
+              | Receiver  |
+              +-----------+
+                    |
+                    v
+              +-----------+
+              | Redaction |
+              +-----------+
+                    |
+                    v
+              +-----------+
+              | Filtering |
+              +-----------+
+                    |
+                    v
+              +-----------+
+              | Sampling  |
+              +-----------+
+                    |
+                    v
+              +-----------+
+              | Batching  |
+              +-----------+
+                    |
+                    v
+               Exporters
+
+This gives the SRE team a central control point.
+#
+
+37. Metrics for Responsible GenAI:
+We should define metrics at several levels.
+
+Platform Metrics:
+request_count
+error_rate
+availability
+CPU
+memory
+
+Agent Metrics:
+agent_execution_count
+agent_failure_count
+agent_latency
+retry_count
+timeout_count
+
+
+Tool Metrics:
+tool_call_count
+tool_failure_count
+tool_denial_count
+tool_latency
+
+RAG Metrics:
+retrieval_latency
+cache_hit_rate
+retrieval_relevance
+citation_accuracy
+
+LLM Metrics:
+input_tokens
+output_tokens
+generation_latency
+TTFT
+model_error_rate
+estimated_cost
+
+Responsible AI Metrics:
+guardrail_blocks
+policy_denials
+HITL_requests
+unsafe_requests
+validation_failures
+grounding_failures
+####
+| GCP                    | AWS                                       |
+| ---------------------- | ----------------------------------------- |
+| Cloud Logging          | **CloudWatch Logs**                       |
+| Logs Explorer          | **CloudWatch Logs Insights**              |
+| Cloud Monitoring       | **CloudWatch**                            |
+| Monitoring Metrics     | **CloudWatch Metrics**                    |
+| Monitoring Dashboards  | **CloudWatch Dashboards**                 |
+| Monitoring Alerting    | **CloudWatch Alarms**                     |
+| Cloud Trace            | **AWS X-Ray**                             |
+| Trace Explorer         | **X-Ray Trace Map / CloudWatch**          |
+| Application Monitoring | **CloudWatch Application Signals**        |
+| Cloud Audit Logs       | **AWS CloudTrail**                        |
+| Configuration tracking | **AWS Config**                            |
+| Managed Prometheus     | **Amazon Managed Service for Prometheus** |
+| Managed Grafana        | **Amazon Managed Grafana**                |
+| OpenTelemetry          | **AWS Distro for OpenTelemetry**          |
+| Cloud Profiler         | **CodeGuru Profiler**                     |
+
+
+observability_comparison:
+  title: "AWS vs GCP Observability — Complete Comparison"
+  purpose: "Enterprise observability service mapping by purpose"
+
+  core_concept:
+    logs: "Tell me what happened"
+    metrics: "Tell me how the system is behaving"
+    traces: "Tell me where the request travelled and where latency occurred"
+    audit: "Tell me who performed an action"
+    dashboards: "Give me a visual view of system health"
+    alerting: "Tell me when a defined condition requires action"
+
+  services:
+
+    - capability: "Central Observability Platform"
+      gcp:
+        service: "Google Cloud Observability"
+        purpose: "Integrated observability across logs, metrics, traces, errors and application health"
+      aws:
+        service: "Amazon CloudWatch"
+        purpose: "Central AWS observability platform for metrics, logs, alarms, dashboards, application monitoring and investigations"
+
+    - capability: "Application and Infrastructure Logs"
+      gcp:
+        service: "Cloud Logging"
+        purpose: "Collect, store, search and analyze application, infrastructure and platform logs"
+      aws:
+        service: "Amazon CloudWatch Logs"
+        purpose: "Collect, store, search and analyze application and infrastructure logs"
+
+    - capability: "Log Search and Query"
+      gcp:
+        service: "Logs Explorer"
+        parent_service: "Cloud Logging"
+        purpose: "Search and analyze logs using structured queries"
+      aws:
+        service: "CloudWatch Logs Insights"
+        parent_service: "Amazon CloudWatch"
+        purpose: "Interactive log querying and analysis"
+
+    - capability: "Metrics"
+      gcp:
+        service: "Cloud Monitoring"
+        purpose: "Collect and analyze infrastructure, application and custom metrics"
+      aws:
+        service: "CloudWatch Metrics"
+        parent_service: "Amazon CloudWatch"
+        purpose: "Collect AWS, application and custom metrics"
+
+    - capability: "Dashboards"
+      gcp:
+        service: "Cloud Monitoring Dashboards"
+        parent_service: "Cloud Monitoring"
+        purpose: "Visualize metrics, logs and system health"
+      aws:
+        service: "CloudWatch Dashboards"
+        parent_service: "Amazon CloudWatch"
+        purpose: "Create operational dashboards for metrics and monitoring data"
+
+    - capability: "Alerting"
+      gcp:
+        service: "Cloud Monitoring Alerting"
+        parent_service: "Cloud Monitoring"
+        purpose: "Create alerting policies based on metrics and conditions"
+      aws:
+        service: "CloudWatch Alarms"
+        parent_service: "Amazon CloudWatch"
+        purpose: "Trigger actions or notifications when thresholds or conditions are met"
+
+    - capability: "Distributed Tracing"
+      gcp:
+        service: "Cloud Trace"
+        purpose: "Distributed tracing for application requests and service-to-service calls"
+      aws:
+        service: "AWS X-Ray"
+        purpose: "Distributed tracing and request analysis across AWS applications"
+
+    - capability: "Trace Visualization"
+      gcp:
+        service: "Trace Explorer"
+        parent_service: "Cloud Trace"
+        purpose: "Search, filter and analyze individual traces and spans"
+      aws:
+        service: "X-Ray Trace Map"
+        parent_service: "AWS X-Ray / CloudWatch"
+        purpose: "Visualize service dependencies and distributed request paths"
+
+    - capability: "Application Performance Monitoring"
+      gcp:
+        service: "Cloud Monitoring Application Monitoring"
+        purpose: "Monitor application health, latency, availability and performance"
+      aws:
+        service: "CloudWatch Application Signals"
+        purpose: "Application performance monitoring using application-centric SLOs and telemetry"
+
+    - capability: "Audit and API Activity"
+      gcp:
+        service: "Cloud Audit Logs"
+        purpose: "Record administrative and data-access activities performed against Google Cloud resources"
+      aws:
+        service: "AWS CloudTrail"
+        purpose: "Record AWS API activity and determine who performed which action"
+
+    - capability: "Configuration and Compliance Tracking"
+      gcp:
+        service: "Cloud Asset Inventory + Security Command Center"
+        purpose: "Track resources, configurations, security posture and compliance-related information"
+      aws:
+        service: "AWS Config"
+        purpose: "Track resource configurations, configuration changes and compliance rules"
+
+    - capability: "Error Monitoring"
+      gcp:
+        service: "Error Reporting"
+        purpose: "Detect, group and analyze application errors and exceptions"
+      aws:
+        service: "CloudWatch Application Signals + CloudWatch Logs"
+        purpose: "Detect and analyze application errors using telemetry and logs"
+
+    - capability: "Infrastructure Monitoring"
+      gcp:
+        service: "Cloud Monitoring"
+        purpose: "Monitor compute, network, storage, databases and other infrastructure"
+      aws:
+        service: "Amazon CloudWatch"
+        purpose: "Monitor AWS infrastructure and service metrics"
+
+    - capability: "Container Monitoring"
+      gcp:
+        service: "Google Kubernetes Engine Monitoring"
+        parent_service: "Cloud Monitoring"
+        purpose: "Monitor GKE workloads, nodes, pods and Kubernetes resources"
+      aws:
+        service: "CloudWatch Container Insights"
+        parent_service: "Amazon CloudWatch"
+        purpose: "Monitor ECS, EKS and container workloads"
+
+    - capability: "Network Flow Monitoring"
+      gcp:
+        service: "VPC Flow Logs + Cloud Logging"
+        purpose: "Capture network flow information and analyze traffic"
+      aws:
+        service: "VPC Flow Logs + CloudWatch"
+        purpose: "Capture network traffic metadata and analyze network behavior"
+
+    - capability: "Synthetic Monitoring"
+      gcp:
+        service: "Synthetic Monitoring"
+        parent_service: "Cloud Monitoring"
+        purpose: "Test application availability and user-facing endpoints"
+      aws:
+        service: "CloudWatch Synthetics"
+        parent_service: "Amazon CloudWatch"
+        purpose: "Run automated canaries to test application endpoints and workflows"
+
+    - capability: "Real User Monitoring"
+      gcp:
+        service: "Google Cloud application observability capabilities"
+        purpose: "Monitor application behavior from the user/application perspective"
+      aws:
+        service: "CloudWatch RUM"
+        purpose: "Monitor real user experience and browser-side application performance"
+
+    - capability: "Prometheus Monitoring"
+      gcp:
+        service: "Google Cloud Managed Service for Prometheus"
+        purpose: "Managed Prometheus-compatible metrics collection and querying"
+      aws:
+        service: "Amazon Managed Service for Prometheus"
+        purpose: "Managed Prometheus-compatible monitoring service"
+
+    - capability: "Grafana"
+      gcp:
+        service: "Amazon Managed Grafana equivalent: Google Cloud Managed Service for Grafana"
+        purpose: "Managed Grafana dashboards and visualization"
+      aws:
+        service: "Amazon Managed Grafana"
+        purpose: "Managed Grafana dashboards and visualization"
+
+    - capability: "OpenTelemetry"
+      gcp:
+        service: "OpenTelemetry + Google Cloud integrations"
+        purpose: "Vendor-neutral instrumentation and telemetry collection"
+      aws:
+        service: "AWS Distro for OpenTelemetry (ADOT)"
+        purpose: "AWS-supported OpenTelemetry distribution for metrics and traces"
+
+    - capability: "Profiling"
+      gcp:
+        service: "Cloud Profiler"
+        purpose: "Analyze application CPU and memory usage"
+      aws:
+        service: "Amazon CodeGuru Profiler"
+        purpose: "Analyze application runtime performance and resource consumption"
+
+    - capability: "Log Routing"
+      gcp:
+        service: "Cloud Logging Log Router"
+        purpose: "Route logs to destinations such as BigQuery, Cloud Storage and Pub/Sub"
+      aws:
+        service: "CloudWatch Logs + subscription filters"
+        purpose: "Route log data to downstream AWS services and processing pipelines"
+
+    - capability: "Operational Investigation"
+      gcp:
+        service: "Cloud Monitoring + Cloud Logging + Cloud Trace"
+        purpose: "Correlate metrics, logs and traces for troubleshooting"
+      aws:
+        service: "CloudWatch + X-Ray + CloudWatch Logs Insights"
+        purpose: "Correlate metrics, logs, traces and application telemetry for investigations"
+
+  service_mapping:
+    gcp_to_aws:
+      cloud_logging: "CloudWatch Logs"
+      logs_explorer: "CloudWatch Logs Insights"
+      cloud_monitoring: "CloudWatch"
+      monitoring_metrics: "CloudWatch Metrics"
+      monitoring_dashboards: "CloudWatch Dashboards"
+      monitoring_alerting: "CloudWatch Alarms"
+      cloud_trace: "AWS X-Ray"
+      trace_explorer: "X-Ray Trace Map / CloudWatch trace experience"
+      application_monitoring: "CloudWatch Application Signals"
+      cloud_audit_logs: "AWS CloudTrail"
+      configuration_tracking: "AWS Config"
+      error_reporting: "CloudWatch + Application Signals + Logs"
+      gke_monitoring: "CloudWatch Container Insights for EKS/ECS"
+      synthetic_monitoring: "CloudWatch Synthetics"
+      real_user_monitoring: "CloudWatch RUM"
+      managed_prometheus: "Amazon Managed Service for Prometheus"
+      managed_grafana: "Amazon Managed Grafana"
+      opentelemetry: "AWS Distro for OpenTelemetry"
+      cloud_profiler: "Amazon CodeGuru Profiler"
+
+  important_distinctions:
+
+    cloudwatch_vs_cloudtrail:
+      cloudwatch:
+        purpose: "Operational observability"
+        answers: "How is my system behaving?"
+        examples:
+          - "CPU is high"
+          - "API latency increased"
+          - "Error rate crossed threshold"
+          - "Application logs contain exceptions"
+          - "Service is unhealthy"
+      cloudtrail:
+        purpose: "Security and API auditing"
+        answers: "Who did what?"
+        examples:
+          - "Who deleted the resource?"
+          - "Which IAM role changed the configuration?"
+          - "Which API was called?"
+          - "When was the security policy modified?"
+
+    cloudwatch_vs_xray:
+      cloudwatch:
+        role: "Broad observability platform"
+        covers:
+          - "Metrics"
+          - "Logs"
+          - "Alarms"
+          - "Dashboards"
+          - "Application monitoring"
+      xray:
+        role: "Distributed tracing"
+        covers:
+          - "Trace"
+          - "Span"
+          - "Service dependency"
+          - "Request path"
+          - "Latency breakdown"
+
+    opentelemetry_vs_observability_platform:
+      opentelemetry:
+        type: "Open standard and instrumentation framework"
+        purpose: "Generate and export telemetry"
+        telemetry:
+          - "Traces"
+          - "Metrics"
+          - "Logs"
+      cloudwatch:
+        type: "AWS observability platform"
+        purpose: "Store, analyze, visualize and alert on telemetry"
+      cloud_monitoring:
+        type: "GCP observability platform"
+        purpose: "Store, analyze, visualize and alert on telemetry"
+
+  telemetry_model:
+    logs:
+      question: "What happened?"
+      gcp: "Cloud Logging"
+      aws: "CloudWatch Logs"
+
+    metrics:
+      question: "How is the system behaving?"
+      gcp: "Cloud Monitoring"
+      aws: "CloudWatch Metrics"
+
+    traces:
+      question: "Where did the request travel?"
+      gcp: "Cloud Trace"
+      aws: "AWS X-Ray"
+
+    audit:
+      question: "Who performed the action?"
+      gcp: "Cloud Audit Logs"
+      aws: "AWS CloudTrail"
+
+    dashboards:
+      question: "What is the overall health?"
+      gcp: "Cloud Monitoring Dashboards"
+      aws: "CloudWatch Dashboards"
+
+    alerts:
+      question: "When should we take action?"
+      gcp: "Cloud Monitoring Alerting"
+      aws: "CloudWatch Alarms"
+
+  genai_agentic_ai_architecture:
+
+    example_flow:
+      - "ServiceNow"
+      - "API Gateway"
+      - "Orchestrator"
+      - "Specialist Agents"
+      - "MCP / Enterprise Tools"
+      - "LLM / Vertex AI or Amazon Bedrock"
+      - "Enterprise Systems"
+
+    gcp_observability:
+      logs: "Cloud Logging"
+      metrics: "Cloud Monitoring"
+      traces: "Cloud Trace"
+      audit: "Cloud Audit Logs"
+      errors: "Error Reporting"
+      dashboards: "Cloud Monitoring Dashboards"
+
+    aws_observability:
+      logs: "CloudWatch Logs"
+      metrics: "CloudWatch Metrics"
+      traces: "AWS X-Ray"
+      audit: "AWS CloudTrail"
+      application_monitoring: "CloudWatch Application Signals"
+      dashboards: "CloudWatch Dashboards"
+
+    recommended_correlation:
+      trace_id: "End-to-end request identifier"
+      span_id: "Individual operation identifier"
+      correlation_id: "Business transaction identifier"
+      incident_id: "ServiceNow incident identifier"
+      agent_name: "Agent responsible for operation"
+      tool_name: "MCP or enterprise tool invoked"
+      model_name: "LLM/model used"
+      token_usage: "Input/output token consumption"
+      latency: "Operation duration"
+      guardrail_verdict: "Safety/policy decision"
+      outcome: "Success/failure/escalation"
+
+  enterprise_observability_layers:
+
+    layer_1_instrumentation:
+      purpose: "Generate telemetry"
+      technologies:
+        - "OpenTelemetry"
+        - "AWS Distro for OpenTelemetry"
+        - "Google Cloud instrumentation"
+        - "Application SDKs"
+
+    layer_2_collection:
+      purpose: "Collect telemetry"
+      gcp:
+        - "Cloud Logging"
+        - "Cloud Monitoring"
+        - "Cloud Trace"
+      aws:
+        - "CloudWatch Logs"
+        - "CloudWatch Metrics"
+        - "AWS X-Ray"
+
+    layer_3_analysis:
+      purpose: "Search, correlate and investigate"
+      gcp:
+        - "Logs Explorer"
+        - "Trace Explorer"
+        - "Monitoring dashboards"
+      aws:
+        - "CloudWatch Logs Insights"
+        - "X-Ray Trace Map"
+        - "CloudWatch Dashboards"
+
+    layer_4_alerting:
+      purpose: "Detect operational conditions"
+      gcp:
+        service: "Cloud Monitoring Alerting"
+      aws:
+        service: "CloudWatch Alarms"
+
+    layer_5_audit:
+      purpose: "Security and compliance evidence"
+      gcp:
+        service: "Cloud Audit Logs"
+      aws:
+        service: "AWS CloudTrail"
+
+    layer_6_visualization:
+      purpose: "Operational dashboards"
+      gcp:
+        - "Cloud Monitoring Dashboards"
+        - "Managed Grafana"
+      aws:
+        - "CloudWatch Dashboards"
+        - "Amazon Managed Grafana"
+
+  architect_interview_summary:
+    one_line:
+      - "GCP Cloud Logging ≈ AWS CloudWatch Logs"
+      - "GCP Cloud Monitoring ≈ Amazon CloudWatch"
+      - "GCP Cloud Trace ≈ AWS X-Ray"
+      - "GCP Trace Explorer ≈ X-Ray Trace Map"
+      - "GCP Cloud Audit Logs ≈ AWS CloudTrail"
+      - "GCP Error Reporting ≈ CloudWatch application/error capabilities"
+      - "GCP Managed Prometheus ≈ Amazon Managed Service for Prometheus"
+      - "GCP Managed Grafana ≈ Amazon Managed Grafana"
+      - "OpenTelemetry ≈ AWS Distro for OpenTelemetry"
+
+    key_architect_statement: >
+      Logs tell me what happened, metrics tell me how the system is behaving,
+      traces tell me where the request travelled and where latency occurred,
+      and audit logs tell me who performed an action. CloudWatch is the broad
+      AWS observability platform, X-Ray specializes in distributed tracing,
+      and CloudTrail provides AWS API and audit history.
